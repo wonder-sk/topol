@@ -1,0 +1,49 @@
+
+########################################################
+# Files
+
+SET (topol_SRCS
+  topol.cpp
+  TopolDialog.cpp
+  TopolGeom.cpp
+)
+
+SET (topol_UIS TopolDialog.ui)
+
+SET (topol_MOC_HDRS
+  topol.h
+  TopolDialog.h
+)
+
+########################################################
+# Build
+
+QT4_WRAP_UI (topol_UIS_H  ${topol_UIS})
+
+QT4_WRAP_CPP (topol_MOC_SRCS  ${topol_MOC_HDRS})
+
+QT4_ADD_RESOURCES(topol_RCC_SRCS ${topol_RCCS})
+
+ADD_LIBRARY (topolplugin MODULE ${topol_SRCS} ${topol_MOC_SRCS} ${topol_RCC_SRCS} ${topol_UIS_H})
+
+INCLUDE_DIRECTORIES(
+  ${CMAKE_BINARY_DIR}/src/ui
+  ${CMAKE_CURRENT_BINARY_DIR}
+  ../../core ../../core/raster ../../core/renderer ../../core/symbology
+  ../../gui  
+  ..
+)
+
+TARGET_LINK_LIBRARIES(topolplugin
+  qgis_core
+  qgis_gui
+)
+
+
+########################################################
+# Install
+
+INSTALL(TARGETS topolplugin
+  RUNTIME DESTINATION ${QGIS_PLUGIN_DIR}
+  LIBRARY DESTINATION ${QGIS_PLUGIN_DIR})
+
