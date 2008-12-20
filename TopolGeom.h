@@ -9,7 +9,7 @@
 #include <qgsgeometry.h>
 #include <qgspoint.h>
 
-class QPlainTextEdit;
+class QTextEdit;
 
 enum CheckType
 {
@@ -38,7 +38,7 @@ class TopolGeom
 {
 public:
   TopolGeom();
-  TopolGeom(QgsVectorLayer *theLayer, QPlainTextEdit *theWindow);
+  TopolGeom(QgsVectorLayer *theLayer, QTextEdit *theWindow);
   ~TopolGeom();
   void buildGeometry(QgsVectorLayer *nodeLayer, QgsVectorLayer *arcLayer);
 
@@ -47,9 +47,8 @@ public:
 private:
   QgsVectorLayer *mLayer;
   QMap<int, QgsGeometry> mObjects;
-  QPlainTextEdit *mWindow;
+  QTextEdit *mWindow;
 
-  QgsPolyline mIntersections;
   QList<TopolNode> mNodes;
   QList<TopolArc> mArcs;
   QgsFeatureIds mConflicting;
