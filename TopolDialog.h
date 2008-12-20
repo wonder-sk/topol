@@ -10,11 +10,6 @@
 #include "ui_TopolDialog.h"
 #include "TopolGeom.h"
 
-class QDialogButtonBox;
-class QPushButton;
-class QLineEdit;
-class QComboBox;
-
 class TopolDialog : public QDialog, public Ui::TopolDialog
 {
 Q_OBJECT

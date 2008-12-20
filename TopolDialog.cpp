@@ -53,8 +53,8 @@ TopolDialog::TopolDialog(const QString &tableName, QgsVectorLayer *theLayer, QWi
   nodeLayer = new QgsVectorLayer(path, "nodes", "ogr" );
   QgsMapLayerRegistry::instance()->addMapLayer(nodeLayer);
 
-  path = addNewLayer(QGis::WKBLineString, "ways");
-  wayLayer = new QgsVectorLayer(path, "ways", "ogr" );
+  path = addNewLayer(QGis::WKBLineString, "arcs");
+  wayLayer = new QgsVectorLayer(path, "arcs", "ogr" );
   QgsMapLayerRegistry::instance()->addMapLayer(wayLayer);
 
   mGeom->buildGeometry(nodeLayer, wayLayer);

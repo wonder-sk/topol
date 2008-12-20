@@ -62,10 +62,9 @@ void TopolGeom::cgIntersect()
 {
   int conflicts = 0;
   QMap<int, QgsGeometry>::Iterator obj1 = mObjects.begin();
-  QMap<int, QgsGeometry>::Iterator obj2 = mObjects.begin();
-
+  QMap<int, QgsGeometry>::Iterator obj2;
   for (; obj1 != mObjects.end(); ++obj1)
-    for (; obj2 != mObjects.end(); ++obj2)
+    for (obj2 = mObjects.begin(); obj2 != mObjects.end(); ++obj2)
     {
       if (obj1.key() >= obj2.key())
 	continue;
@@ -86,10 +85,9 @@ void TopolGeom::cgOverlap()
 {
   int conflicts = 0;
   QMap<int, QgsGeometry>::Iterator obj1 = mObjects.begin();
-  QMap<int, QgsGeometry>::Iterator obj2 = mObjects.begin();
-
+  QMap<int, QgsGeometry>::Iterator obj2;
   for (; obj1 != mObjects.end(); ++obj1)
-    for (; obj2 != mObjects.end(); ++obj2)
+    for (obj2 = mObjects.begin(); obj2 != mObjects.end(); ++obj2)
     {
       if (obj1.key() >= obj2.key())
 	continue;
@@ -131,111 +129,169 @@ void TopolGeom::cgMultipart()
   mWindow->appendPlainText(text);
 }
 
-void TopolGeom::buildGeometry(QgsVectorLayer *nodeLayer, QgsVectorLayer *wayLayer)
+//TODO: split or simplify, lines with >=2 intersections doesn't work yet
+void TopolGeom::buildIntersections()
 {
-//TODO: mNodes and mLines are not sets, QgsLine code not finished, split to more sub-functions
-  std::cout << "Intersections:\n";
-
   QMap<int, QgsGeometry>::Iterator obj1 = mObjects.begin();
-  QMap<int, QgsGeometry>::Iterator obj2 = mObjects.begin();
+  QMap<int, QgsGeometry>::Iterator obj2;
 
   // add all intersection points to nodes list
   for (; obj1 != mObjects.end(); ++obj1)
-    for (; obj2 != mObjects.end(); ++obj2)
+    for (obj2 = mObjects.begin(); obj2 != mObjects.end(); ++obj2)
     {
       if (obj1.key() >= obj2.key())
 	continue;
 
       QgsGeometry *intersection = obj1.value().intersection(&obj2.value());
+      QgsPoint point = intersection->asPoint();
     
-      if (intersection->asPoint() != QgsPoint(0,0))
+      if (point != QgsPoint(0,0))
       {
-        QgsPoint point = intersection->asPoint();
-        std::cout << point.x() << ", " << point.y();
+	mIntersections.append(point);
 
         int at, before, after;
 	double dist;
 
-	// this should work on temporary objects, if not solved in a more clever way
+	// TODO: this should work on temporary objects, if not solved in a more clever way
         obj1.value().closestVertex(point, at, before, after, dist);
 	obj1.value().insertVertex(point.x(), point.y(), after);
+        
+        TopolNode node;
+	node.point = point;
+
+        QgsPolyline polyline = obj1.value().asPolyline();
+	QgsPolyline::Iterator it =  polyline.begin();
+
+	QgsPolyline arc;
+
+        for (; it != polyline.end(); ++it)
+	{
+	  arc.append(*it);
+
+	  if (*it == point) 
+	  {
+	    // add first arc
+	    node.arcs.append(arc);
+            arc.clear();
+	  }
+	}
+
+	// add second arc
+	node.arcs.append(arc);
+
         obj2.value().closestVertex(point, at, before, after, dist);
 	obj2.value().insertVertex(point.x(), point.y(), after);
+
+        polyline = obj2.value().asPolyline();
+	it =  polyline.begin();
+	node.arcs.clear();
+
+        for (; it != polyline.end(); ++it)
+	{
+	  arc.append(*it);
+
+	  if (*it == point) 
+	  {
+	    // add third arc
+	    node.arcs.append(arc);
+            arc.clear();
+	  }
+	}
+
+	// add fourth arc
+	node.arcs.append(arc);
+
+	// node is done -> add it to the list
+	mNodes.append(node);
       }
     }
+}
 
-  std::cout << "Line Points:\n";
-
+// create layers containing nodes and arcs
+void TopolGeom::buildGeometry(QgsVectorLayer *nodeLayer, QgsVectorLayer *arcLayer)
+{
   mNodes.clear();
-  mLines.clear();
+  buildIntersections();
+
+  TopolNode tempNode;
 
   QMap<int, QgsGeometry>::Iterator obj = mObjects.begin();
-  for (; obj != mObjects.end(); ++obj)
+  // add beginnings and ends of lines to nodes list
+  for (obj = mObjects.begin(); obj != mObjects.end(); ++obj)
   {
     QgsPolyline polyline = obj->asPolyline();
 
-    QgsPolyline::Iterator pt = polyline.begin();
-    QgsPolyline::Iterator ppt = polyline.end();
+    tempNode.point = polyline.first();
+    QgsPolyline::Iterator it =  polyline.begin();
+    QgsPolyline arc;
+    bool intersected = false;
 
-    for (; pt != polyline.end(); ++pt)
+    for (; it != polyline.end(); ++it)
     {
-      if (ppt != polyline.end())
-        mLines.append(QgsLine(*ppt, *pt));
+      arc.append(*it);
 
-      mNodes.append(*pt);
-      ppt = pt;
+      if (mIntersections.contains(*it)) 
+      {
+	intersected = true;
+        // add first node
+        tempNode.arcs.append(arc);
+        mNodes.append(tempNode);
+
+	tempNode.point = polyline.last();
+	arc.clear();
+        arc.append(*it);
+      }
     }
 
-    //  mNodes |= *pt;
+    // add second node
+    tempNode.arcs.append(arc);
+    mNodes.append(tempNode);
 
-    //QList<QgsPoint> pointList = polyline.toList();
-    //QSet<QgsPoint> pointSet = pointList.toSet(); 
-    //mNodes |= pointSet;
-    //mNodes |= polyline.toList().toSet();
-    //mNodes |= QSet<QgsPoint>::fromList(polyline.toList());
-      
-    QgsPolyline::ConstIterator it = polyline.begin();
-    for (; it != polyline.end(); ++it)
-      std::cout << it->x() << ", " << it->y() << "\n";
+    // not intersected -> need to add the other end node
+    if (!intersected)
+    {
+      //reverse arc
+      QgsPolyline cra;
+      for (it = arc.begin(); it != arc.end(); ++it)
+        cra.prepend(*it);
+
+      tempNode.arcs.append(cra);
+      tempNode.point = polyline.last();
+      mNodes.append(tempNode);
+    }
   }
 
-  /*
-    std::cout << "All Nodes:\n";
-
-    QList<QgsPoint>::ConstIterator node = mNodes.begin();
-    for (; node != mNodes.end(); ++node)
-      std::cout << node->x() << ", " << node->y() << "\n";
-*/
-
-  // create node and way layers
+  // create node and arc layers
   QgsFeature f;
   int id = 0;
 
   // node layer
   nodeLayer->startEditing();
 
-  QList<QgsPoint>::ConstIterator node = mNodes.begin();
+  QList<TopolNode>::ConstIterator node = mNodes.begin();
   for (; node != mNodes.end(); ++node)
   {
-    f.setGeometry(QgsGeometry::fromPoint(*node));
+    f.setGeometry(QgsGeometry::fromPoint(node->point));
     f.addAttribute(0, id);
     nodeLayer->addFeature(f);
     ++id;
   }
 
-  // way layer
-  wayLayer->startEditing();
+  // arc layer
+  // TODO: arcs added more than once
+  arcLayer->startEditing();
+
   id = 0;
-/*
-  QList<QgsLine>::Iterator line = mLines.begin();
-  for (; line != mLines.end(); ++line)
+  node = mNodes.begin();
+  for (; node != mNodes.end(); ++node)
   {
-    f.setGeometry(QgsGeometry::fromWkt(line->wellKnownText()));
-    //QString wkt = line->wellKnownText();
-    //f.setGeometry(QgsGeometry::fromWkt(wkt));
-    f.addAttribute(0, id);
-    wayLayer->addFeature(f);
-    ++id;
+    QList<QgsPolyline>::ConstIterator arc = node->arcs.begin();
+    for (; arc != node->arcs.end(); ++arc)
+    {
+      f.setGeometry(QgsGeometry::fromPolyline(*arc));
+      f.addAttribute(0, id);
+      arcLayer->addFeature(f);
+      ++id;
+    }
   }
-*/
 }
