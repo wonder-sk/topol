@@ -7,6 +7,7 @@
 
 #include "TopolGeom.h"
 
+//TODO: this file is a big mess!
 TopolGeom::TopolGeom()
 {
 }
@@ -29,9 +30,19 @@ void TopolGeom::getFeatures()
   mLayer->select(QgsAttributeList());
 
   QgsFeature f;
+  QgsGeometry *g;
 
   while (mLayer->nextFeature(f))
-    mObjects[f.id()] = *f.geometryAndOwnership();
+  {
+    g = f.geometryAndOwnership();
+    std::cout << f.id() << ", ";
+    if (g)
+      mObjects[f.id()] = *g;
+    else
+    std::cout <<  "\n[" << f.id() << "]\n" <<std::flush;
+  }
+
+  std::cout << "prosle\n" <<std::flush;
 }
 
 QgsFeatureIds TopolGeom::checkGeometry(CheckType type)
@@ -131,9 +142,10 @@ void TopolGeom::cgMultipart()
 
 //TODO: split or simplify
   // TODO: arcs added more than once
+  // TODO: Polygon version not done
 void TopolGeom::buildIntersections()
 {
-  QMap<int, QgsGeometry>::Iterator obj1 = mObjects.begin();
+  QMap<int, QgsGeometry>::Iterator obj1;
   QMap<int, QgsGeometry>::Iterator obj2;
 
   bool intersecting;
@@ -149,7 +161,8 @@ void TopolGeom::buildIntersections()
 	continue;
 
       QgsGeometry *intersection = obj1.value().intersection(&obj2.value());
-  //std::cout << "intersekci type: " << intersection->type() << "\n" << std::flush;
+      if (!intersection)
+        continue;
 
       QgsPoint pt;
       QgsMultiPoint pts;
@@ -161,14 +174,13 @@ void TopolGeom::buildIntersections()
 	  pts.append(pt);
 	else
 	  pts = intersection->asMultiPoint();
+
+        intersecting = true;
       }
-      // no intersections found
       else
       {
-        intersecting = true;
         continue;
       }
-
       if (pts != QgsMultiPoint())
       {
         TopolNode node;
@@ -183,11 +195,64 @@ void TopolGeom::buildIntersections()
 	{
 	  intersections.append(*mit);
 
+	  /*QList<QgsPoint> pol, testPoints;
+	  bool top;
+	  pol.append(*mit);
+	  pol.append(*mit);
+	  QList<QgsGeometry *> geoms;
+
+	  if (obj1.value().splitGeometry(pol, geoms, top, testPoints) == 1)
+		  printf("je to 1\n");
+	  */
+	  //////////////////
+/*
+	  QgsPolyline lin;
+	  lin.append(*mit); 
+	  lin.append(*mit); 
+	  lin[1].setX(lin[1].x() + 0.000001);
+
+	  QgsGeometry *g = QgsGeometry::fromPolyline(lin);
+	  if (!g)
+	  	std::cout << "from: ne" << std::flush;
+
+	  QgsGeometry *combined;
+	  combined = obj1.value().combine(g); 
+	  if (!combined)
+	  	std::cout << "combined: ne" << std::flush;
+
+	  std::cout << "comb type: " << combined->type();
+	QgsPolyline combl = obj1.value().asPolyline(); 
+	  std::cout << "\n1.\n";
+	  for (QgsPolyline::Iterator pit =combl.begin(); pit != combl.end(); ++pit)
+		  std::cout << pit->x() << " , " << pit->y() << "\n";
+
+	  std::cout << "2.\n";
+	  combl =  g->asPolyline();
+	  for (QgsPolyline::Iterator pit =combl.begin(); pit != combl.end(); ++pit)
+		  std::cout << pit->x() << " , " << pit->y() << "\n";
+
+	  std::cout << "po\n";
+	  combl =  combined->asPolyline();
+	  for (QgsPolyline::Iterator pit =combl.begin(); pit != combl.end(); ++pit)
+		  std::cout << pit->x() << " , " << pit->y() << "\n";
+	 */ //////////////////
+	  
+//	QgsPolyline combl = obj1.value().asPolyline(); 
+//	  std::cout << "\n1.\n";
+//	  for (QgsPolyline::Iterator pit =combl.begin(); pit != combl.end(); ++pit)
+//		  std::cout << pit->x() << " , " << pit->y() << "\n";
+//
 	  // TODO: this should work on temporary objects, if not solved in a more clever way
           obj1.value().closestVertex(*mit, at, before, after, dist);
-          obj1.value().insertVertex(mit->x(), mit->y(), after);
+          obj1.value().insertVertex(mit->x(), mit->y(), at);
           obj2.value().closestVertex(*mit, at, before, after, dist);
-          obj2.value().insertVertex(mit->x(), mit->y(), after);
+          obj2.value().insertVertex(mit->x(), mit->y(), at);
+
+//	combl = obj1.value().asPolyline(); 
+//	  std::cout << "\n2.\n";
+//	  for (QgsPolyline::Iterator pit =combl.begin(); pit != combl.end(); ++pit)
+//		  std::cout << pit->x() << " , " << pit->y() << "\n";
+	std::cout << "bod: " << pts.first().x() << " , " << pts.first().y() << "\n";
 	} 
 
         QgsPolyline arc;
@@ -203,7 +268,9 @@ void TopolGeom::buildIntersections()
 
           if (intersections.contains(*it)) 
 	  {
-	    node.arcs.append(arc);
+	if (arc.size() > 1)
+	  node.arcs.append(arc);
+	else std::cout << "SHIT";
 	    mNodes.append(node);
 	    node.arcs.clear();
 
@@ -213,9 +280,13 @@ void TopolGeom::buildIntersections()
 	    arc.append(*it);
 	  }
 	}
+	std::cout << "prosla prvni:  \n";
 
 	// append arc to current intersection and line endpoint
-	node.arcs.append(arc);
+	if (arc.size() > 1)
+	  node.arcs.append(arc);
+	else std::cout << "SHET";
+
 	mNodes.append(node);
 	node.point = polyline.last();
 	node.arcs.clear();
@@ -228,13 +299,16 @@ void TopolGeom::buildIntersections()
 	node.point = polyline.first();
 	node.arcs.clear();
 
+	std::cout << "du na 2. :  \n";
         for (it = polyline.begin(); it != polyline.end(); ++it)
 	{
 	  arc.append(*it);
 
           if (intersections.contains(*it)) 
 	  {
-	    node.arcs.append(arc);
+	if (arc.size() > 1)
+	  node.arcs.append(arc);
+	else std::cout << "SHUT";
 	    mNodes.append(node);
 	    node.arcs.clear();
 
@@ -246,7 +320,10 @@ void TopolGeom::buildIntersections()
 	}
 
 	// append arc to current intersection and line endpoint
-	node.arcs.append(arc);
+	if (arc.size() > 1)
+	  node.arcs.append(arc);
+	else std::cout << "SHLT";
+
 	mNodes.append(node);
 	node.point = polyline.last();
 	node.arcs.clear();
@@ -256,6 +333,7 @@ void TopolGeom::buildIntersections()
       else
         std::cout << "not multipoint\n" << std::flush;
     }
+
 
     if (!intersecting)
     {
@@ -307,10 +385,19 @@ void TopolGeom::buildGeometry(QgsVectorLayer *nodeLayer, QgsVectorLayer *arcLaye
     QList<QgsPolyline>::ConstIterator arc = node->arcs.begin();
     for (; arc != node->arcs.end(); ++arc)
     {
+	QgsPolyline::ConstIterator it =  arc->begin();
+        for (; it != arc->end(); ++it)
+	    std::cout << it->x() << ", ";
       f.setGeometry(QgsGeometry::fromPolyline(*arc));
-      f.addAttribute(0, id);
-      arcLayer->addFeature(f, false);
-      ++id;
+      if (!f.geometry())
+	      std::cout << "kruci\n";
+      else
+      {
+        f.addAttribute(0, id);
+        arcLayer->addFeature(f, false);
+        ++id;
+      }
+  std::cout << "id :"  << id << std::flush;
     }
   }
 
