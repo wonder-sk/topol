@@ -50,6 +50,7 @@ private:
   QTextEdit *mWindow;
 
   QList<TopolNode> mNodes;
+  QMap<QString, TopolNode> mmNodes;
   QList<TopolArc> mArcs;
   QgsFeatureIds mConflicting;
 

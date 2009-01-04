@@ -6,8 +6,8 @@
 #include <qgspoint.h>
 
 #include "TopolGeom.h"
+#include "show.h"
 
-//TODO: this file is a big mess!
 TopolGeom::TopolGeom()
 {
 }
@@ -22,7 +22,9 @@ TopolGeom::TopolGeom(QgsVectorLayer *theLayer, QTextEdit *theWindow)
 
 TopolGeom::~TopolGeom()
 {
-  //TODO: free geometries in mObjects
+  QMap<int, QgsGeometry>::Iterator obj;
+  for (obj = mObjects.begin(); obj != mObjects.end(); ++obj)
+    free(&obj.value());
 }
 
 void TopolGeom::getFeatures()
@@ -35,14 +37,84 @@ void TopolGeom::getFeatures()
   while (mLayer->nextFeature(f))
   {
     g = f.geometryAndOwnership();
-    std::cout << f.id() << ", ";
     if (g)
       mObjects[f.id()] = *g;
-    else
-    std::cout <<  "\n[" << f.id() << "]\n" <<std::flush;
+  }
+}
+
+  // TODO: Polygon version not done
+void TopolGeom::buildIntersections()
+{
+  QMap<int, QgsGeometry>::Iterator obj;
+
+ QgsGeometry *ge = &mObjects.begin().value();
+ obj = mObjects.begin();
+  for (++obj; obj != mObjects.end(); ++obj)
+    ge = ge->combine(&obj.value());
+
+  QgsMultiPolyline mpol = ge->asMultiPolyline();
+  QgsMultiPolyline::Iterator mpit = mpol.begin();
+
+  for (; mpit != mpol.end(); ++mpit)
+  {	  
+//    show_line(*mpit);
+
+    mmNodes[mpit->first().toString()].point = mpit->first();
+    mmNodes[mpit->first().toString()].arcs.append(*mpit);
+    mmNodes[mpit->last().toString()].point = mpit->last();
+    mmNodes[mpit->last().toString()].arcs.append(*mpit);
+  }
+}
+
+// create layers containing nodes and arcs
+void TopolGeom::buildGeometry(QgsVectorLayer *nodeLayer, QgsVectorLayer *arcLayer)
+{
+  mNodes.clear();
+  buildIntersections();
+
+  // create node and arc layers
+  QgsFeature f;
+  int id = 0;
+
+  // node layer
+  nodeLayer->startEditing();
+
+  QMap<QString, TopolNode>::ConstIterator node = mmNodes.begin();
+  for (; node != mmNodes.end(); ++node)
+  {
+    f.setGeometry(QgsGeometry::fromPoint(node.value().point));
+    f.addAttribute(0, id);
+    nodeLayer->addFeature(f, false);
+    ++id;
   }
 
-  std::cout << "prosle\n" <<std::flush;
+  nodeLayer->updateExtents();
+
+  // arc layer
+  arcLayer->startEditing();
+  id = 0;
+  node = mmNodes.begin();
+  for (; node != mmNodes.end(); ++node)
+  {
+    QList<QgsPolyline>::ConstIterator arc = node.value().arcs.begin();
+    for (; arc != node.value().arcs.end(); ++arc)
+    {
+	QgsPolyline::ConstIterator it =  arc->begin();
+        for (; it != arc->end(); ++it)
+	    std::cout << it->x() << ", ";
+      f.setGeometry(QgsGeometry::fromPolyline(*arc));
+      if (!f.geometry())
+	      std::cout << "kruci\n";
+      else
+      {
+        f.addAttribute(0, id);
+        arcLayer->addFeature(f, false);
+        ++id;
+      }
+    }
+  }
+
+  arcLayer->updateExtents();
 }
 
 QgsFeatureIds TopolGeom::checkGeometry(CheckType type)
@@ -138,268 +210,4 @@ void TopolGeom::cgMultipart()
 
   QString text = QString("# of intersections: %1\n").arg(conflicts);
   mWindow->append(text);
-}
-
-//TODO: split or simplify
-  // TODO: arcs added more than once
-  // TODO: Polygon version not done
-void TopolGeom::buildIntersections()
-{
-  QMap<int, QgsGeometry>::Iterator obj1;
-  QMap<int, QgsGeometry>::Iterator obj2;
-
-  bool intersecting;
-
-  // add all intersection points to nodes list
-  for (obj1 = mObjects.begin(); obj1 != mObjects.end(); ++obj1)
-  {
-    intersecting = false;
-
-    for (obj2 = mObjects.begin(); obj2 != mObjects.end(); ++obj2)
-    {
-      if (obj1.key() >= obj2.key())
-	continue;
-
-      QgsGeometry *intersection = obj1.value().intersection(&obj2.value());
-      if (!intersection)
-        continue;
-
-      QgsPoint pt;
-      QgsMultiPoint pts;
-
-      // check if intersection is point or multipoint
-      if (intersection->type() == 0)
-      {
-        if ((pt = intersection->asPoint()) != QgsPoint(0,0))
-	  pts.append(pt);
-	else
-	  pts = intersection->asMultiPoint();
-
-        intersecting = true;
-      }
-      else
-      {
-        continue;
-      }
-      if (pts != QgsMultiPoint())
-      {
-        TopolNode node;
-        int at, before, after;
-	double dist;
-	
-	QgsMultiPoint intersections;
-	QgsMultiPoint::ConstIterator mit = pts.begin();
-
-	// creates intersection list
-	for (; mit != pts.end(); ++mit)
-	{
-	  intersections.append(*mit);
-
-	  /*QList<QgsPoint> pol, testPoints;
-	  bool top;
-	  pol.append(*mit);
-	  pol.append(*mit);
-	  QList<QgsGeometry *> geoms;
-
-	  if (obj1.value().splitGeometry(pol, geoms, top, testPoints) == 1)
-		  printf("je to 1\n");
-	  */
-	  //////////////////
-/*
-	  QgsPolyline lin;
-	  lin.append(*mit); 
-	  lin.append(*mit); 
-	  lin[1].setX(lin[1].x() + 0.000001);
-
-	  QgsGeometry *g = QgsGeometry::fromPolyline(lin);
-	  if (!g)
-	  	std::cout << "from: ne" << std::flush;
-
-	  QgsGeometry *combined;
-	  combined = obj1.value().combine(g); 
-	  if (!combined)
-	  	std::cout << "combined: ne" << std::flush;
-
-	  std::cout << "comb type: " << combined->type();
-	QgsPolyline combl = obj1.value().asPolyline(); 
-	  std::cout << "\n1.\n";
-	  for (QgsPolyline::Iterator pit =combl.begin(); pit != combl.end(); ++pit)
-		  std::cout << pit->x() << " , " << pit->y() << "\n";
-
-	  std::cout << "2.\n";
-	  combl =  g->asPolyline();
-	  for (QgsPolyline::Iterator pit =combl.begin(); pit != combl.end(); ++pit)
-		  std::cout << pit->x() << " , " << pit->y() << "\n";
-
-	  std::cout << "po\n";
-	  combl =  combined->asPolyline();
-	  for (QgsPolyline::Iterator pit =combl.begin(); pit != combl.end(); ++pit)
-		  std::cout << pit->x() << " , " << pit->y() << "\n";
-	 */ //////////////////
-	  
-//	QgsPolyline combl = obj1.value().asPolyline(); 
-//	  std::cout << "\n1.\n";
-//	  for (QgsPolyline::Iterator pit =combl.begin(); pit != combl.end(); ++pit)
-//		  std::cout << pit->x() << " , " << pit->y() << "\n";
-//
-	  // TODO: this should work on temporary objects, if not solved in a more clever way
-          obj1.value().closestVertex(*mit, at, before, after, dist);
-          obj1.value().insertVertex(mit->x(), mit->y(), at);
-          obj2.value().closestVertex(*mit, at, before, after, dist);
-          obj2.value().insertVertex(mit->x(), mit->y(), at);
-
-//	combl = obj1.value().asPolyline(); 
-//	  std::cout << "\n2.\n";
-//	  for (QgsPolyline::Iterator pit =combl.begin(); pit != combl.end(); ++pit)
-//		  std::cout << pit->x() << " , " << pit->y() << "\n";
-	std::cout << "bod: " << pts.first().x() << " , " << pts.first().y() << "\n";
-	} 
-
-        QgsPolyline arc;
-        QgsPolyline polyline = obj1.value().asPolyline();
-	QgsPolyline::Iterator it =  polyline.begin();
-
-	//TODO: simplify
-	// walk along first line and add arcs to intersection nodes
-	node.point = polyline.first();
-        for (; it != polyline.end(); ++it)
-	{
-	  arc.append(*it);
-
-          if (intersections.contains(*it)) 
-	  {
-	if (arc.size() > 1)
-	  node.arcs.append(arc);
-	else std::cout << "SHIT";
-	    mNodes.append(node);
-	    node.arcs.clear();
-
-	    node.point = *it;
-	    node.arcs.append(arc);
-            arc.clear();
-	    arc.append(*it);
-	  }
-	}
-	std::cout << "prosla prvni:  \n";
-
-	// append arc to current intersection and line endpoint
-	if (arc.size() > 1)
-	  node.arcs.append(arc);
-	else std::cout << "SHET";
-
-	mNodes.append(node);
-	node.point = polyline.last();
-	node.arcs.clear();
-	node.arcs.append(arc);
-	mNodes.append(node);
-
-	// walk along second line and add arcs to intersection nodes
-	arc.clear();
-        polyline = obj2.value().asPolyline();
-	node.point = polyline.first();
-	node.arcs.clear();
-
-	std::cout << "du na 2. :  \n";
-        for (it = polyline.begin(); it != polyline.end(); ++it)
-	{
-	  arc.append(*it);
-
-          if (intersections.contains(*it)) 
-	  {
-	if (arc.size() > 1)
-	  node.arcs.append(arc);
-	else std::cout << "SHUT";
-	    mNodes.append(node);
-	    node.arcs.clear();
-
-	    node.point = *it;
-	    node.arcs.append(arc);
-            arc.clear();
-	    arc.append(*it);
-	  }
-	}
-
-	// append arc to current intersection and line endpoint
-	if (arc.size() > 1)
-	  node.arcs.append(arc);
-	else std::cout << "SHLT";
-
-	mNodes.append(node);
-	node.point = polyline.last();
-	node.arcs.clear();
-	node.arcs.append(arc);
-	mNodes.append(node);
-      }
-      else
-        std::cout << "not multipoint\n" << std::flush;
-    }
-
-
-    if (!intersecting)
-    {
-      TopolNode node;
-      QgsPolyline polyline = obj1.value().asPolyline();
-
-      node.point = polyline.first();
-      node.arcs.append(polyline);
-      mNodes.append(node);
-
-      node.point = polyline.last();
-      mNodes.append(node);
-    }
-  }
-}
-
-// create layers containing nodes and arcs
-void TopolGeom::buildGeometry(QgsVectorLayer *nodeLayer, QgsVectorLayer *arcLayer)
-{
-  mNodes.clear();
-  buildIntersections();
-
-  // create node and arc layers
-  QgsFeature f;
-  int id = 0;
-
-  // node layer
-  nodeLayer->startEditing();
-
-  QList<TopolNode>::ConstIterator node = mNodes.begin();
-  for (; node != mNodes.end(); ++node)
-  {
-    f.setGeometry(QgsGeometry::fromPoint(node->point));
-    f.addAttribute(0, id);
-    nodeLayer->addFeature(f, false);
-    ++id;
-  }
-
-  nodeLayer->updateExtents();
-
-  // arc layer
-  // TODO: arcs added more than once
-  arcLayer->startEditing();
-
-  id = 0;
-  node = mNodes.begin();
-  for (; node != mNodes.end(); ++node)
-  {
-    QList<QgsPolyline>::ConstIterator arc = node->arcs.begin();
-    for (; arc != node->arcs.end(); ++arc)
-    {
-	QgsPolyline::ConstIterator it =  arc->begin();
-        for (; it != arc->end(); ++it)
-	    std::cout << it->x() << ", ";
-      f.setGeometry(QgsGeometry::fromPolyline(*arc));
-      if (!f.geometry())
-	      std::cout << "kruci\n";
-      else
-      {
-        f.addAttribute(0, id);
-        arcLayer->addFeature(f, false);
-        ++id;
-      }
-  std::cout << "id :"  << id << std::flush;
-    }
-  }
-
-  arcLayer->updateExtents();
 }
