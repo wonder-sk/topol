@@ -42,28 +42,52 @@ void TopolGeom::getFeatures()
   }
 }
 
-  // TODO: Polygon version not done
+// TODO: Polygon version not done
 void TopolGeom::buildIntersections()
 {
   QMap<int, QgsGeometry>::Iterator obj;
+  QList<QgsGeometry *> queue;
+  QgsGeometry *a, *b, *c;
+  int objects = mObjects.size();
 
- QgsGeometry *ge = &mObjects.begin().value();
- obj = mObjects.begin();
-  for (++obj; obj != mObjects.end(); ++obj)
-    ge = ge->combine(&obj.value());
+  for (obj = mObjects.begin(); obj != mObjects.end(); ++obj)
+  {
+    queue.append(&obj.value());
+  }
 
-  QgsMultiPolyline mpol = ge->asMultiPolyline();
+  for (int i = 1; queue.size() > 1; ++i) {
+    a = queue.takeFirst();
+    b = queue.takeFirst();
+
+    std::cout << i;
+    if (c = a->combine(b))
+    {
+      std::cout << ", ok\n";
+      queue.append(c);
+    }
+    else
+      std::cout << ", merge failed -> skipping\n";
+
+    if (i > objects && a != c)
+      free(a);
+
+    if (++i > objects)
+      free(b);
+  } 
+
+  QgsMultiPolyline mpol = c->asMultiPolyline();
   QgsMultiPolyline::Iterator mpit = mpol.begin();
 
   for (; mpit != mpol.end(); ++mpit)
   {	  
-//    show_line(*mpit);
-
+    //show_line(*mpit);
     mmNodes[mpit->first().toString()].point = mpit->first();
     mmNodes[mpit->first().toString()].arcs.append(*mpit);
     mmNodes[mpit->last().toString()].point = mpit->last();
     mmNodes[mpit->last().toString()].arcs.append(*mpit);
   }
+
+  free(c);
 }
 
 // create layers containing nodes and arcs
@@ -99,9 +123,6 @@ void TopolGeom::buildGeometry(QgsVectorLayer *nodeLayer, QgsVectorLayer *arcLaye
     QList<QgsPolyline>::ConstIterator arc = node.value().arcs.begin();
     for (; arc != node.value().arcs.end(); ++arc)
     {
-	QgsPolyline::ConstIterator it =  arc->begin();
-        for (; it != arc->end(); ++it)
-	    std::cout << it->x() << ", ";
       f.setGeometry(QgsGeometry::fromPolyline(*arc));
       if (!f.geometry())
 	      std::cout << "kruci\n";
