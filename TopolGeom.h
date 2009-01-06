@@ -28,7 +28,6 @@ public:
 class TopolArc
 {
 public:
-  // beginning and end of line
   int beg, end;
 
   QgsPolyline arc;
@@ -49,9 +48,9 @@ private:
   QMap<int, QgsGeometry> mObjects;
   QTextEdit *mWindow;
 
-  QList<TopolNode> mNodes;
-  QMap<QString, TopolNode> mmNodes;
-  QList<TopolArc> mArcs;
+  QMap<QString, TopolNode> mNodes;
+  //QMap<QString, TopolArc> mArcs;
+  QList<QgsPolyline> mArcs;
   QgsFeatureIds mConflicting;
 
   void getFeatures();
