@@ -22,9 +22,77 @@ TopolGeom::TopolGeom(QgsVectorLayer *theLayer, QTextEdit *theWindow)
 
 TopolGeom::~TopolGeom()
 {
-	QMap<int, QgsGeometry>::Iterator obj;
+	QMap<int, QgsGeometry*>::Iterator obj;
 	for (obj = mObjects.begin(); obj != mObjects.end(); ++obj)
-		free(&obj.value());
+		delete(obj.value());
+}
+
+/**
+ * This function updates QList arcs in this way:
+ * Adds 2 or more new arcs, which were part of arc a to the start of the list. 
+ *   (So that we can use the information about the number of already tested arcs from the start of the list.)
+ * Adds 2 or more new arcs, which were part of arc arcs[b] to the end of the list.
+ * Removes the arcs[b] arc and deletes it.
+ */
+void TopolGeom::updateArcs(Arc *a, int b, QgsGeometry *comb, QList<Arc*> *arcs)
+{ 
+  QgsMultiPolyline mpol = comb->asMultiPolyline();
+  QgsGeometry *newGeom;
+  int tested = b;
+	
+  // get pointer to the b arc, and then remove it from the list, 
+  // while we did not change the index by adding new arcs 
+  Arc *bb = (*arcs)[b];
+  arcs->removeAt(b);
+	
+  for (QgsMultiPolyline::Iterator mpit = mpol.begin(); mpit != mpol.end(); ++mpit) {
+
+    // get the polyline and its geometry
+    newGeom = QgsGeometry::fromPolyline(*mpit);
+    
+    if (belongsTo(newGeom, a)) {
+     // the polyline belongs to arc a, so it goes to the start of list
+      arcs->prepend(new Arc(newGeom, a->featureID, tested));
+
+      // the next polylines will not need to test against its "siblings" already inserted to arcs
+      tested++;
+      //std::cout << "newGeom: " << newGeom->asPolyline().first().toString().toStdString() << "\n" << std::flush;
+      //std::cout << "arcs[0]: " << (*arcs)[0]->geom->asPolyline().first().toString().toStdString() << "\n" << std::flush;
+    }
+    else if (belongsTo(newGeom, bb)) {
+      // the polyline belongs to arc b, so it goes to the end of list
+      //std::cout << "patrim k B\n" << std::flush;
+      arcs->append(new Arc(newGeom, bb->featureID, 0));
+    }  
+    else {
+      std::cout << "nepatrim nikam!\n" << std::flush;
+	  }  
+  }
+  
+  delete bb;
+}
+
+bool TopolGeom::belongsTo(QgsGeometry *newGeom, Arc *originalArc)
+{
+  double intersectThreshold =  0.0000001;
+		        
+  QgsPolyline polyline = newGeom->asPolyline();
+  QgsPoint point;
+  if (polyline.size() > 2 ) {
+    point.set( polyline[1].x(), polyline[1].y() );
+//    std::cout << "> 2: " << point.x() << ";" << point.y() << "\n";
+  }
+  else if (polyline.size() == 2 ) {
+    point.set( (polyline[0].x()+polyline[1].x())/2, (polyline[0].y()+polyline[1].y())/2 );
+//    std::cout << "= 2: " << point.x() << ";" << point.y() << "\n";
+  }
+  else {
+    return false;
+  }
+				  
+  // the newGeom belongs to originalArc, if the originalArc contains the point
+  // for implementation reasons we allow some threshold
+  return (originalArc->geom->distance(*QgsGeometry::fromPoint(point)) < intersectThreshold);
 }
 
 void TopolGeom::getFeatures()
@@ -38,184 +106,62 @@ void TopolGeom::getFeatures()
 	{
 		g = f.geometryAndOwnership();
 		if (g)
-			mObjects[f.id()] = *g;
+			mObjects[f.id()] = g;
 	}
 }
 
-struct info
-{
-	 QgsGeometry *g;
-	 int comp;
-	 QSet<int> groups;
-}; 
 
-// TODO: Polygon version not done
 void TopolGeom::buildIntersections()
 {
-	QMap<int, QgsGeometry>::Iterator obj;
-	//QList<QgsGeometry *> queue, parsed;
-	QList<info> geoms;
+  QList<Arc*> arcs;
+  QgsGeometry *comb;
 
-	QgsGeometry *c;
-	//int objects = mObjects.size();
+  // convert all initial geometries to polylines and put them to a list
+  for (QMap<int, QgsGeometry*>::Iterator obj = mObjects.begin(); obj != mObjects.end(); ++obj)
+  {
+    arcs.append(new Arc(obj.value(), obj.key()));
+  }
 
-	///////////////////////////////////////////////////
-	for (obj = mObjects.begin(); obj != mObjects.end(); ++obj)
-	{
-		struct info inf;
-		inf.comp = obj.key();	
-		inf.groups.clear();
-		inf.g = &obj.value();
-		geoms.append(inf);
-	}
+  while (!arcs.isEmpty()) {
+    // get the first arc
 
-	for (int a = 0; a < geoms.size();)// ++a)
-	{
-	std::cout << "QUEUE taken\n" << std::flush;
-		bool intersection = false;
-		QgsGeometry *lastIntersected;
+    //for (int j = 0; j < arcs.size(); ++j)
+      //std::cout << arcs[j]->featureID << ", "<< std::flush;
+    //std::cout << "\n"<< std::flush; 
 
-std::cout << "a: " << geoms[a].g->asPolyline().first().toString().toStdString() << "\n";
+    Arc *a = arcs.takeFirst();
 
-		for (int b = 1; b < geoms.size(); ++b)
-		{
-	std::cout << "geoms size " << geoms.size() <<"\n" << std::flush;
-std::cout << "b zas b: " << geoms[b].g->asPolyline().first().toString().toStdString() << "\n";
+    // find if it intersects with any other arc
+    bool intersects = false;
+    for (int b = 0; b < arcs.size(); ++b)
+    {
+      if ( a->intersects(&arcs, b) )
+      {
+        comb = a->geom->combine(arcs[b]->geom);
+        if ((a->geom == comb) || comb->asMultiPolyline().size() <= 2)
+          continue;
+          
+        intersects = true;
 
-			// if not intersecting each other
-			if ( !(geoms[a].g->boundingBox().intersects(geoms[b].g->boundingBox()))
-				|| !(geoms[a].g->intersects(geoms[b].g)) )
-			{
-	std::cout << "continue\n" << std::flush;
-				continue;
-			}
-	std::cout << "prusecik\n" << std::flush;
-			if ((c = geoms[a].g->combine(geoms[b].g)) && geoms[a].g != c)
-			{
-	std::cout << "combine\n" << std::flush;
-	std::cout << "protinajici: " << geoms[b].g->asPolyline().first().toString().toStdString() << "\n";
-				QgsMultiPolyline mpol = c->asMultiPolyline();
-				QgsMultiPolyline::Iterator mpit = mpol.begin();
-				QgsGeometry *ng;
-				for (; mpit != mpol.end(); ++mpit)
-				{
-					std::cout << "polyline\n" << std::flush;
-					ng = QgsGeometry::fromPolyline(*mpit);
-					struct info inf;
-					inf.g = ng;
-					inf.comp = 
-					geoms.append(ng);			 
-				}
+        // this function updates arcs in this way
+        // adds 4 or more new arcs 
+        // removes the arcs[b] arc and deletes it
+        updateArcs(a, b, comb, &arcs);
+                
+        break;
+      }    
+    }
 
-	lastIntersected = ng;
-
-	geoms.removeAt(b);
-	geoms.pop_front();
-	a = 0;
-	intersection = true;
-	std::cout << "size " << geoms.size() <<"\n" << std::flush;
-	break;
-			}
-			else
-				std::cout << "GEOS union not possible!\n";
-		} 	
-
-		if (!intersection)
-		{
-			if (geoms[a].g == lastIntersected)
-				break; 
-
-			++a;
-			geoms.append(geoms.takeFirst());
-		}
-	}
-	std::cout << "oblouky:\n";
-
-	QList<QgsGeometry *>::Iterator it ; 
-	for (it = geoms.begin(); it != geoms.end(); ++it)
-	{
-		QgsPolyline pol = (*it)->asPolyline();
-	std::cout << pol.first().toString().toStdString() << "\n";
-		mNodes[pol.first().toString()].point = pol.first();
-		mNodes[pol.first().toString()].arcs.append(pol);
-		mNodes[pol.last().toString()].point = pol.last();
-		mNodes[pol.last().toString()].arcs.append(pol);
-	}
-	//////////////////////////////////////////////////
-	/*
-	for (obj = mObjects.begin(); obj != mObjects.end(); ++obj)
-		//queue.append(&obj.value());
-		parsed.append(&obj.value());
-
-	for (int a = 0; a < parsed.size();)// ++a)
-	{
-	std::cout << "QUEUE taken\n" << std::flush;
-		bool intersection = false;
-		QgsGeometry *lastIntersected;
-
-std::cout << "a: " << parsed[a]->asPolyline().first().toString().toStdString() << "\n";
-
-		for (int b = 1; b < parsed.size(); ++b)
-		{
-	std::cout << "parsed size " << parsed.size() <<"\n" << std::flush;
-std::cout << "b zas b: " << parsed[b]->asPolyline().first().toString().toStdString() << "\n";
-
-			// if not intersecting each other
-			if ( !(parsed[a]->boundingBox().intersects(parsed[b]->boundingBox()))
-				|| !(parsed[a]->intersects(parsed[b])) )
-			{
-	std::cout << "continue\n" << std::flush;
-				continue;
-			}
-	std::cout << "prusecik\n" << std::flush;
-			if ((c = parsed[a]->combine(parsed[b])) && parsed[a] != c)
-			{
-	std::cout << "combine\n" << std::flush;
-	std::cout << "protinajici: " << parsed[b]->asPolyline().first().toString().toStdString() << "\n";
-				QgsMultiPolyline mpol = c->asMultiPolyline();
-				QgsMultiPolyline::Iterator mpit = mpol.begin();
-				QgsGeometry *ng;
-				for (; mpit != mpol.end(); ++mpit)
-				{
-					std::cout << "polyline\n" << std::flush;
-					ng = QgsGeometry::fromPolyline(*mpit);
-					parsed.append(ng);			 
-				}
-
-	lastIntersected = ng;
-
-	parsed.removeAt(b);
-	parsed.pop_front();
-	a = 0;
-	intersection = true;
-	std::cout << "size " << parsed.size() <<"\n" << std::flush;
-	break;
-			}
-			else
-				std::cout << "GEOS union not possible!\n";
-		} 	
-
-		if (!intersection)
-		{
-			if (parsed[a] == lastIntersected)
-				break; 
-
-			++a;
-			parsed.append(parsed.takeFirst());
-		}
-	}
-	std::cout << "oblouky:\n";
-
-	QList<QgsGeometry *>::Iterator it ; 
-	for (it = parsed.begin(); it != parsed.end(); ++it)
-	{
-		QgsPolyline pol = (*it)->asPolyline();
-	std::cout << pol.first().toString().toStdString() << "\n";
-		mNodes[pol.first().toString()].point = pol.first();
-		mNodes[pol.first().toString()].arcs.append(pol);
-		mNodes[pol.last().toString()].point = pol.last();
-		mNodes[pol.last().toString()].arcs.append(pol);
-	}*/
+    if (intersects) {
+      // we have to delete the arc a, it was replaced by its child arcs
+      delete a;
+    }
+    else {
+      // we have not found any intersection of arc a with any other arc
+      // so a is finished and goes to global list
+      mArcs.append(*a); 
+    }
+  }
 }
 
 // create layers containing nodes and arcs
@@ -292,6 +238,7 @@ QgsFeatureIds TopolGeom::checkGeometry(CheckType type)
 
 void TopolGeom::cgIntersect()
 {
+	/*
 	int conflicts = 0;
 	QMap<int, QgsGeometry>::Iterator obj1 = mObjects.begin();
 	QMap<int, QgsGeometry>::Iterator obj2;
@@ -310,11 +257,12 @@ void TopolGeom::cgIntersect()
 		}
 
 	QString text = QString("# of intersections: %1\n").arg(conflicts);
-	mWindow->append(text);
+	mWindow->append(text);*/
 }
 
 void TopolGeom::cgOverlap()
 {
+	/*
 	int conflicts = 0;
 	QMap<int, QgsGeometry>::Iterator obj1 = mObjects.begin();
 	QMap<int, QgsGeometry>::Iterator obj2;
@@ -339,11 +287,11 @@ void TopolGeom::cgOverlap()
 		}
 
 	QString text = QString("# of intersections: %1\n").arg(conflicts);
-	mWindow->append(text);
+	mWindow->append(text);*/
 }
 
 void TopolGeom::cgMultipart()
-{
+{/*
 	int conflicts = 0;
 	QMap<int, QgsGeometry>::Iterator obj = mObjects.begin();
 
@@ -358,5 +306,5 @@ void TopolGeom::cgMultipart()
 		}	
 
 	QString text = QString("# of intersections: %1\n").arg(conflicts);
-	mWindow->append(text);
+	mWindow->append(text);*/
 }
