@@ -56,8 +56,7 @@ void TopolGeom::updateArcs(Arc *a, int b, QgsGeometry *comb, QList<Arc*> *arcs)
 
       // the next polylines will not need to test against its "siblings" already inserted to arcs
       tested++;
-      //std::cout << "newGeom: " << newGeom->asPolyline().first().toString().toStdString() << "\n" << std::flush;
-      //std::cout << "arcs[0]: " << (*arcs)[0]->geom->asPolyline().first().toString().toStdString() << "\n" << std::flush;
+      //std::cout << "patrim k A\n" << std::flush;
     }
     else if (belongsTo(newGeom, bb)) {
       // the polyline belongs to arc b, so it goes to the end of list
@@ -80,11 +79,9 @@ bool TopolGeom::belongsTo(QgsGeometry *newGeom, Arc *originalArc)
   QgsPoint point;
   if (polyline.size() > 2 ) {
     point.set( polyline[1].x(), polyline[1].y() );
-//    std::cout << "> 2: " << point.x() << ";" << point.y() << "\n";
   }
   else if (polyline.size() == 2 ) {
     point.set( (polyline[0].x()+polyline[1].x())/2, (polyline[0].y()+polyline[1].y())/2 );
-//    std::cout << "= 2: " << point.x() << ";" << point.y() << "\n";
   }
   else {
     return false;
@@ -125,8 +122,8 @@ void TopolGeom::buildIntersections()
   while (!arcs.isEmpty()) {
     // get the first arc
 
-    //for (int j = 0; j < arcs.size(); ++j)
-      //std::cout << arcs[j]->featureID << ", "<< std::flush;
+  //for (int j = 0; j < arcs.size(); ++j) 
+  //  std::cout << arcs[j]->featureID << " (" << arcs[j]->geom->asPolyline().first() << " - " << arcs[j]->geom->asPolyline().last() << ")\n" << std::flush;
     //std::cout << "\n"<< std::flush; 
 
     Arc *a = arcs.takeFirst();
@@ -142,6 +139,7 @@ void TopolGeom::buildIntersections()
           continue;
           
         intersects = true;
+//	std::cout << a->featureID << " intersects with " << arcs[b]->featureID << " at " << b << std::flush;
 
         // this function updates arcs in this way
         // adds 4 or more new arcs 
@@ -162,51 +160,57 @@ void TopolGeom::buildIntersections()
       mArcs.append(*a); 
     }
   }
+
+  //for (int j = 0; j < mArcs.size(); ++j) 
+//    std::cout << mArcs[j].featureID << " (" << mArcs[j].geom->asPolyline().first() << " - " << mArcs[j].geom->asPolyline().last() << ")\n" << std::flush;
+    
 }
 
 // create layers containing nodes and arcs
 void TopolGeom::buildGeometry(QgsVectorLayer *nodeLayer, QgsVectorLayer *arcLayer)
 {
-	mNodes.clear();
+	mArcs.clear();
 	buildIntersections();
 
-	// create node and arc layers
-	QgsFeature f;
-	int id = 0;
+	// create node list
+	for (int i = 0; i < mArcs.size(); ++i)
+	{
+		// startpoint
+		QgsPoint pt = mArcs[i].geom->asPolyline().first();
+		QString index = pt.toString();
+		mNodes[index].point = pt;
+		mNodes[index].arcs.append(&mArcs[i]);
 
-	// node layer
+		// endpoint
+		pt = mArcs[i].geom->asPolyline().last();
+		index = pt.toString();
+		mNodes[index].point = pt;
+		mNodes[index].arcs.append(&mArcs[i]);
+	}
+
+	// create node layer
+	QgsFeature f;
 	nodeLayer->startEditing();
 
-	QMap<QString, TopolNode>::ConstIterator node = mNodes.begin();
-	for (; node != mNodes.end(); ++node)
+	int id = 0;
+	QMap<QString, TopolNode>::Iterator it;
+	for (it = mNodes.begin(); it != mNodes.end(); ++it)
 	{
-		f.setGeometry(QgsGeometry::fromPoint(node.value().point));
-		f.addAttribute(0, id);
+		f.setGeometry(QgsGeometry::fromPoint(it->point));
+		f.addAttribute(0, id++);
 		nodeLayer->addFeature(f, false);
-		++id;
 	}
 
 	nodeLayer->updateExtents();
 
 	// arc layer
 	arcLayer->startEditing();
-	id = 0;
-	node = mNodes.begin();
-	for (; node != mNodes.end(); ++node)
+
+	for (int i = 0; i < mArcs.size(); ++i)
 	{
-		QList<QgsPolyline>::ConstIterator arc = node.value().arcs.begin();
-		for (; arc != node.value().arcs.end(); ++arc)
-		{
-			f.setGeometry(QgsGeometry::fromPolyline(*arc));
-			if (!f.geometry())
-				std::cout << "kruci\n";
-			else
-			{
-				f.addAttribute(0, id);
-				arcLayer->addFeature(f, false);
-				++id;
-			}
-		}
+		f.setGeometry(mArcs[i].geom);
+		f.addAttribute(0, i);
+		arcLayer->addFeature(f, false);
 	}
 
 	arcLayer->updateExtents();
@@ -214,7 +218,7 @@ void TopolGeom::buildGeometry(QgsVectorLayer *nodeLayer, QgsVectorLayer *arcLaye
 
 QgsFeatureIds TopolGeom::checkGeometry(CheckType type)
 {
-	mWindow->append("Check for: " + type);
+	/*mWindow->append("Check for: " + type);
 	QGis::GeometryType layertype = mLayer->geometryType();
 
 	switch (type)
@@ -233,12 +237,12 @@ QgsFeatureIds TopolGeom::checkGeometry(CheckType type)
 			break;
 	}
 
-	return mConflicting;
+	return mConflicting;*/
 }
 
+	/*
 void TopolGeom::cgIntersect()
 {
-	/*
 	int conflicts = 0;
 	QMap<int, QgsGeometry>::Iterator obj1 = mObjects.begin();
 	QMap<int, QgsGeometry>::Iterator obj2;
@@ -257,12 +261,11 @@ void TopolGeom::cgIntersect()
 		}
 
 	QString text = QString("# of intersections: %1\n").arg(conflicts);
-	mWindow->append(text);*/
+	mWindow->append(text);
 }
 
 void TopolGeom::cgOverlap()
 {
-	/*
 	int conflicts = 0;
 	QMap<int, QgsGeometry>::Iterator obj1 = mObjects.begin();
 	QMap<int, QgsGeometry>::Iterator obj2;
@@ -287,11 +290,11 @@ void TopolGeom::cgOverlap()
 		}
 
 	QString text = QString("# of intersections: %1\n").arg(conflicts);
-	mWindow->append(text);*/
+	mWindow->append(text);
 }
 
 void TopolGeom::cgMultipart()
-{/*
+{
 	int conflicts = 0;
 	QMap<int, QgsGeometry>::Iterator obj = mObjects.begin();
 
@@ -306,5 +309,5 @@ void TopolGeom::cgMultipart()
 		}	
 
 	QString text = QString("# of intersections: %1\n").arg(conflicts);
-	mWindow->append(text);*/
-}
+	mWindow->append(text);
+}*/

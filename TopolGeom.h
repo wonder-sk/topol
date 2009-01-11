@@ -68,7 +68,8 @@ class TopolNode
 {
 public:
   QgsPoint point;
-  QList<QgsPolyline> arcs;
+  //QList<QgsPolyline> arcs;
+  QList<Arc*> arcs;
 };
 
 class TopolArc
@@ -103,9 +104,9 @@ private:
   void getFeatures();
   void buildIntersections();
 
-  void cgIntersect();
-  void cgOverlap();
-  void cgMultipart();
+  //void cgIntersect();
+  //void cgOverlap();
+  //void cgMultipart();
 };
 
 #endif
