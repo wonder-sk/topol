@@ -21,7 +21,7 @@ TopolDialog::TopolDialog(const QString &tableName, QgsVectorLayer *theLayer, QWi
   setupUi(this);
   std::cout << "XXXXXXX\n\n\n";
   mLayer = theLayer;
-  mGeom = new TopolGeom(theLayer, resultWindow);
+  //mGeom = new TopolGeom(theLayer, resultWindow);
 
   QgsVectorLayer *nodeLayer, *wayLayer;
 

@@ -27,6 +27,7 @@
 #include "topol.h"
 #include "TopolDialog.h"
 #include "rulesDialog.h"
+#include "checkDock.h"
 
 //
 // Qt4 Related Includes
@@ -106,9 +107,10 @@ void Topol::run()
     return;
   }
 
-  TopolDialog* topolDia = new TopolDialog("TOPOL", (QgsVectorLayer *)(myLayer));
+  //TopolDialog* topolDia = new TopolDialog("TOPOL", (QgsVectorLayer *)(myLayer));
   rulesDialog* rulesDia = new rulesDialog("Rules", (QgsVectorLayer *)(myLayer));
-  rulesDia->show();
+  checkDock* chDock = new checkDock("Rules", (QgsVectorLayer *)(myLayer), rulesDia);
+  chDock->show();
   //topolDia->show();
 }
 

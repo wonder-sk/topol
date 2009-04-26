@@ -1,9 +1,7 @@
 #ifndef RULESDIALOG_H_
 #define RULESDIALOG_H_
 
-#include <QDialog>
-#include <QString>
-#include <QModelIndex>
+#include <QTabWidget>
 
 #include <qgsvectorlayer.h>
 
