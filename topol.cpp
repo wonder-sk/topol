@@ -26,6 +26,7 @@
 
 #include "topol.h"
 #include "TopolDialog.h"
+#include "rulesDialog.h"
 
 //
 // Qt4 Related Includes
@@ -79,6 +80,11 @@ void Topol::initGui()
   mQGisIface->addToolBarIcon(mQActionPointer);
   mQGisIface->addPluginToMenu(tr("&Topol"), mQActionPointer);
 
+  //mRulesPointer = new QAction(QIcon(":/topol/topol.png"),tr("Topology Checker"), this);
+  //connect(mRulesPointer, SIGNAL(triggered()), this, SLOT(rules()));
+  //mQGisIface->addToolBarIcon(mRulesPointer);
+  //mQGisIface->addPluginToMenu(tr("&Rules"), mRulesPointer);
+
 }
 //method defined in interface
 void Topol::help()
@@ -100,8 +106,10 @@ void Topol::run()
     return;
   }
 
-  TopolDialog *dia = new TopolDialog("TOPOL", (QgsVectorLayer *)(myLayer));
-  dia->show();
+  TopolDialog* topolDia = new TopolDialog("TOPOL", (QgsVectorLayer *)(myLayer));
+  rulesDialog* rulesDia = new rulesDialog("Rules", (QgsVectorLayer *)(myLayer));
+  rulesDia->show();
+  //topolDia->show();
 }
 
 // Unload the plugin by cleaning up the GUI
@@ -110,7 +118,10 @@ void Topol::unload()
   // remove the GUI
   mQGisIface->removePluginMenu("&Topol",mQActionPointer);
   mQGisIface->removeToolBarIcon(mQActionPointer);
+  //mQGisIface->removePluginMenu("&Rules",mRulesPointer);
+  //mQGisIface->removeToolBarIcon(mRulesPointer);
   delete mQActionPointer;
+  //delete mRulesPointer;
 }
 
 

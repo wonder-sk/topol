@@ -19,6 +19,7 @@ TopolDialog::TopolDialog(const QString &tableName, QgsVectorLayer *theLayer, QWi
 : QDialog(parent), Ui::TopolDialog()
 {
   setupUi(this);
+  std::cout << "XXXXXXX\n\n\n";
   mLayer = theLayer;
   mGeom = new TopolGeom(theLayer, resultWindow);
 
@@ -57,7 +58,9 @@ TopolDialog::TopolDialog(const QString &tableName, QgsVectorLayer *theLayer, QWi
   wayLayer = new QgsVectorLayer(path, "arcs", "ogr" );
   QgsMapLayerRegistry::instance()->addMapLayer(wayLayer);
 
-  mGeom->buildGeometry(nodeLayer, wayLayer);
+  std::cout << "buildge\n\n\n";
+  //mGeom->buildGeometry(nodeLayer, wayLayer);
+  std::cout << "buildge hotov\n\n\n";
 }
 
 TopolDialog::~TopolDialog()
