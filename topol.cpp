@@ -4,7 +4,7 @@
   -------------------
          begin                : 2008
          copyright            : Vita Cizek
-         email                : weetya (strange_letter_a) gmail.com
+         email                : weetya (at) gmail.com
 
  ***************************************************************************
  *                                                                         *
@@ -28,6 +28,7 @@
 #include "TopolDialog.h"
 #include "rulesDialog.h"
 #include "checkDock.h"
+#include "validationDock.h"
 
 //
 // Qt4 Related Includes
@@ -70,7 +71,6 @@ Topol::~Topol()
  */
 void Topol::initGui()
 {
-
   // Create the action for tool
   mQActionPointer = new QAction(QIcon(":/topol/topol.png"),tr("Topology Checker"), this);
   // Set the what's this text
@@ -109,7 +109,9 @@ void Topol::run()
 
   //TopolDialog* topolDia = new TopolDialog("TOPOL", (QgsVectorLayer *)(myLayer));
   rulesDialog* rulesDia = new rulesDialog("Rules", (QgsVectorLayer *)(myLayer));
-  checkDock* chDock = new checkDock("Rules", (QgsVectorLayer *)(myLayer), rulesDia);
+  validationDock* vDock = new validationDock("Rules", (QgsVectorLayer *)(myLayer), rulesDia);
+  checkDock* chDock = new checkDock("Rules", (QgsVectorLayer *)(myLayer), rulesDia, vDock);
+  //vDock->show();
   chDock->show();
   //topolDia->show();
 }

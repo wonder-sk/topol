@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>checkDock</class>
- <widget class="QDockWidget" name="checkDock">
+ <class>validationDock</class>
+ <widget class="QDockWidget" name="validationDock">
   <property name="geometry">
    <rect>
     <x>0</x>

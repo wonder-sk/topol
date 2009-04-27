@@ -1,5 +1,5 @@
-#ifndef CHECKDOCK_H
-#define CHECKDOCK_H
+#ifndef VALIDATION_H
+#define VALIDATION_H
 
 #include <QDockWidget>
 

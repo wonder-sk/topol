@@ -20,11 +20,9 @@ validationDock::validationDock(const QString &tableName, QgsVectorLayer* theLaye
 {
   setupUi(this);
 
-  std::cout << "check dock\n\n\n";
+  std::cout << "val dock\n\n\n";
   mLayer = theLayer;
   mConfigureDialog = theConfigureDialog;
-
-  connect(configureButton, SIGNAL(clicked()), this, SLOT(configure()));
 }
 
 validationDock::~validationDock() {}
