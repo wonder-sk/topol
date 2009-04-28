@@ -14,7 +14,7 @@ class checkDock : public QDockWidget, public Ui::checkDock
 Q_OBJECT
 
 public:
-  checkDock(const QString &tableName, QgsVectorLayer *theLayer, rulesDialog* theConfigureDialog, validationDock* theValidationDock, QWidget *parent = 0);
+  checkDock(const QString &tableName, QgsVectorLayer *theLayer, rulesDialog* theConfigureDialog, QWidget *parent = 0);
   ~checkDock();
 
 private:
@@ -26,12 +26,13 @@ private:
   QMap<int, QgsRectangle> mErrorRectangleMap;
 
   void initErrorMaps();
-  void checkForIntersections();
+  void checkForIntersections(QgsFeatureList featureList);
   void updateValidationDock(int row, validationError errorType);
 
 private slots:
   void configure();
-  void validate();
+  void validateAll();
+  void validateExtent();
 };
 
 #endif

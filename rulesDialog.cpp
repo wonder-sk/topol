@@ -18,7 +18,6 @@ rulesDialog::rulesDialog(const QString &tableName, QgsVectorLayer *theLayer, QWi
 : QTabWidget(parent), Ui::rulesDialog()
 {
   setupUi(this);
-  std::cout << "rules\n\n\n";
   mLayer = theLayer;
 /*
   QGis::GeometryType type = mLayer->geometryType();
