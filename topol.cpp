@@ -28,7 +28,6 @@
 #include "TopolDialog.h"
 #include "rulesDialog.h"
 #include "checkDock.h"
-#include "validationDock.h"
 
 //
 // Qt4 Related Includes
@@ -107,15 +106,11 @@ void Topol::run()
     return;
   }
 
-  //TopolDialog* topolDia = new TopolDialog("TOPOL", (QgsVectorLayer *)(myLayer));
   rulesDialog* rulesDia = new rulesDialog("Rules", (QgsVectorLayer *)(myLayer));
-  //validationDock* vDock = new validationDock("Rules", (QgsVectorLayer *)(myLayer), rulesDia);
   //checkDock* chDock = new checkDock("Rules", (QgsVectorLayer *)(myLayer), rulesDia, vDock);
   checkDock* chDock = new checkDock("Rules", (QgsVectorLayer *)(myLayer), rulesDia);
   mQGisIface->addDockWidget(Qt::RightDockWidgetArea, chDock);
-  //vDock->show();
   chDock->show();
-  //topolDia->show();
 }
 
 // Unload the plugin by cleaning up the GUI

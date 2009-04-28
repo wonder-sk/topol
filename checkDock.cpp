@@ -26,7 +26,6 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, rulesDi
   setupUi(this);
   mLayer = theLayer;
   mConfigureDialog = theConfigureDialog;
-  //mValidationDock = theValidationDock;
 
   initErrorMaps();
 
@@ -56,9 +55,7 @@ void checkDock::initErrorMaps()
 
 void checkDock::updateValidationDock(int row, validationError errorType)
 {
-  //mErrorList->setItem(row - 1, 0, new QTableWidgetItem(mErrorNameMap[errorType]));
-  //std::cout << "item: "<<mValidationDock->errorTable->itemAt(row - 1, 0)->text().toStdString();
- /* 
+/*
   QComboBox* cb = new QComboBox();
   QMap<validationError, QString>::const_iterator it = mErrorFixMap.lowerBound(errorType);
   QMap<validationError, QString>::const_iterator upperBound = mErrorFixMap.upperBound(errorType);
@@ -66,47 +63,18 @@ void checkDock::updateValidationDock(int row, validationError errorType)
     cb->addItem(it.value());
 */
 
-	std::cout << "updating\n";
   mErrorList->addItem(mErrorNameMap[errorType]);
-  mComment->setText(QString("%1 errors were found").arg(row));
-  //std::cout << "cb future text: " <<it.value().toStdString();
-  //std::cout << "cb text: "<<cb->currentText().toStdString();
-  //mValidationDock->errorTable->setCellWidget(row - 1, 1, cb);
-  //mValidationDock->errorTable->setItem(row - 1, 1, new QTableWidgetItem("No fix"));
-  //mValidationDock->errorTable->setItem(row - 1, 1, new QTableWidgetItem(QString("%1").arg(row - 1)));
-
-/*  QComboBox* pb = new QPushButton();
-  connect(pb, SIGNAL(clicked()), this, SLOT(zoomTo()));
-  mValidationDock->errorTable->setCellWidget(row - 1, 2, pb);
-*/
-  //mValidationDock->errorTable->setRowCount(row);
-  //QStringList labels;
-  //labels << "Error Type" << "Suggested Fixes";
-  //mValidationDock->errorTable->setHorizontalHeaderLabels(labels);
-  //mValidationDock->errorTable->resizeColumnsToContents();
 }
 
 void checkDock::checkForIntersections(QgsFeatureList featureList)
 {
   QgsGeometryMap m;
-  //QgsRectangle r;
-  //mLayer->select(QgsAttributeList(), QgsRectangle());
 
-  //std::cout << "#of selected: "<<mLayer->selectedFeatureCount()<<"\n";
-  std::cout << "#of selected: "<<featureList.size()<<"\n";
+  //std::cout << "#of selected: "<<featureList.size()<<"\n";
 
   QgsFeature f;
   QgsGeometry *g;
 
-  /*
-  while (mLayer->nextFeature(f))
-  {
-    g = f.geometryAndOwnership();
-    if (g)
-      m[f.id()] = *g;
-  }
-  */
-  
   QgsFeatureList::Iterator it;
   for (it = featureList.begin(); it != featureList.end(); ++it)
   {
@@ -115,7 +83,7 @@ void checkDock::checkForIntersections(QgsFeatureList featureList)
       m[it->id()] = *g;
   }
 
-  std::cout << "msize: "<<m.size()<<"\n";
+  //std::cout << "msize: "<<m.size()<<"\n";
   int intersectionCount = 0;
 
   for (int i = 0; i < m.size(); ++i)
@@ -129,10 +97,12 @@ void checkDock::checkForIntersections(QgsFeatureList featureList)
       {
 	++intersectionCount;
 	mErrorRectangleMap[i] = m[i].boundingBox();
-        std::cout << "intersection: " <<i<<"  "<<j<<"\n";
+        //std::cout << "intersection: " <<i<<"  "<<j<<"\n";
 	updateValidationDock(intersectionCount, ErrorIntersection);
       }
     }
+
+    mComment->setText(QString("%1 errors were found").arg(intersectionCount));
 }
 
 void checkDock::configure()
@@ -140,28 +110,26 @@ void checkDock::configure()
   mConfigureDialog->show();
 }
 
-void checkDock::validateExtent()
+void checkDock::validate(QgsRectangle rect)
 {
   mErrorList->clear();
-  QgsRectangle extent = QgisApp::instance()->mapCanvas()->extent();
-  //std::cout << extent;
-  mLayer->select(QgsAttributeList(), extent);
-  QgsFeatureList featureList = mLayer->selectedFeatures();
+  mLayer->select(QgsAttributeList(), rect);
+
+  QgsFeatureList featureList;
+  QgsFeature f;
+  while (mLayer->nextFeature(f))
+    featureList << f;
 
   checkForIntersections(featureList);
 }
 
+void checkDock::validateExtent()
+{
+  QgsRectangle extent = QgisApp::instance()->mapCanvas()->extent();
+  validate(extent);
+}
+
 void checkDock::validateAll()
 {
-  mErrorList->clear();
-  QgsFeature f;
-  QgsRectangle r;
-
-  mLayer->select(QgsAttributeList(), QgsRectangle(), true, false);
-  QgsFeatureList featureList = mLayer->selectedFeatures();
-  //QgsFeatureList featureList;
-  //while (mLayer->nextFeature(f))
-    //featureList << f;
-
-  checkForIntersections(featureList);
+  validate(QgsRectangle());
 }

@@ -4,26 +4,19 @@
 
 SET (topol_SRCS
   topol.cpp
-  #TopolDialog.cpp
   rulesDialog.cpp
   checkDock.cpp
-  validationDock.cpp
-  #TopolGeom.cpp
 )
 
 SET (topol_UIS
-  #TopolDialog.ui
   rulesDialog.ui
   checkDock.ui  
-  validationDock.ui
 )
 
 SET (topol_MOC_HDRS
   topol.h
-  #TopolDialog.h
   rulesDialog.h
   checkDock.h
-  validationDock.h
 )
 
 ########################################################

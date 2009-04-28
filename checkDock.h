@@ -7,7 +7,12 @@
 
 #include "ui_checkDock.h"
 #include "rulesDialog.h"
-#include "validationDock.h"
+
+enum validationError {
+  ErrorIntersection = 1,
+  ErrorOverlap,
+  ErrorTolerance
+};
 
 class checkDock : public QDockWidget, public Ui::checkDock
 {
@@ -20,7 +25,6 @@ public:
 private:
   QgsVectorLayer *mLayer;
   rulesDialog* mConfigureDialog;
-  validationDock* mValidationDock;
   QMap<validationError, QString> mErrorNameMap;
   QMap<validationError, QString> mErrorFixMap;
   QMap<int, QgsRectangle> mErrorRectangleMap;
@@ -31,6 +35,7 @@ private:
 
 private slots:
   void configure();
+  void validate(QgsRectangle rect);
   void validateAll();
   void validateExtent();
 };
