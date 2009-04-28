@@ -111,6 +111,7 @@ void Topol::run()
   rulesDialog* rulesDia = new rulesDialog("Rules", (QgsVectorLayer *)(myLayer));
   validationDock* vDock = new validationDock("Rules", (QgsVectorLayer *)(myLayer), rulesDia);
   checkDock* chDock = new checkDock("Rules", (QgsVectorLayer *)(myLayer), rulesDia, vDock);
+  mQGisIface->addDockWidget(Qt::LeftDockWidgetArea, chDock);
   //vDock->show();
   chDock->show();
   //topolDia->show();

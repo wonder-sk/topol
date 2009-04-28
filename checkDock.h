@@ -21,9 +21,11 @@ private:
   QgsVectorLayer *mLayer;
   rulesDialog* mConfigureDialog;
   validationDock* mValidationDock;
-  QMap<validationError, QString> errorMap;
+  QMap<validationError, QString> mErrorNameMap;
+  QMap<validationError, QString> mErrorFixMap;
+  QMap<int, QgsRectangle> mErrorRectangleMap;
 
-
+  void initErrorMaps();
   void checkForIntersections();
   void updateValidationDock(int row, validationError errorType);
 
