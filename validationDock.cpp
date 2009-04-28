@@ -23,6 +23,9 @@ validationDock::validationDock(const QString &tableName, QgsVectorLayer* theLaye
   std::cout << "val dock\n\n\n";
   mLayer = theLayer;
   mConfigureDialog = theConfigureDialog;
+  QStringList labels;
+  labels << "Error Type" << "Suggested Fixes";
+  errorTable->setHorizontalHeaderLabels(labels);
 }
 
 validationDock::~validationDock() {}

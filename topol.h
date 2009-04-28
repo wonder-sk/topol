@@ -33,8 +33,8 @@
  *   DON'T: separate variable names using underscores: my_variable_name (NO!)
  *
  * **************************************************************************/
-#ifndef Topol_H
-#define Topol_H
+#ifndef TOPOL_H
+#define TOPOL_H
 
 //QT4 includes
 #include <QObject>

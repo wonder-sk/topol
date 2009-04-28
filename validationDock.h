@@ -1,5 +1,5 @@
-#ifndef VALIDATION_H
-#define VALIDATION_H
+#ifndef VALIDATIONDOCK_H
+#define VALIDATIONDOCK_H
 
 #include <QDockWidget>
 
@@ -7,6 +7,12 @@
 
 #include "ui_validationDock.h"
 #include "rulesDialog.h"
+
+enum validationError {
+  ErrorIntersection = 1,
+  ErrorOverlap,
+  ErrorTolerance
+};
 
 class validationDock : public QDockWidget, public Ui::validationDock
 {

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>194</width>
-    <height>55</height>
+    <width>160</width>
+    <height>171</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,27 +19,39 @@
      <rect>
       <x>0</x>
       <y>0</y>
-      <width>182</width>
-      <height>31</height>
+      <width>151</width>
+      <height>141</height>
      </rect>
     </property>
     <layout class="QFormLayout" name="formLayout">
-     <item row="0" column="0">
+     <property name="fieldGrowthPolicy">
+      <enum>QFormLayout::ExpandingFieldsGrow</enum>
+     </property>
+     <item row="3" column="1">
+      <widget class="QPushButton" name="validateButton">
+       <property name="text">
+        <string>Validate All</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
       <widget class="QPushButton" name="configureButton">
        <property name="text">
         <string>Configure</string>
        </property>
       </widget>
      </item>
-     <item row="0" column="1">
-      <widget class="QPushButton" name="validateButton">
+     <item row="4" column="1">
+      <widget class="QPushButton" name="pushButton">
        <property name="text">
-        <string>Validate</string>
+        <string>Validate Extent</string>
        </property>
       </widget>
      </item>
     </layout>
    </widget>
+   <zorder>formLayoutWidget</zorder>
+   <zorder>validateButton</zorder>
   </widget>
  </widget>
  <resources/>
