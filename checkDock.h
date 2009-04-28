@@ -11,7 +11,8 @@
 enum validationError {
   ErrorIntersection = 1,
   ErrorOverlap,
-  ErrorTolerance
+  ErrorTolerance,
+  ErrorDangle
 };
 
 class checkDock : public QDockWidget, public Ui::checkDock
@@ -22,22 +23,25 @@ public:
   checkDock(const QString &tableName, QgsVectorLayer *theLayer, rulesDialog* theConfigureDialog, QWidget *parent = 0);
   ~checkDock();
 
+private slots:
+  void configure();
+  void validate(QgsRectangle rect);
+  void validateAll();
+  void validateExtent();
+  void errorListClicked(const QModelIndex& index);
+
 private:
   QgsVectorLayer *mLayer;
   rulesDialog* mConfigureDialog;
   QMap<validationError, QString> mErrorNameMap;
   QMap<validationError, QString> mErrorFixMap;
   QMap<int, QgsRectangle> mErrorRectangleMap;
+  QgsGeometryMap mGeometryMap;
 
   void initErrorMaps();
-  void checkForIntersections(QgsFeatureList featureList);
+  void checkIntersections();
+  void checkDanglingEndpoints();
   void updateValidationDock(int row, validationError errorType);
-
-private slots:
-  void configure();
-  void validate(QgsRectangle rect);
-  void validateAll();
-  void validateExtent();
 };
 
 #endif

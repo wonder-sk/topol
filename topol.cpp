@@ -25,7 +25,6 @@
 #include <qgisgui.h>
 
 #include "topol.h"
-#include "TopolDialog.h"
 #include "rulesDialog.h"
 #include "checkDock.h"
 

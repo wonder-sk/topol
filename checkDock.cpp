@@ -36,6 +36,8 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, rulesDi
   connect(mConfigureButton, SIGNAL(clicked()), this, SLOT(configure()));
   connect(mValidateAllButton, SIGNAL(clicked()), this, SLOT(validateAll()));
   connect(mValidateExtentButton, SIGNAL(clicked()), this, SLOT(validateExtent()));
+  connect(mErrorList, SIGNAL(clicked(const QModelIndex &)), this, SLOT(errorListClicked(const QModelIndex &)));
+
 }
 
 checkDock::~checkDock() {}
@@ -45,12 +47,21 @@ void checkDock::initErrorMaps()
   mErrorNameMap[ErrorIntersection] = "Intersecting geometries";
   mErrorNameMap[ErrorOverlap] = "Overlapping geometries";
   mErrorNameMap[ErrorTolerance] = "Segment shorter than tolerance";
+  mErrorNameMap[ErrorDangle] = "Point too close to segment";
 
   /*mErrorFixMap.insertMulti(ErrorIntersection, "Move intersecting geometries");
   mErrorFixMap.insertMulti(ErrorIntersection, "Union intersecting geometries");
   mErrorFixMap.insertMulti(ErrorTolerance, "Increase segment size");
   mErrorFixMap.insertMulti(ErrorTolerance, "Delete segment");
   */
+}
+
+void checkDock::errorListClicked(const QModelIndex& index)
+{
+  std::cout << index.row() <<" setting Extent\n";
+  QgisApp::instance()->mapCanvas()->setExtent(mErrorRectangleMap[index.row()]);
+  QgisApp::instance()->mapCanvas()->zoomToNextExtent();
+  //QgisApp::instance()->mapCanvas()->updateOverview();
 }
 
 void checkDock::updateValidationDock(int row, validationError errorType)
@@ -62,47 +73,50 @@ void checkDock::updateValidationDock(int row, validationError errorType)
   for (; it != upperBound; ++it)
     cb->addItem(it.value());
 */
-
-  mErrorList->addItem(mErrorNameMap[errorType]);
+  //mErrorList->addItem(mErrorNameMap[errorType]);
 }
 
-void checkDock::checkForIntersections(QgsFeatureList featureList)
+void checkDock::checkDanglingEndpoints()
 {
-  QgsGeometryMap m;
+  double tolerance = 0.1;
 
-  //std::cout << "#of selected: "<<featureList.size()<<"\n";
-
-  QgsFeature f;
-  QgsGeometry *g;
-
-  QgsFeatureList::Iterator it;
-  for (it = featureList.begin(); it != featureList.end(); ++it)
-  {
-    g = it->geometry();
-    if (g)
-      m[it->id()] = *g;
-  }
-
-  //std::cout << "msize: "<<m.size()<<"\n";
-  int intersectionCount = 0;
-
-  for (int i = 0; i < m.size(); ++i)
-    for (int j = 0; j < m.size(); ++j)
+  QgsGeometryMap::Iterator it, jit;
+  for (it = mGeometryMap.begin(); it != mGeometryMap.end(); ++it)
+    for (jit = mGeometryMap.begin(); jit != mGeometryMap.end(); ++jit)
     {
-      if (i >= j)
+      if (it.key() >= jit.key())
         continue;
 
-
-      if (m[i].intersects(&m[j]))
+      if (it.value().distance(jit.value()) < tolerance)
       {
-	++intersectionCount;
-	mErrorRectangleMap[i] = m[i].boundingBox();
-        //std::cout << "intersection: " <<i<<"  "<<j<<"\n";
-	updateValidationDock(intersectionCount, ErrorIntersection);
+	mErrorRectangleMap[it.key()] = it.value().boundingBox();
+        std::cout << "point too close: " <<it.key()<<"  "<<jit.key()<<"\n";
+        mErrorList->addItem(mErrorNameMap[ErrorDangle]);
       }
     }
+   
+  //snapToGeometry(point, geom, squaredTolerance, QMultiMap<double, QgsSnappingResult>, SnapToVertexAndSegment);
+}
 
-    mComment->setText(QString("%1 errors were found").arg(intersectionCount));
+void checkDock::checkIntersections()
+{
+  QgsGeometryMap::Iterator it, jit;
+  for (it = mGeometryMap.begin(); it != mGeometryMap.end(); ++it)
+    for (jit = mGeometryMap.begin(); jit != mGeometryMap.end(); ++jit)
+    {
+      if (it.key() >= jit.key())
+        continue;
+
+      if (it.value().intersects(&jit.value()))
+      {
+        QgsRectangle r = it.value().boundingBox();
+	r.combineExtentWith(&jit.value().boundingBox());
+	mErrorRectangleMap[mErrorList->count()] = r;
+
+	//std::cout << "intersection: " <<i<<"  "<<j<<"\n";
+        mErrorList->addItem(mErrorNameMap[ErrorIntersection]);
+      }
+    }
 }
 
 void checkDock::configure()
@@ -113,14 +127,22 @@ void checkDock::configure()
 void checkDock::validate(QgsRectangle rect)
 {
   mErrorList->clear();
+  mGeometryMap.clear();
   mLayer->select(QgsAttributeList(), rect);
 
-  QgsFeatureList featureList;
   QgsFeature f;
+  QgsGeometry *g;
   while (mLayer->nextFeature(f))
-    featureList << f;
+  {
+    g = f.geometry();
+    if (g)
+      mGeometryMap[f.id()] = *g;
+  }
 
-  checkForIntersections(featureList);
+  checkIntersections();
+  checkDanglingEndpoints();
+
+  mComment->setText(QString("%1 errors were found").arg(mErrorList->count()));
 }
 
 void checkDock::validateExtent()
