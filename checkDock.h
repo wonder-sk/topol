@@ -26,7 +26,12 @@ public:
   TopolErrorType type;
   QgsRectangle boundingBox;  
   QgsGeometry conflict;
-  QgsFeatureList features;
+  QgsFeatureIds fids;
+
+  void fix()
+  {
+
+  }
 };
 
 class checkDock : public QDockWidget, public Ui::checkDock
@@ -39,7 +44,7 @@ public:
 
 private slots:
   void configure();
-  void validate(QgsRectangle rect);
+  void fix();
   void validateAll();
   void validateExtent();
   void errorListClicked(const QModelIndex& index);
@@ -51,14 +56,15 @@ private:
   QMap<int, QgsFeature> mFeatureMap;
   //QMap<validationError, QString> mErrorFixMap;
   //QMap<int, QgsRectangle> mErrorRectangleMap;
-  QMap<int, TopolError> mErrorMap;
+  QList<TopolError> mErrorList;
   QgsGeometryMap mGeometryMap;
   QgsRubberBand* mRubberBand;
 
   void initErrorMaps();
   void checkIntersections();
   void checkDanglingEndpoints();
-  void updateValidationDock(int row, TopolErrorType errorType);
+  //void updateValidationDock(int row, TopolErrorType errorType);
+  void validate(QgsRectangle rect);
 };
 
 #endif

@@ -60,7 +60,7 @@
      <string>Topology not checked yet</string>
     </property>
    </widget>
-   <widget class="QListWidget" name="mErrorList">
+   <widget class="QListWidget" name="mErrorListView">
     <property name="geometry">
      <rect>
       <x>20</x>

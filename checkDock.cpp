@@ -38,7 +38,8 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, rulesDi
   connect(mConfigureButton, SIGNAL(clicked()), this, SLOT(configure()));
   connect(mValidateAllButton, SIGNAL(clicked()), this, SLOT(validateAll()));
   connect(mValidateExtentButton, SIGNAL(clicked()), this, SLOT(validateExtent()));
-  connect(mErrorList, SIGNAL(clicked(const QModelIndex &)), this, SLOT(errorListClicked(const QModelIndex &)));
+  connect(mFixButton, SIGNAL(clicked()), this, SLOT(fix()));
+  connect(mErrorListView, SIGNAL(clicked(const QModelIndex &)), this, SLOT(errorListClicked(const QModelIndex &)));
 }
 
 checkDock::~checkDock()
@@ -60,26 +61,31 @@ void checkDock::initErrorMaps()
   */
 }
 
+void checkDock::configure()
+{
+  mConfigureDialog->show();
+}
+
 void checkDock::errorListClicked(const QModelIndex& index)
 {
   //std::cout << index.row() <<" setting Extent: " <<  mErrorRectangleMap[index.row()]<<"\n";
 
   /*QgsRectangle zoom;
   std::cout << "zoom:"<<zoom;
-  QgsFeatureList::ConstIterator it = mErrorMap[index.row()].features.begin();
-  for (; it != mErrorMap[index.row()].features.end(); ++it)
+  QgsFeatureList::ConstIterator it = mErrorList[index.row()].features.begin();
+  for (; it != mErrorList[index.row()].features.end(); ++it)
     zoom.combineExtentWith(mFeatureMap[it->fid].geometry().boundingBox());
 */
-  QgisApp::instance()->mapCanvas()->setExtent(mErrorMap[index.row()].boundingBox);
+  QgisApp::instance()->mapCanvas()->setExtent(mErrorList[index.row()].boundingBox);
   QgisApp::instance()->mapCanvas()->refresh();
   //QgsGeometry* g = it.value().intersection(&jit.value());
   //delete g;
-  mRubberBand->setToGeometry(&mErrorMap[index.row()].conflict, mLayer);
+  mRubberBand->setToGeometry(&mErrorList[index.row()].conflict, mLayer);
 
 }
 
-void checkDock::updateValidationDock(int row, TopolErrorType errorType)
-{
+//void checkDock::updateValidationDock(int row, TopolErrorType errorType)
+//{
 /*
   QComboBox* cb = new QComboBox();
   QMap<validationError, QString>::const_iterator it = mErrorFixMap.lowerBound(errorType);
@@ -87,7 +93,27 @@ void checkDock::updateValidationDock(int row, TopolErrorType errorType)
   for (; it != upperBound; ++it)
     cb->addItem(it.value());
 */
-  //mErrorList->addItem(mErrorNameMap[errorType]);
+  //mErrorListView->addItem(mErrorNameMap[errorType]);
+//}
+
+void checkDock::fix()
+{
+  //mFixBox->currentText();
+  int row = mErrorListView->currentRow();
+
+  //mErrorFixMap[row];
+
+  /*switch (mErrorList[row].type())
+  {
+    
+
+  }*/
+
+  //QMap<validationError, QString>::const_iterator it = mErrorFixMap.lowerBound(errorType);
+  //QMap<validationError, QString>::const_iterator upperBound = mErrorFixMap.upperBound(errorType);
+  //for (; it != upperBound; ++it)
+    //cb->addItem(it.value());
+
 }
 
 void checkDock::checkDanglingEndpoints()
@@ -107,16 +133,19 @@ void checkDock::checkDanglingEndpoints()
       {
         QgsRectangle r = g1->boundingBox();
 	r.combineExtentWith(&g2->boundingBox());
-	mErrorMap[mErrorList->count()].boundingBox = r;
+	mErrorList << TopolError();
+	mErrorList.last().boundingBox = r;
+	mErrorList.last().fids << it.key() << jit.key();
+	//mErrorList[mErrorListView->count()].fids << it.key() << jit.key();
 
 	QgsGeometry* c = g1->intersection(g2);
 	if (!c)
 	  c = new QgsGeometry;
 
-	mErrorMap[mErrorList->count()].conflict = *c;
+	mErrorList.last().conflict = *c;
 	delete c;
 
-        mErrorList->addItem(mErrorNameMap[TopolDangle]);
+        mErrorListView->addItem(mErrorNameMap[TopolDangle]);
       }
     }
 
@@ -140,28 +169,25 @@ void checkDock::checkIntersections()
       {
         QgsRectangle r = g1->boundingBox();
 	r.combineExtentWith(&g2->boundingBox());
-	mErrorMap[mErrorList->count()].boundingBox = r;
+	mErrorList << TopolError();
+	mErrorList.last().boundingBox = r;
+	mErrorList.last().fids << it.key() << jit.key();
 
 	QgsGeometry* c = g1->intersection(g2);
 	if (!c)
 	  c = new QgsGeometry;
 
-	mErrorMap[mErrorList->count()].conflict = *c;
+	mErrorList.last().conflict = *c;
 	delete c;
 
-        mErrorList->addItem(mErrorNameMap[TopolIntersection]);
+        mErrorListView->addItem(mErrorNameMap[TopolIntersection]);
       }
     }
 }
 
-void checkDock::configure()
-{
-  mConfigureDialog->show();
-}
-
 void checkDock::validate(QgsRectangle rect)
 {
-  mErrorList->clear();
+  mErrorListView->clear();
   mFeatureMap.clear();
   mLayer->select(QgsAttributeList(), rect);
 
@@ -176,7 +202,7 @@ void checkDock::validate(QgsRectangle rect)
   checkIntersections();
   checkDanglingEndpoints();
 
-  mComment->setText(QString("%1 errors were found").arg(mErrorList->count()));
+  mComment->setText(QString("%1 errors were found").arg(mErrorListView->count()));
 }
 
 void checkDock::validateExtent()
