@@ -48,10 +48,10 @@ checkDock::~checkDock()
 
 void checkDock::initErrorMaps()
 {
-  mErrorNameMap[ErrorIntersection] = "Intersecting geometries";
-  mErrorNameMap[ErrorOverlap] = "Overlapping geometries";
-  mErrorNameMap[ErrorTolerance] = "Segment shorter than tolerance";
-  mErrorNameMap[ErrorDangle] = "Point too close to segment";
+  mErrorNameMap[TopolIntersection] = "Intersecting geometries";
+  mErrorNameMap[TopolOverlap] = "Overlapping geometries";
+  mErrorNameMap[TopolTolerance] = "Segment shorter than tolerance";
+  mErrorNameMap[TopolDangle] = "Point too close to segment";
 
   /*mErrorFixMap.insertMulti(ErrorIntersection, "Move intersecting geometries");
   mErrorFixMap.insertMulti(ErrorIntersection, "Union intersecting geometries");
@@ -62,12 +62,23 @@ void checkDock::initErrorMaps()
 
 void checkDock::errorListClicked(const QModelIndex& index)
 {
-  std::cout << index.row() <<" setting Extent: " <<  mErrorRectangleMap[index.row()]<<"\n";
-  QgisApp::instance()->mapCanvas()->setExtent(mErroMap[index.row()].boundingBox);
+  //std::cout << index.row() <<" setting Extent: " <<  mErrorRectangleMap[index.row()]<<"\n";
+
+  /*QgsRectangle zoom;
+  std::cout << "zoom:"<<zoom;
+  QgsFeatureList::ConstIterator it = mErrorMap[index.row()].features.begin();
+  for (; it != mErrorMap[index.row()].features.end(); ++it)
+    zoom.combineExtentWith(mFeatureMap[it->fid].geometry().boundingBox());
+*/
+  QgisApp::instance()->mapCanvas()->setExtent(mErrorMap[index.row()].boundingBox);
   QgisApp::instance()->mapCanvas()->refresh();
+  //QgsGeometry* g = it.value().intersection(&jit.value());
+  //delete g;
+  mRubberBand->setToGeometry(&mErrorMap[index.row()].conflict, mLayer);
+
 }
 
-void checkDock::updateValidationDock(int row, validationError errorType)
+void checkDock::updateValidationDock(int row, TopolErrorType errorType)
 {
 /*
   QComboBox* cb = new QComboBox();
@@ -82,49 +93,63 @@ void checkDock::updateValidationDock(int row, validationError errorType)
 void checkDock::checkDanglingEndpoints()
 {
   double tolerance = 0.1;
-
-  QgsGeometryMap::Iterator it, jit;
-  for (it = mGeometryMap.begin(); it != mGeometryMap.end(); ++it)
-    for (jit = mGeometryMap.begin(); jit != mGeometryMap.end(); ++jit)
+  QMap<int, QgsFeature>::Iterator it, jit;
+  for (it = mFeatureMap.begin(); it != mFeatureMap.end(); ++it)
+    for (jit = mFeatureMap.begin(); jit != mFeatureMap.end(); ++jit)
     {
       if (it.key() >= jit.key())
         continue;
 
-      if (it.value().distance(jit.value()) < tolerance)
+      QgsGeometry* g1 = it.value().geometry();
+      QgsGeometry* g2 = jit.value().geometry();
+
+      if (g1->distance(*g2) < tolerance)
       {
-	//mErrorRectangleMap[it.key()] = it.value().boundingBox();
-        QgsRectangle r = it.value().boundingBox();
-	r.combineExtentWith(&jit.value().boundingBox());
-	mErrorRectangleMap[mErrorList->count()] = r;
-        std::cout << "point too close: " <<it.key()<<"  "<<jit.key()<<"\n";
-        mErrorList->addItem(mErrorNameMap[ErrorDangle]);
+        QgsRectangle r = g1->boundingBox();
+	r.combineExtentWith(&g2->boundingBox());
+	mErrorMap[mErrorList->count()].boundingBox = r;
+
+	QgsGeometry* c = g1->intersection(g2);
+	if (!c)
+	  c = new QgsGeometry;
+
+	mErrorMap[mErrorList->count()].conflict = *c;
+	delete c;
+
+        mErrorList->addItem(mErrorNameMap[TopolDangle]);
       }
     }
-   
+
+  //fix would be like that
   //snapToGeometry(point, geom, squaredTolerance, QMultiMap<double, QgsSnappingResult>, SnapToVertexAndSegment);
 }
 
 void checkDock::checkIntersections()
 {
-  QgsGeometryMap::Iterator it, jit;
-  for (it = mGeometryMap.begin(); it != mGeometryMap.end(); ++it)
-    for (jit = mGeometryMap.begin(); jit != mGeometryMap.end(); ++jit)
+  QMap<int, QgsFeature>::Iterator it, jit;
+  for (it = mFeatureMap.begin(); it != mFeatureMap.end(); ++it)
+    for (jit = mFeatureMap.begin(); jit != mFeatureMap.end(); ++jit)
     {
       if (it.key() >= jit.key())
         continue;
 
-      if (it.value().intersects(&jit.value()))
-      {
-        QgsRectangle r = it.value().boundingBox();
-	r.combineExtentWith(&jit.value().boundingBox());
-	mErrorRectangleMap[mErrorList->count()] = r;
-	//r = g->boundingBox();
-        QgsGeometry* g = it.value().intersection(&jit.value());
-        mRubberBand->setToGeometry(g, mLayer);
-        delete g;
+      QgsGeometry* g1 = it.value().geometry();
+      QgsGeometry* g2 = jit.value().geometry();
 
-	std::cout << "intersection: " <<it.key()<<"  "<<jit.key()<<"\n";
-        mErrorList->addItem(mErrorNameMap[ErrorIntersection]);
+      if (g1->intersects(g2))
+      {
+        QgsRectangle r = g1->boundingBox();
+	r.combineExtentWith(&g2->boundingBox());
+	mErrorMap[mErrorList->count()].boundingBox = r;
+
+	QgsGeometry* c = g1->intersection(g2);
+	if (!c)
+	  c = new QgsGeometry;
+
+	mErrorMap[mErrorList->count()].conflict = *c;
+	delete c;
+
+        mErrorList->addItem(mErrorNameMap[TopolIntersection]);
       }
     }
 }
@@ -137,16 +162,15 @@ void checkDock::configure()
 void checkDock::validate(QgsRectangle rect)
 {
   mErrorList->clear();
-  mGeometryMap.clear();
+  mFeatureMap.clear();
   mLayer->select(QgsAttributeList(), rect);
 
   QgsFeature f;
-  QgsGeometry *g;
+  //QgsGeometry *g;
   while (mLayer->nextFeature(f))
   {
-    g = f.geometry();
-    if (g)
-      mGeometryMap[f.id()] = *g;
+    if (f.geometry())
+      mFeatureMap[f.id()] = f;
   }
 
   checkIntersections();

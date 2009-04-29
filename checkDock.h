@@ -4,10 +4,13 @@
 #include <QDockWidget>
 
 #include <qgsvectorlayer.h>
-#include <qgsrubberband.h>
+#include <qgsgeometry.h>
+//#include <qgsrubberband.h>
 
 #include "ui_checkDock.h"
 #include "rulesDialog.h"
+
+class QgsRubberBand;
 
 enum TopolErrorType
 {
@@ -22,8 +25,9 @@ class TopolError
 public:
   TopolErrorType type;
   QgsRectangle boundingBox;  
+  QgsGeometry conflict;
   QgsFeatureList features;
-}
+};
 
 class checkDock : public QDockWidget, public Ui::checkDock
 {
@@ -43,7 +47,8 @@ private slots:
 private:
   QgsVectorLayer *mLayer;
   rulesDialog* mConfigureDialog;
-  QMap<validationError, QString> mErrorNameMap;
+  QMap<TopolErrorType, QString> mErrorNameMap;
+  QMap<int, QgsFeature> mFeatureMap;
   //QMap<validationError, QString> mErrorFixMap;
   //QMap<int, QgsRectangle> mErrorRectangleMap;
   QMap<int, TopolError> mErrorMap;
@@ -53,7 +58,7 @@ private:
   void initErrorMaps();
   void checkIntersections();
   void checkDanglingEndpoints();
-  void updateValidationDock(int row, validationError errorType);
+  void updateValidationDock(int row, TopolErrorType errorType);
 };
 
 #endif
