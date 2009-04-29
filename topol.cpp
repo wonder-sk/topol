@@ -21,6 +21,7 @@
 //
 
 #include <qgsmaplayer.h>
+#include <qgsapplication.h>
 #include <qgisinterface.h>
 #include <qgisgui.h>
 
@@ -34,6 +35,7 @@
 
 #include <QAction>
 #include <QToolBar>
+#include <QFile>
 #include <QMessageBox>
 
 static const char * const sIdent = "$Id: plugin.cpp 8053 2008-01-26 13:59:53Z timlinux $";
@@ -57,6 +59,7 @@ Topol::Topol(QgisInterface * theQgisInterface):
                  QgisPlugin(sName,sDescription,sPluginVersion,sPluginType),
                  mQGisIface(theQgisInterface)
 {
+	std::cout << "Topol constr\n";
 }
 
 Topol::~Topol()
@@ -69,8 +72,31 @@ Topol::~Topol()
  */
 void Topol::initGui()
 {
+  mQActionPointer = new QAction(QIcon(),tr("Topology Checker"), this);
+
+  QString myCurThemePath = QgsApplication::activeThemePath() + "/plugins/topol.png";
+  QString myDefThemePath = QgsApplication::defaultThemePath() + "/plugins/topol.png";
+  QString myQrcPath = ":/topol.png";
+
+  if ( QFile::exists( myCurThemePath ) )
+  {
+    mQActionPointer->setIcon( QIcon( myCurThemePath ) );
+  }
+  else if ( QFile::exists( myDefThemePath ) )
+  {
+    mQActionPointer->setIcon( QIcon( myDefThemePath ) );
+  }
+  else if ( QFile::exists( myQrcPath ) )
+  {
+    mQActionPointer->setIcon( QIcon( myQrcPath ) );
+  }
+  else
+  {
+    mQActionPointer->setIcon( QIcon() );
+  }
+
   // Create the action for tool
-  mQActionPointer = new QAction(QIcon(":/topol/topol.png"),tr("Topology Checker"), this);
+  //mQActionPointer = new QAction(QIcon(":/topol_c/topol.png"),tr("Topology Checker"), this);
   // Set the what's this text
   mQActionPointer->setWhatsThis(tr("Open Topology Checker for vector layer"));
   // Connect the action to the run
@@ -83,6 +109,7 @@ void Topol::initGui()
   //connect(mRulesPointer, SIGNAL(triggered()), this, SLOT(rules()));
   //mQGisIface->addToolBarIcon(mRulesPointer);
   //mQGisIface->addPluginToMenu(tr("&Rules"), mRulesPointer);
+  //run();
 
 }
 //method defined in interface
@@ -98,6 +125,7 @@ void Topol::help()
 void Topol::run()
 {
   
+  std::cout << "to nejde?\n"<<std::flush;
   QgsMapLayer *myLayer = mQGisIface->activeLayer();
 
   if (myLayer == NULL || myLayer->type() != QgsMapLayer::VectorLayer) {
@@ -105,9 +133,11 @@ void Topol::run()
     return;
   }
 
+  std::cout << "nejde?\n"<<std::flush;
   rulesDialog* rulesDia = new rulesDialog("Rules", (QgsVectorLayer *)(myLayer));
   //checkDock* chDock = new checkDock("Rules", (QgsVectorLayer *)(myLayer), rulesDia, vDock);
   checkDock* chDock = new checkDock("Rules", (QgsVectorLayer *)(myLayer), rulesDia);
+  std::cout << "proc to nejde?\n"<<std::flush;
   mQGisIface->addDockWidget(Qt::RightDockWidgetArea, chDock);
   chDock->show();
 }
@@ -116,11 +146,12 @@ void Topol::run()
 void Topol::unload()
 {
   // remove the GUI
-  mQGisIface->removePluginMenu("&Topol",mQActionPointer);
-  mQGisIface->removeToolBarIcon(mQActionPointer);
+  std::cout << "proc to unloaduje?\n"<<std::flush;
+  //mQGisIface->removePluginMenu("&Topol",mQActionPointer);
+  //mQGisIface->removeToolBarIcon(mQActionPointer);
   //mQGisIface->removePluginMenu("&Rules",mRulesPointer);
   //mQGisIface->removeToolBarIcon(mRulesPointer);
-  delete mQActionPointer;
+  //delete mQActionPointer;
   //delete mRulesPointer;
 }
 

@@ -4,16 +4,26 @@
 #include <QDockWidget>
 
 #include <qgsvectorlayer.h>
+#include <qgsrubberband.h>
 
 #include "ui_checkDock.h"
 #include "rulesDialog.h"
 
-enum validationError {
-  ErrorIntersection = 1,
-  ErrorOverlap,
-  ErrorTolerance,
-  ErrorDangle
+enum TopolErrorType
+{
+  TopolIntersection = 1,
+  TopolOverlap,
+  TopolTolerance,
+  TopolDangle
 };
+
+class TopolError
+{
+public:
+  TopolErrorType type;
+  QgsRectangle boundingBox;  
+  QgsFeatureList features;
+}
 
 class checkDock : public QDockWidget, public Ui::checkDock
 {
@@ -34,9 +44,11 @@ private:
   QgsVectorLayer *mLayer;
   rulesDialog* mConfigureDialog;
   QMap<validationError, QString> mErrorNameMap;
-  QMap<validationError, QString> mErrorFixMap;
-  QMap<int, QgsRectangle> mErrorRectangleMap;
+  //QMap<validationError, QString> mErrorFixMap;
+  //QMap<int, QgsRectangle> mErrorRectangleMap;
+  QMap<int, TopolError> mErrorMap;
   QgsGeometryMap mGeometryMap;
+  QgsRubberBand* mRubberBand;
 
   void initErrorMaps();
   void checkIntersections();

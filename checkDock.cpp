@@ -11,6 +11,7 @@
 #include <qgsgeometry.h>
 #include <qgsfeature.h>
 #include <qgsmapcanvas.h>
+#include <qgsrubberband.h>
 
 #include <qgsproviderregistry.h>
 #include <qgslogger.h>
@@ -32,15 +33,18 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, rulesDi
   mValidateExtentButton->setIcon(QIcon(":/topol_c/topol.png"));
   mValidateAllButton->setIcon(QIcon(":/topol_c/topol.png"));
   mConfigureButton->setIcon(QIcon(":/topol_c/topol.png"));
+  mRubberBand = new QgsRubberBand(QgisApp::instance()->mapCanvas(), mLayer);
 
   connect(mConfigureButton, SIGNAL(clicked()), this, SLOT(configure()));
   connect(mValidateAllButton, SIGNAL(clicked()), this, SLOT(validateAll()));
   connect(mValidateExtentButton, SIGNAL(clicked()), this, SLOT(validateExtent()));
   connect(mErrorList, SIGNAL(clicked(const QModelIndex &)), this, SLOT(errorListClicked(const QModelIndex &)));
-
 }
 
-checkDock::~checkDock() {}
+checkDock::~checkDock()
+{
+  delete mRubberBand;
+}
 
 void checkDock::initErrorMaps()
 {
@@ -58,10 +62,9 @@ void checkDock::initErrorMaps()
 
 void checkDock::errorListClicked(const QModelIndex& index)
 {
-  std::cout << index.row() <<" setting Extent\n";
-  QgisApp::instance()->mapCanvas()->setExtent(mErrorRectangleMap[index.row()]);
-  QgisApp::instance()->mapCanvas()->zoomToNextExtent();
-  //QgisApp::instance()->mapCanvas()->updateOverview();
+  std::cout << index.row() <<" setting Extent: " <<  mErrorRectangleMap[index.row()]<<"\n";
+  QgisApp::instance()->mapCanvas()->setExtent(mErroMap[index.row()].boundingBox);
+  QgisApp::instance()->mapCanvas()->refresh();
 }
 
 void checkDock::updateValidationDock(int row, validationError errorType)
@@ -89,7 +92,10 @@ void checkDock::checkDanglingEndpoints()
 
       if (it.value().distance(jit.value()) < tolerance)
       {
-	mErrorRectangleMap[it.key()] = it.value().boundingBox();
+	//mErrorRectangleMap[it.key()] = it.value().boundingBox();
+        QgsRectangle r = it.value().boundingBox();
+	r.combineExtentWith(&jit.value().boundingBox());
+	mErrorRectangleMap[mErrorList->count()] = r;
         std::cout << "point too close: " <<it.key()<<"  "<<jit.key()<<"\n";
         mErrorList->addItem(mErrorNameMap[ErrorDangle]);
       }
@@ -112,8 +118,12 @@ void checkDock::checkIntersections()
         QgsRectangle r = it.value().boundingBox();
 	r.combineExtentWith(&jit.value().boundingBox());
 	mErrorRectangleMap[mErrorList->count()] = r;
+	//r = g->boundingBox();
+        QgsGeometry* g = it.value().intersection(&jit.value());
+        mRubberBand->setToGeometry(g, mLayer);
+        delete g;
 
-	//std::cout << "intersection: " <<i<<"  "<<j<<"\n";
+	std::cout << "intersection: " <<it.key()<<"  "<<jit.key()<<"\n";
         mErrorList->addItem(mErrorNameMap[ErrorIntersection]);
       }
     }

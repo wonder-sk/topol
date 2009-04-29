@@ -19,6 +19,8 @@ SET (topol_MOC_HDRS
   checkDock.h
 )
 
+SET (topol_RCCS  topol.qrc)
+
 ########################################################
 # Build
 
