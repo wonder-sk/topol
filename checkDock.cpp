@@ -49,10 +49,19 @@ checkDock::~checkDock()
 
 void checkDock::initErrorMaps()
 {
-  mErrorNameMap[TopolIntersection] = "Intersecting geometries";
-  mErrorNameMap[TopolOverlap] = "Overlapping geometries";
-  mErrorNameMap[TopolTolerance] = "Segment shorter than tolerance";
-  mErrorNameMap[TopolDangle] = "Point too close to segment";
+  mErrorNameMap[TopolErrorSelfIntersection] = "Intersecting itself";
+  mErrorNameMap[TopolErrorIntersection] = "Intersecting geometries";
+  mErrorNameMap[TopolErrorOverlap] = "Overlapping geometries";
+  mErrorNameMap[TopolErrorTolerance] = "Segment shorter than tolerance";
+  mErrorNameMap[TopolErrorDangle] = "Point too close to segment";
+
+  mFixNameMap[TopolFixMoveFirst] = "Move first geometry";
+  mFixNameMap[TopolFixMoveSecond] = "Move second geometry";
+  mFixNameMap[TopolFixDeleteFirst] = "Delete first geometry";
+  mFixNameMap[TopolFixDeleteSecond] = "Delete second geometry";
+  mFixNameMap[TopolFixUnionFirst] = "Union in first";
+  mFixNameMap[TopolFixUnionSecond] = "Union in second";
+  mFixNameMap[TopolFixSnap] = "Snap to segment";
 
   /*mErrorFixMap.insertMulti(ErrorIntersection, "Move intersecting geometries");
   mErrorFixMap.insertMulti(ErrorIntersection, "Union intersecting geometries");
@@ -145,12 +154,38 @@ void checkDock::checkDanglingEndpoints()
 	mErrorList.last().conflict = *c;
 	delete c;
 
-        mErrorListView->addItem(mErrorNameMap[TopolDangle]);
+        mErrorListView->addItem(mErrorNameMap[TopolErrorDangle]);
       }
     }
 
   //fix would be like that
   //snapToGeometry(point, geom, squaredTolerance, QMultiMap<double, QgsSnappingResult>, SnapToVertexAndSegment);
+}
+
+void checkDock::checkSelfIntersections()
+{
+  /*QList<TopolError>::Iterator it = mErrorList.begin();
+  QList<TopolError>::Iterator end_it = mErrorList.end();
+  QSet<TopolError> set;
+  QList<TopolError> tempList;
+
+  for (; it != end_it; ++it)
+  {
+    //set = it->fids.toSet();
+    //if (set.size() < it->fids.size())
+    if (it->fids.size() == 1)
+    {
+      tempList << TopolError();
+      tempList.last().boundingBox = it->boundingBox;
+      tempList.last().fids << it->fids;
+
+      tempList.last().conflict = it->conflict;
+      mErrorListView->addItem(mErrorNameMap[TopolSelfIntersection]);
+    }
+  }
+
+  mErrorList << tempList;
+  */
 }
 
 void checkDock::checkIntersections()
@@ -159,7 +194,7 @@ void checkDock::checkIntersections()
   for (it = mFeatureMap.begin(); it != mFeatureMap.end(); ++it)
     for (jit = mFeatureMap.begin(); jit != mFeatureMap.end(); ++jit)
     {
-      if (it.key() >= jit.key())
+      if (it.key() > jit.key())
         continue;
 
       QgsGeometry* g1 = it.value().geometry();
@@ -180,7 +215,8 @@ void checkDock::checkIntersections()
 	mErrorList.last().conflict = *c;
 	delete c;
 
-        mErrorListView->addItem(mErrorNameMap[TopolIntersection]);
+        mErrorListView->addItem(mErrorNameMap[TopolErrorIntersection] + QString(" %1 %2").arg(it.key()).arg(jit.key()));
+	mFixBox->addItems
       }
     }
 }
@@ -189,6 +225,7 @@ void checkDock::validate(QgsRectangle rect)
 {
   mErrorListView->clear();
   mFeatureMap.clear();
+  //mLayer = QgisApp::instance()->mapLegend()->currentLayer();
   mLayer->select(QgsAttributeList(), rect);
 
   QgsFeature f;
@@ -200,6 +237,7 @@ void checkDock::validate(QgsRectangle rect)
   }
 
   checkIntersections();
+  checkSelfIntersections();
   checkDanglingEndpoints();
 
   mComment->setText(QString("%1 errors were found").arg(mErrorListView->count()));
