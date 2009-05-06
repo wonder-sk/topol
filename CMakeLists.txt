@@ -5,7 +5,7 @@
 SET (topol_SRCS
   topol.cpp
   rulesDialog.cpp
-  checkDock.cpp
+  #checkDock.cpp
   topolError.cpp
 )
 
@@ -17,8 +17,7 @@ SET (topol_UIS
 SET (topol_MOC_HDRS
   topol.h
   rulesDialog.h
-  checkDock.h
-  topolError.h
+  #checkDock.h
 )
 
 SET (topol_RCCS  topol.qrc)

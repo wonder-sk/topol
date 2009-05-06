@@ -216,7 +216,7 @@ void checkDock::checkIntersections()
 	delete c;
 
         mErrorListView->addItem(mErrorNameMap[TopolErrorIntersection] + QString(" %1 %2").arg(it.key()).arg(jit.key()));
-	mFixBox->addItems
+	//mFixBox->addItems
       }
     }
 }
