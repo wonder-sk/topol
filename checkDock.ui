@@ -94,7 +94,7 @@
     </property>
     <item>
      <property name="text">
-      <string>Select Automatic Fix</string>
+      <string>Select automatic fix</string>
      </property>
     </item>
    </widget>

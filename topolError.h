@@ -6,41 +6,19 @@
 #include <qgsrectangle.h>
 
 class TopolError;
-
-enum TopolErrorType
-{
-  TopolErrorIntersection = 1,
-  TopolErrorSelfIntersection,
-  TopolErrorOverlap,
-  TopolErrorTolerance,
-  TopolErrorDangle
-};
-
 typedef bool (TopolError::*fixFunction)();
-/*
-enum TopolFixType
-{
-  TopolFixMoveFirst = 1,
-  TopolFixMoveSecond,
-  TopolFixUnionFirst,
-  TopolFixUnionSecond,
-  TopolFixDeleteFirst,
-  TopolFixDeleteSecond,
-  TopolFixSnap,
-};*/
-
-//const StringList FixType = 
 
 class TopolError
 {
 protected:
-  TopolErrorType mType;
+  QString mName;
   QgsRectangle mBoundingBox;  
   QgsGeometry* mConflict;
   QgsFeatureIds mFids;
-  QStringList mFixNames;
+  QgsVectorLayer* mLayer;
   QMap<QString, fixFunction> mFixMap;
 
+  bool fixDummy() { return false; }
   bool fixMoveFirst();
   bool fixMoveSecond();
   bool fixUnionFirst();
@@ -48,18 +26,24 @@ protected:
   bool fixDeleteFirst();
   bool fixDeleteSecond();
 
+  //helper fix functions
+  bool fixUnion(int id1, int id2);
+
 public:
-  TopolError(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QgsFeatureIds theFids) : mBoundingBox(theBoundingBox), mConflict(theConflict), mFids(theFids) {};
+  TopolError(QgsVectorLayer* theLayer, QgsRectangle theBoundingBox, QgsGeometry* theConflict, QgsFeatureIds theFids) : mLayer(theLayer), mBoundingBox(theBoundingBox), mConflict(theConflict), mFids(theFids) {};
 
   virtual ~TopolError() {}
-  virtual bool fixIt(QString fixName);
-  virtual QStringList fixNames() { return mFixNames; }
+  virtual bool fix(QString fixName);
+  virtual QString name() { return mName; }
+  virtual QgsGeometry* conflict() { return mConflict; }
+  virtual QgsRectangle boundingBox() { return mBoundingBox; }
+  virtual QStringList fixNames() { return mFixMap.keys(); }
 };
 
-class TopolErrorIntersection : TopolError
+class TopolErrorIntersection : public TopolError
 {
-  TopolErrorIntersection(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QgsFeatureIds theFids);
-  //TopolErrorIntersection(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QgsFeatureIds theFids) : mBoundingBox(theBoundingBox), mConflict(theConflict), mFids(theFids);
+public:
+  TopolErrorIntersection(QgsVectorLayer* theLayer, QgsRectangle theBoundingBox, QgsGeometry* theConflict, QgsFeatureIds theFids);
 };
 
 #endif

@@ -125,7 +125,6 @@ void Topol::help()
 void Topol::run()
 {
   
-  std::cout << "to nejde?\n"<<std::flush;
   QgsMapLayer *myLayer = mQGisIface->activeLayer();
 
   if (myLayer == NULL || myLayer->type() != QgsMapLayer::VectorLayer) {
@@ -133,11 +132,8 @@ void Topol::run()
     return;
   }
 
-  std::cout << "nejde?\n"<<std::flush;
   rulesDialog* rulesDia = new rulesDialog("Rules", (QgsVectorLayer *)(myLayer));
-  //checkDock* chDock = new checkDock("Rules", (QgsVectorLayer *)(myLayer), rulesDia, vDock);
   checkDock* chDock = new checkDock("Rules", (QgsVectorLayer *)(myLayer), rulesDia);
-  std::cout << "proc to nejde?\n"<<std::flush;
   mQGisIface->addDockWidget(Qt::RightDockWidgetArea, chDock);
   chDock->show();
 }
@@ -146,13 +142,12 @@ void Topol::run()
 void Topol::unload()
 {
   // remove the GUI
-  std::cout << "proc to unloaduje?\n"<<std::flush;
-  //mQGisIface->removePluginMenu("&Topol",mQActionPointer);
-  //mQGisIface->removeToolBarIcon(mQActionPointer);
-  //mQGisIface->removePluginMenu("&Rules",mRulesPointer);
-  //mQGisIface->removeToolBarIcon(mRulesPointer);
-  //delete mQActionPointer;
-  //delete mRulesPointer;
+  mQGisIface->removePluginMenu("&Topol",mQActionPointer);
+  mQGisIface->removeToolBarIcon(mQActionPointer);
+  mQGisIface->removePluginMenu("&Rules",mRulesPointer);
+  mQGisIface->removeToolBarIcon(mRulesPointer);
+  delete mQActionPointer;
+  delete mRulesPointer;
 }
 
 

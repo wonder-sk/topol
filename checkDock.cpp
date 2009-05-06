@@ -28,8 +28,6 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, rulesDi
   mLayer = theLayer;
   mConfigureDialog = theConfigureDialog;
 
-  initErrorMaps();
-
   mValidateExtentButton->setIcon(QIcon(":/topol_c/topol.png"));
   mValidateAllButton->setIcon(QIcon(":/topol_c/topol.png"));
   mConfigureButton->setIcon(QIcon(":/topol_c/topol.png"));
@@ -45,29 +43,8 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, rulesDi
 checkDock::~checkDock()
 {
   delete mRubberBand;
-}
-
-void checkDock::initErrorMaps()
-{
-  mErrorNameMap[TopolErrorSelfIntersection] = "Intersecting itself";
-  mErrorNameMap[TopolErrorIntersection] = "Intersecting geometries";
-  mErrorNameMap[TopolErrorOverlap] = "Overlapping geometries";
-  mErrorNameMap[TopolErrorTolerance] = "Segment shorter than tolerance";
-  mErrorNameMap[TopolErrorDangle] = "Point too close to segment";
-
-  mFixNameMap[TopolFixMoveFirst] = "Move first geometry";
-  mFixNameMap[TopolFixMoveSecond] = "Move second geometry";
-  mFixNameMap[TopolFixDeleteFirst] = "Delete first geometry";
-  mFixNameMap[TopolFixDeleteSecond] = "Delete second geometry";
-  mFixNameMap[TopolFixUnionFirst] = "Union in first";
-  mFixNameMap[TopolFixUnionSecond] = "Union in second";
-  mFixNameMap[TopolFixSnap] = "Snap to segment";
-
-  /*mErrorFixMap.insertMulti(ErrorIntersection, "Move intersecting geometries");
-  mErrorFixMap.insertMulti(ErrorIntersection, "Union intersecting geometries");
-  mErrorFixMap.insertMulti(ErrorTolerance, "Increase segment size");
-  mErrorFixMap.insertMulti(ErrorTolerance, "Delete segment");
-  */
+  //TODO:
+  //delete mErrorList
 }
 
 void checkDock::configure()
@@ -85,48 +62,40 @@ void checkDock::errorListClicked(const QModelIndex& index)
   for (; it != mErrorList[index.row()].features.end(); ++it)
     zoom.combineExtentWith(mFeatureMap[it->fid].geometry().boundingBox());
 */
-  QgisApp::instance()->mapCanvas()->setExtent(mErrorList[index.row()].boundingBox);
+  int row = index.row();
+  QgisApp::instance()->mapCanvas()->setExtent(mErrorList[index.row()]->boundingBox());
   QgisApp::instance()->mapCanvas()->refresh();
   //QgsGeometry* g = it.value().intersection(&jit.value());
   //delete g;
-  mRubberBand->setToGeometry(&mErrorList[index.row()].conflict, mLayer);
-
+  mFixBox->clear();
+  mFixBox->addItem("Select automatic fix");
+  mFixBox->addItems(mErrorList[row]->fixNames());
+  mRubberBand->setToGeometry(mErrorList[row]->conflict(), mLayer);
 }
-
-//void checkDock::updateValidationDock(int row, TopolErrorType errorType)
-//{
-/*
-  QComboBox* cb = new QComboBox();
-  QMap<validationError, QString>::const_iterator it = mErrorFixMap.lowerBound(errorType);
-  QMap<validationError, QString>::const_iterator upperBound = mErrorFixMap.upperBound(errorType);
-  for (; it != upperBound; ++it)
-    cb->addItem(it.value());
-*/
-  //mErrorListView->addItem(mErrorNameMap[errorType]);
-//}
 
 void checkDock::fix()
 {
-  //mFixBox->currentText();
   int row = mErrorListView->currentRow();
+  QString fixName = mFixBox->currentText();
 
-  //mErrorFixMap[row];
+  if (row == -1)
+    return;
 
-  /*switch (mErrorList[row].type())
+  if (mErrorList[row]->fix(fixName))
   {
-    
-
-  }*/
-
-  //QMap<validationError, QString>::const_iterator it = mErrorFixMap.lowerBound(errorType);
-  //QMap<validationError, QString>::const_iterator upperBound = mErrorFixMap.upperBound(errorType);
-  //for (; it != upperBound; ++it)
-    //cb->addItem(it.value());
-
+    mErrorList.removeAt(row);
+    delete mErrorListView->takeItem(row);
+    mComment->setText(QString("%1 errors were found").arg(mErrorListView->count()));
+    mRubberBand->reset();
+    mLayer->triggerRepaint();
+  }
+  else
+    mComment->setText("Error not fixed!");
 }
 
 void checkDock::checkDanglingEndpoints()
 {
+	/*
   double tolerance = 0.1;
   QMap<int, QgsFeature>::Iterator it, jit;
   for (it = mFeatureMap.begin(); it != mFeatureMap.end(); ++it)
@@ -142,24 +111,25 @@ void checkDock::checkDanglingEndpoints()
       {
         QgsRectangle r = g1->boundingBox();
 	r.combineExtentWith(&g2->boundingBox());
-	mErrorList << TopolError();
-	mErrorList.last().boundingBox = r;
-	mErrorList.last().fids << it.key() << jit.key();
-	//mErrorList[mErrorListView->count()].fids << it.key() << jit.key();
 
 	QgsGeometry* c = g1->intersection(g2);
 	if (!c)
 	  c = new QgsGeometry;
 
-	mErrorList.last().conflict = *c;
-	delete c;
+	QgsFeatureIds fids;
+	fids << it.key() << jit.key();
+	TopolErrorIntersection* err = new TopolErrorIntersection(r, c, fids);
+	//delete c;
+	//mErrorList[mErrorListView->count()].fids << it.key() << jit.key();
 
-        mErrorListView->addItem(mErrorNameMap[TopolErrorDangle]);
+        mErrorListView->addItem(err->name());
+	mErrorList << err;
+        //mErrorListView->addItem(mErrorNameMap[TopolErrorDangle]);
       }
     }
 
   //fix would be like that
-  //snapToGeometry(point, geom, squaredTolerance, QMultiMap<double, QgsSnappingResult>, SnapToVertexAndSegment);
+  //snapToGeometry(point, geom, squaredTolerance, QMultiMap<double, QgsSnappingResult>, SnapToVertexAndSegment);*/
 }
 
 void checkDock::checkSelfIntersections()
@@ -194,7 +164,7 @@ void checkDock::checkIntersections()
   for (it = mFeatureMap.begin(); it != mFeatureMap.end(); ++it)
     for (jit = mFeatureMap.begin(); jit != mFeatureMap.end(); ++jit)
     {
-      if (it.key() > jit.key())
+      if (it.key() >= jit.key())
         continue;
 
       QgsGeometry* g1 = it.value().geometry();
@@ -204,19 +174,17 @@ void checkDock::checkIntersections()
       {
         QgsRectangle r = g1->boundingBox();
 	r.combineExtentWith(&g2->boundingBox());
-	mErrorList << TopolError();
-	mErrorList.last().boundingBox = r;
-	mErrorList.last().fids << it.key() << jit.key();
 
 	QgsGeometry* c = g1->intersection(g2);
 	if (!c)
 	  c = new QgsGeometry;
 
-	mErrorList.last().conflict = *c;
-	delete c;
+	QgsFeatureIds fids;
+	fids << it.key() << jit.key();
+	TopolErrorIntersection* err = new TopolErrorIntersection(mLayer, r, c, fids);
 
-        mErrorListView->addItem(mErrorNameMap[TopolErrorIntersection] + QString(" %1 %2").arg(it.key()).arg(jit.key()));
-	//mFixBox->addItems
+	mErrorList << err;
+        mErrorListView->addItem(err->name() + QString(" %1 %2").arg(it.key()).arg(jit.key()));
       }
     }
 }
@@ -225,7 +193,7 @@ void checkDock::validate(QgsRectangle rect)
 {
   mErrorListView->clear();
   mFeatureMap.clear();
-  //mLayer = QgisApp::instance()->mapLegend()->currentLayer();
+  //mLayer = QgisApp::instance()->activeLayer();
   mLayer->select(QgsAttributeList(), rect);
 
   QgsFeature f;

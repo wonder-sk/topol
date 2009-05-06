@@ -1,44 +1,69 @@
 #include "topolError.h"
 
-bool TopolError::fixIt(QString fixName)
+bool TopolError::fix(QString fixName)
 {
-  //fixFunction f = mFixMap[fixName];
-  //(this->*f)();
+std::cout << "fix: \""<<fixName.toStdString()<<"\"\n";
   (this->*mFixMap[fixName])();
 }
 
 bool TopolError::fixMoveFirst()
 {
+  return false;
 }
 
 bool TopolError::fixMoveSecond()
 {
+  return false;
+}
+
+bool TopolError::fixUnion(int id1, int id2)
+{
+  bool ok;
+  QgsFeature f1, f2;
+  ok = mLayer->featureAtId(id1, f1, true, false);
+  ok = ok && mLayer->featureAtId(id2, f2, true, false);
+
+  if (!ok)
+    return false;
+
+  QgsGeometry* g = f1.geometry()->combine(f2.geometry());
+  if (!g)
+    return false;
+
+  if (mLayer->deleteFeature(f1.id()))
+  {
+    f1.setGeometry(g);
+    return true;
+  }
+
+  return false;
 }
 
 bool TopolError::fixUnionFirst()
 {
+  return fixUnion(mFids.values().first(), mFids.values()[1]);
 }
 
 bool TopolError::fixUnionSecond()
 {
+  return fixUnion(mFids.values()[1], mFids.values().first());
 }
 
 bool TopolError::fixDeleteFirst()
 {
+  return mLayer->deleteFeature(mFids.values().first());
 }
 
 bool TopolError::fixDeleteSecond()
 {
+  return mLayer->deleteFeature(mFids.values()[1]);
 }
 
-//TopolErrorIntersection
-//TopolErrorIntersection::TopolErrorIntersection(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QgsFeatureIds theFids) : mBoundingBox(theBoundingBox), mConflict(theConflict), mFids(theFids)
-TopolErrorIntersection::TopolErrorIntersection(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QgsFeatureIds theFids) : TopolError(theBoundingBox, theConflict, theFids)
+TopolErrorIntersection::TopolErrorIntersection(QgsVectorLayer* theLayer, QgsRectangle theBoundingBox, QgsGeometry* theConflict, QgsFeatureIds theFids) : TopolError(theLayer, theBoundingBox, theConflict, theFids)
 {
-  mBoundingBox = theBoundingBox;
-  mConflict = theConflict;
-  mFids = theFids;
+  mName = "Intersecting geometries";
 
+  mFixMap["Select automatic fix"] = &TopolErrorIntersection::fixDummy;
   mFixMap["Move first feature"] = &TopolErrorIntersection::fixMoveFirst;
   mFixMap["Move second feature"] = &TopolErrorIntersection::fixMoveSecond;
   mFixMap["Union to first feature"] = &TopolErrorIntersection::fixUnionFirst;

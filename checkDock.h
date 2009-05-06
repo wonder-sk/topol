@@ -30,16 +30,16 @@ private slots:
 private:
   QgsVectorLayer *mLayer;
   rulesDialog* mConfigureDialog;
-  QMap<TopolErrorType, QString> mErrorNameMap;
-  QMap<TopolFixType, QString> mFixNameMap;
+  //QMap<TopolErrorType, QString> mErrorNameMap;
+  //QMap<TopolFixType, QString> mFixNameMap;
   QMap<int, QgsFeature> mFeatureMap;
   //QMap<validationError, QString> mErrorFixMap;
   //QMap<int, QgsRectangle> mErrorRectangleMap;
-  QList<TopolError> mErrorList;
+  QList<TopolError*> mErrorList;
   QgsGeometryMap mGeometryMap;
   QgsRubberBand* mRubberBand;
 
-  void initErrorMaps();
+  //void initErrorMaps();
   void checkIntersections();
   void checkSelfIntersections();
   void checkDanglingEndpoints();
