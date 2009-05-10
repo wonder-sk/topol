@@ -11,6 +11,9 @@
 #include "topolError.h"
 
 class QgsRubberBand;
+class QgisApp;
+
+typedef QList<TopolError*> ErrorList;
 
 class checkDock : public QDockWidget, public Ui::checkDock
 {
@@ -30,20 +33,18 @@ private slots:
 private:
   QgsVectorLayer *mLayer;
   rulesDialog* mConfigureDialog;
-  //QMap<TopolErrorType, QString> mErrorNameMap;
-  //QMap<TopolFixType, QString> mFixNameMap;
-  QMap<int, QgsFeature> mFeatureMap;
-  //QMap<validationError, QString> mErrorFixMap;
-  //QMap<int, QgsRectangle> mErrorRectangleMap;
-  QList<TopolError*> mErrorList;
-  QgsGeometryMap mGeometryMap;
   QgsRubberBand* mRubberBand;
+  //QgisInterface* mQgisIface;
+  QgisApp* mQgisApp;
 
-  //void initErrorMaps();
+  QMap<int, QgsFeature> mFeatureMap;
+  ErrorList mErrorList;
+  //QList<TopolError*> mErrorList;
+  QgsGeometryMap mGeometryMap;
+
   void checkIntersections();
   void checkSelfIntersections();
   void checkDanglingEndpoints();
-  //void updateValidationDock(int row, TopolErrorType errorType);
   void validate(QgsRectangle rect);
 };
 

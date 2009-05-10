@@ -59,7 +59,6 @@ Topol::Topol(QgisInterface * theQgisInterface):
                  QgisPlugin(sName,sDescription,sPluginVersion,sPluginType),
                  mQGisIface(theQgisInterface)
 {
-	std::cout << "Topol constr\n";
 }
 
 Topol::~Topol()

@@ -51,6 +51,7 @@ bool TopolError::fixUnionSecond()
 
 bool TopolError::fixDeleteFirst()
 {
+//TODO: skip errors associated with deleted feature
   return mLayer->deleteFeature(mFids.values().first());
 }
 
