@@ -19,6 +19,7 @@ protected:
   QMap<QString, fixFunction> mFixMap;
 
   bool fixDummy() { return false; }
+  bool fixSnap();
   bool fixMoveFirst();
   bool fixMoveSecond();
   bool fixUnionFirst();
@@ -44,6 +45,12 @@ class TopolErrorIntersection : public TopolError
 {
 public:
   TopolErrorIntersection(QgsVectorLayer* theLayer, QgsRectangle theBoundingBox, QgsGeometry* theConflict, QgsFeatureIds theFids);
+};
+
+class TopolErrorDangle : public TopolError
+{
+public:
+  TopolErrorDangle(QgsVectorLayer* theLayer, QgsRectangle theBoundingBox, QgsGeometry* theConflict, QgsFeatureIds theFids);
 };
 
 #endif

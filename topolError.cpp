@@ -16,6 +16,33 @@ bool TopolError::fixMoveSecond()
   return false;
 }
 
+bool TopolErrorDangle::fixSnap(int id1, int id2, QgsGeometry* g)
+{
+  bool ok;
+  QgsFeature f1, f2;
+  ok = mLayer->featureAtId(id1, f1, true, false);
+  ok = ok && mLayer->featureAtId(id2, f2, true, false);
+
+  if (!ok)
+    return false;
+
+  //snapToGeometry(point, geom, squaredTolerance, QMultiMap<double, QgsSnappingResult>, SnapToVertexAndSegment);
+
+  //this shouldn't happen
+  if (!g)
+    return false;
+
+  QgsGeometry* ge = f1.geometry();
+  QgsGeometryV2 *gv2 = QgsGeometryV2::importFromOldGeometry(ge);
+
+  LineString ls = gv2->lineString();
+  ls.last() = g->asPolyline().last();
+  ge = gv2->exportToOldGeometry();
+
+  f1.setGeometry(ge);
+  return true;
+}
+
 bool TopolError::fixUnion(int id1, int id2)
 {
   bool ok;
@@ -30,7 +57,7 @@ bool TopolError::fixUnion(int id1, int id2)
   if (!g)
     return false;
 
-  if (mLayer->deleteFeature(f1.id()))
+  if (mLayer->deleteFeature(f2.id()))
   {
     f1.setGeometry(g);
     return true;
@@ -71,4 +98,14 @@ TopolErrorIntersection::TopolErrorIntersection(QgsVectorLayer* theLayer, QgsRect
   mFixMap["Union to second feature"] = &TopolErrorIntersection::fixUnionSecond;
   mFixMap["Delete first feature"] = &TopolErrorIntersection::fixDeleteFirst;
   mFixMap["Delete second feature"] = &TopolErrorIntersection::fixDeleteSecond;
+}
+
+TopolErrorDangle::TopolErrorDangle(QgsVectorLayer* theLayer, QgsRectangle theBoundingBox, QgsGeometry* theConflict, QgsFeatureIds theFids) : TopolError(theLayer, theBoundingBox, theConflict, theFids)
+{
+  mName = "Dangling endpoint";
+
+  mFixMap["Select automatic fix"] = &TopolErrorDangle::fixDummy;
+  mFixMap["Move first feature"] = &TopolErrorDangle::fixMoveFirst;
+  mFixMap["Move second feature"] = &TopolErrorDangle::fixMoveSecond;
+  mFixMap["Union to first feature"] = &TopolErrorDangle::fixSnap;
 }

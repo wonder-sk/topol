@@ -34,18 +34,18 @@ private:
   QgsVectorLayer *mLayer;
   rulesDialog* mConfigureDialog;
   QgsRubberBand* mRubberBand;
-  //QgisInterface* mQgisIface;
   QgisApp* mQgisApp;
 
   QMap<int, QgsFeature> mFeatureMap;
   ErrorList mErrorList;
-  //QList<TopolError*> mErrorList;
   QgsGeometryMap mGeometryMap;
 
   void checkIntersections();
   void checkSelfIntersections();
   void checkDanglingEndpoints();
   void validate(QgsRectangle rect);
+
+  static const double tolerance = 0.1;
 };
 
 #endif

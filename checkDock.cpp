@@ -18,6 +18,7 @@
 
 #include "rulesDialog.h"
 #include "../../app/qgisapp.h"
+#include "../../core/geometry_v2/qgsgeometryv2.h"
 
 checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, rulesDialog* theConfigureDialog, QWidget* parent)
 : QDockWidget(parent), Ui::checkDock()
@@ -87,23 +88,38 @@ void checkDock::fix()
 }
 
 QgsGeometry* checkEndpoints(QgsGeometry* g1, QgsGeometry* g2)
-{/*
+{
+	//TODO:MultiLines
   QgsGeometryV2* g1v2 = QgsGeometryV2::importFromOldGeometry(g1);
   QgsGeometryV2* g2v2 = QgsGeometryV2::importFromOldGeometry(g2);
 
   if (!g1v2 || !g2v2)
     return 0;
 
-  if (g1v2->type() != GeomLineString)
+  if (g1v2->type() != GeomLineString || g2v2->type() != GeomLineString)
     return 0;
-    */
 
+  QgsPoint endPoint = g1v2->lineString().last()
+  QgsGeometry *g = QgsGeometry::fromPoint(endPoint);
+  if (g2->sqrDist(g) < distance)
+  {
+    int before;
+    QgsPoint minDistPoint;  
+    closestSegmentWithContext(ls.last(), minDistPoint, before);
+    delete g;
+    
+    LineString ls;
+    ls << endPoint << minDistPoint;
+    g = QgsGeometry::fromPolyline(ls);
+    return g;
+  }
+
+  delete g;
   return 0;
 }
 
 void checkDock::checkDanglingEndpoints()
 {
-  double tolerance = 0.1;
   QMap<int, QgsFeature>::Iterator it, jit;
   for (it = mFeatureMap.begin(); it != mFeatureMap.end(); ++it)
     for (jit = mFeatureMap.begin(); jit != mFeatureMap.end(); ++jit)
@@ -116,25 +132,34 @@ void checkDock::checkDanglingEndpoints()
 
       if (g1->distance(*g2) < tolerance)
       {
-	QgsGeometry* c;
-	if (c = checkEndpoints(g1, g2))
+	QgsGeometry* c, *d;
+	if (c = checkEndpoints(g1, g2) || d = checkEndpoints(g2, g1))
 	{
           QgsRectangle r = g1->boundingBox();
 	  r.combineExtentWith(&g2->boundingBox());
 
 	  QgsFeatureIds fids;
 	  fids << it.key() << jit.key();
-	  TopolErrorIntersection* err = new TopolErrorIntersection(r, c, fids);
+	  
+	  TopolErrorIntersection* err;
+          if (c)
+	  {
+	    fids << it.key() << jit.key();
+            err = new TopolErrorDangle(r, c, fids);
+            mErrorListView->addItem(err->name());
+	    mErrorList << err;
+	  }
 
-          mErrorListView->addItem(err->name());
-	  mErrorList << err;
-          //mErrorListView->addItem(mErrorNameMap[TopolErrorDangle]);
+          if (d)
+	  {
+	    fids << jit.key() << it.key();
+            err = new TopolErrorDangle(r, d, fids);
+            mErrorListView->addItem(err->name());
+	    mErrorList << err;
+	  }
 	}
       }
     }
-
-  //fix would be like that
-  //snapToGeometry(point, geom, squaredTolerance, QMultiMap<double, QgsSnappingResult>, SnapToVertexAndSegment);
 }
 
 void checkDock::checkIntersections()
