@@ -19,6 +19,7 @@
 #include "rulesDialog.h"
 #include "../../app/qgisapp.h"
 #include "../../core/geometry_v2/qgsgeometryv2.h"
+#include "../../core/geometry_v2/qgsg2linestring.h"
 
 checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, rulesDialog* theConfigureDialog, QWidget* parent)
 : QDockWidget(parent), Ui::checkDock()
@@ -90,8 +91,11 @@ void checkDock::fix()
 QgsGeometry* checkEndpoints(QgsGeometry* g1, QgsGeometry* g2)
 {
 	//TODO:MultiLines
+  std::cout << "no?\n"<<std::flush;
   QgsGeometryV2* g1v2 = QgsGeometryV2::importFromOldGeometry(g1);
+  std::cout << "no\n"<<std::flush;
   QgsGeometryV2* g2v2 = QgsGeometryV2::importFromOldGeometry(g2);
+  std::cout << "n\n"<<std::flush;
 
   if (!g1v2 || !g2v2)
     return 0;
@@ -99,13 +103,13 @@ QgsGeometry* checkEndpoints(QgsGeometry* g1, QgsGeometry* g2)
   if (g1v2->type() != GeomLineString || g2v2->type() != GeomLineString)
     return 0;
 
-  QgsPoint endPoint = g1v2->lineString().last()
+  QgsPoint endPoint = ((QgsG2LineString*)g1v2)->lineString().last();
   QgsGeometry *g = QgsGeometry::fromPoint(endPoint);
-  if (g2->sqrDist(g) < distance)
+  if (g2->distance(*g) < 0.1)
   {
     int before;
     QgsPoint minDistPoint;  
-    closestSegmentWithContext(ls.last(), minDistPoint, before);
+    g2->closestSegmentWithContext(endPoint, minDistPoint, before);
     delete g;
     
     LineString ls;
@@ -130,10 +134,10 @@ void checkDock::checkDanglingEndpoints()
       QgsGeometry* g1 = it.value().geometry();
       QgsGeometry* g2 = jit.value().geometry();
 
-      if (g1->distance(*g2) < tolerance)
+      if (g1->distance(*g2) < 0.1)
       {
-	QgsGeometry* c, *d;
-	if (c = checkEndpoints(g1, g2) || d = checkEndpoints(g2, g1))
+	QgsGeometry *c, *d;
+	if ((c = checkEndpoints(g1, g2)) || (d = checkEndpoints(g2, g1)))
 	{
           QgsRectangle r = g1->boundingBox();
 	  r.combineExtentWith(&g2->boundingBox());
@@ -141,11 +145,11 @@ void checkDock::checkDanglingEndpoints()
 	  QgsFeatureIds fids;
 	  fids << it.key() << jit.key();
 	  
-	  TopolErrorIntersection* err;
+	  TopolErrorDangle* err;
           if (c)
 	  {
 	    fids << it.key() << jit.key();
-            err = new TopolErrorDangle(r, c, fids);
+            err = new TopolErrorDangle(mLayer, r, c, fids);
             mErrorListView->addItem(err->name());
 	    mErrorList << err;
 	  }
@@ -153,7 +157,7 @@ void checkDock::checkDanglingEndpoints()
           if (d)
 	  {
 	    fids << jit.key() << it.key();
-            err = new TopolErrorDangle(r, d, fids);
+            err = new TopolErrorDangle(mLayer, r, d, fids);
             mErrorListView->addItem(err->name());
 	    mErrorList << err;
 	  }

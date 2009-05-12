@@ -44,8 +44,6 @@ private:
   void checkSelfIntersections();
   void checkDanglingEndpoints();
   void validate(QgsRectangle rect);
-
-  static const double tolerance = 0.1;
 };
 
 #endif

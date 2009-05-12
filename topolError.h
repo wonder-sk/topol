@@ -28,6 +28,7 @@ protected:
   bool fixDeleteSecond();
 
   //helper fix functions
+  bool fixMove(int id1, int id2);
   bool fixUnion(int id1, int id2);
 
 public:
