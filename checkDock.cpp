@@ -21,6 +21,7 @@
 #include "../../core/geometry_v2/qgsgeometryv2.h"
 #include "../../core/geometry_v2/qgsg2linestring.h"
 
+//TODO: fix crashing when no layer under
 checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, rulesDialog* theConfigureDialog, QWidget* parent)
 : QDockWidget(parent), Ui::checkDock()
 {
@@ -101,6 +102,8 @@ void checkDock::fix()
     delete mErrorListView->takeItem(row);
     mComment->setText(QString("%1 errors were found").arg(mErrorListView->count()));
     mRubberBand->reset();
+    rub1->reset();
+    rub2->reset();
     mLayer->triggerRepaint();
   }
   else
@@ -111,11 +114,8 @@ void checkDock::fix()
 QgsGeometry* checkEndpoints(QgsGeometry* g1, QgsGeometry* g2)
 {
 	//TODO:MultiLines
-  std::cout << "no?\n"<<std::flush;
   QgsGeometryV2* g1v2 = QgsGeometryV2::importFromOldGeometry(g1);
-  std::cout << "no\n"<<std::flush;
   QgsGeometryV2* g2v2 = QgsGeometryV2::importFromOldGeometry(g2);
-  std::cout << "n\n"<<std::flush;
 
   if (!g1v2 || !g2v2)
     return 0;
@@ -272,6 +272,8 @@ void checkDock::validate(QgsRectangle rect)
   */
 
   mComment->setText(QString("%1 errors were found").arg(mErrorListView->count()));
+  rub1->reset();
+  rub2->reset();
   mRubberBand->reset();
 }
 

@@ -20,10 +20,7 @@ bool TopolError::fixMove(int id1, int id2)
 
   // 0 means success
   if(!f1.geometry()->makeDifference(f2.geometry()))
-  {
-    //f1.setGeometry(g);
-    return true;
-  }
+    return mLayer->changeGeometry(f1.id(), f1.geometry());
 
   return false;
 }
@@ -53,10 +50,7 @@ bool TopolError::fixUnion(int id1, int id2)
     return false;
 
   if (mLayer->deleteFeature(f2.id()))
-  {
-    f1.setGeometry(g);
-    return true;
-  }
+    return mLayer->changeGeometry(f1.id(), g);
 
   return false;
 }
@@ -64,12 +58,9 @@ bool TopolError::fixUnion(int id1, int id2)
 bool TopolError::fixSnap()
 {
   bool ok;
-  std::cout << "alive\n" << std::flush;
   QgsFeature f1, f2;
   ok = mLayer->featureAtId(mFids.values().first(), f1, true, false);
-  std::cout << "alive\n" << std::flush;
   ok = ok && mLayer->featureAtId(mFids.values()[1], f2, true, false);
-  std::cout << "alive\n" << std::flush;
 
   if (!ok)
     return false;
@@ -78,15 +69,16 @@ bool TopolError::fixSnap()
 
   QgsGeometry* ge = f1.geometry();
   QgsGeometryV2 *gv2 = QgsGeometryV2::importFromOldGeometry(ge);
-  std::cout << "alive\n" << std::flush;
 
   LineString ls = ((QgsG2LineString*)gv2)->lineString();
+  std::cout << "last: "<<ls.last();
   ls.last() = mConflict->asPolyline().last();
+  std::cout << "last: "<<ls.last();
+  //TODO: fix crashing when no layer under
+  ((QgsG2LineString*)gv2)->setLineString(ls);
   ge = gv2->exportToOldGeometry();
 
-  std::cout << "alive\n" << std::flush;
-  f1.setGeometry(ge);
-  return true;
+  return mLayer->changeGeometry(f1.id(), ge);
 }
 
 bool TopolError::fixUnionFirst()
