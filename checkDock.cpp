@@ -33,12 +33,13 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, rulesDi
   mValidateExtentButton->setIcon(QIcon(":/topol_c/topol.png"));
   mValidateAllButton->setIcon(QIcon(":/topol_c/topol.png"));
   mConfigureButton->setIcon(QIcon(":/topol_c/topol.png"));
+
   mRubberBand = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
   rub1 = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
   rub2 = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
   rub1->setColor("blue");
   rub2->setColor("red");
-  mRubberBand->setColor("green");
+  mRubberBand->setColor("gold");
 
   connect(mConfigureButton, SIGNAL(clicked()), this, SLOT(configure()));
   connect(mValidateAllButton, SIGNAL(clicked()), this, SLOT(validateAll()));

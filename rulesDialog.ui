@@ -1,262 +1,327 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>rulesDialog</class>
- <widget class="QTabWidget" name="rulesDialog">
+ <widget class="QDialog" name="Dialog">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>335</height>
+    <height>332</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Rules to be checked</string>
+   <string>Topology settings</string>
   </property>
-  <property name="currentIndex">
-   <number>1</number>
-  </property>
-  <widget class="QWidget" name="pointTab">
-   <property name="statusTip">
-    <string/>
+  <widget class="QDialogButtonBox" name="buttonBox">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>290</y>
+     <width>341</width>
+     <height>32</height>
+    </rect>
    </property>
-   <property name="accessibleName">
-    <string/>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
    </property>
-   <attribute name="title">
-    <string>Points</string>
-   </attribute>
-   <widget class="QWidget" name="gridLayoutWidget">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>10</y>
-      <width>371</width>
-      <height>151</height>
-     </rect>
-    </property>
-    <layout class="QGridLayout" name="gridLayout">
-     <item row="3" column="0">
-      <widget class="QCheckBox" name="overlapBox">
-       <property name="text">
-        <string>covered by line</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="0">
-      <widget class="QCheckBox" name="overlapBox_3">
-       <property name="text">
-        <string>covered by endpoint</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <widget class="QCheckBox" name="overlapBox_4">
-       <property name="text">
-        <string>inside polygon</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="0">
-      <widget class="QCheckBox" name="overlapBox_2">
-       <property name="text">
-        <string>covered by polygon boundary</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </widget>
-   <widget class="QWidget" name="formLayoutWidget_3">
-    <property name="geometry">
-     <rect>
-      <x>130</x>
-      <y>270</y>
-      <width>157</width>
-      <height>34</height>
-     </rect>
-    </property>
-    <layout class="QFormLayout" name="formLayout_3">
-     <item row="0" column="0">
-      <widget class="QPushButton" name="okButton">
-       <property name="text">
-        <string>OK</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QPushButton" name="cancelButton">
-       <property name="text">
-        <string>Cancel</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </widget>
+   <property name="standardButtons">
+    <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+   </property>
   </widget>
-  <widget class="QWidget" name="lineTab">
-   <attribute name="title">
-    <string>Lines</string>
-   </attribute>
-   <widget class="QWidget" name="gridLayoutWidget_2">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>10</y>
-      <width>371</width>
-      <height>251</height>
-     </rect>
-    </property>
-    <layout class="QGridLayout" name="gridLayout_2">
-     <item row="3" column="0">
-      <widget class="QCheckBox" name="overlapBox_5">
-       <property name="text">
-        <string>must not overlap</string>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="0">
-      <widget class="QCheckBox" name="overlapBox_6">
-       <property name="text">
-        <string>dangling endpoint</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <widget class="QCheckBox" name="overlapBox_7">
-       <property name="text">
-        <string>lines larger than tolerance</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="0">
-      <widget class="QCheckBox" name="overlapBox_8">
-       <property name="text">
-        <string>must not intersect</string>
-       </property>
-      </widget>
-     </item>
-     <item row="6" column="0">
-      <widget class="QCheckBox" name="overlapBox_9">
-       <property name="text">
-        <string>covered by polygon boundary</string>
-       </property>
-      </widget>
-     </item>
-     <item row="7" column="0">
-      <widget class="QCheckBox" name="overlapBox_10">
-       <property name="text">
-        <string>self-intersect</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="0">
-      <widget class="QCheckBox" name="overlapBox_12">
-       <property name="text">
-        <string>must touch other line</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
+  <widget class="QTabWidget" name="tabWidget">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>391</width>
+     <height>291</height>
+    </rect>
+   </property>
+   <property name="currentIndex">
+    <number>3</number>
+   </property>
+   <widget class="QWidget" name="Points">
+    <attribute name="title">
+     <string>Points</string>
+    </attribute>
+    <widget class="QWidget" name="gridLayoutWidget">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>0</y>
+       <width>371</width>
+       <height>151</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="3" column="0">
+       <widget class="QCheckBox" name="overlapBox">
+        <property name="text">
+         <string>covered by line</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QCheckBox" name="overlapBox_3">
+        <property name="text">
+         <string>covered by endpoint</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QCheckBox" name="overlapBox_4">
+        <property name="text">
+         <string>inside polygon</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QCheckBox" name="overlapBox_2">
+        <property name="text">
+         <string>covered by polygon boundary</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
    </widget>
-   <widget class="QWidget" name="formLayoutWidget">
-    <property name="geometry">
-     <rect>
-      <x>130</x>
-      <y>270</y>
-      <width>190</width>
-      <height>34</height>
-     </rect>
-    </property>
-    <layout class="QFormLayout" name="formLayout">
-     <item row="0" column="1">
-      <widget class="QPushButton" name="pushButton_2">
-       <property name="text">
-        <string>Cancel</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="0">
-      <widget class="QPushButton" name="pushButton">
-       <property name="text">
-        <string>OK</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
+   <widget class="QWidget" name="Lines">
+    <attribute name="title">
+     <string>Lines</string>
+    </attribute>
+    <widget class="QWidget" name="gridLayoutWidget_2">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>0</y>
+       <width>371</width>
+       <height>251</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="3" column="0">
+       <widget class="QCheckBox" name="overlapBox_5">
+        <property name="text">
+         <string>must not overlap</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QCheckBox" name="overlapBox_6">
+        <property name="text">
+         <string>dangling endpoint</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QCheckBox" name="overlapBox_7">
+        <property name="text">
+         <string>lines larger than tolerance</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QCheckBox" name="overlapBox_8">
+        <property name="text">
+         <string>must not intersect</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0">
+       <widget class="QCheckBox" name="overlapBox_9">
+        <property name="text">
+         <string>covered by polygon boundary</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0">
+       <widget class="QCheckBox" name="overlapBox_10">
+        <property name="text">
+         <string>self-intersect</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QCheckBox" name="overlapBox_12">
+        <property name="text">
+         <string>must touch other line</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
    </widget>
-  </widget>
-  <widget class="QWidget" name="polygonTab">
-   <attribute name="title">
-    <string>Polygons</string>
-   </attribute>
-   <widget class="QWidget" name="gridLayoutWidget_3">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>10</y>
-      <width>371</width>
-      <height>151</height>
-     </rect>
-    </property>
-    <layout class="QGridLayout" name="gridLayout_3">
-     <item row="1" column="0">
-      <widget class="QCheckBox" name="overlapBox_13">
-       <property name="text">
-        <string>lines larger than tolerance</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="0">
-      <widget class="QCheckBox" name="overlapBox_15">
-       <property name="text">
-        <string>contains point</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="0">
-      <widget class="QCheckBox" name="overlapBox_16">
-       <property name="text">
-        <string>must not selfintersect</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="0">
-      <widget class="QCheckBox" name="overlapBox_11">
-       <property name="text">
-        <string>must not overlap</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
+   <widget class="QWidget" name="Polygons">
+    <attribute name="title">
+     <string>Polygons</string>
+    </attribute>
+    <widget class="QWidget" name="gridLayoutWidget_3">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>0</y>
+       <width>371</width>
+       <height>151</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_3">
+      <item row="1" column="0">
+       <widget class="QCheckBox" name="overlapBox_13">
+        <property name="text">
+         <string>lines larger than tolerance</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QCheckBox" name="overlapBox_15">
+        <property name="text">
+         <string>contains point</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QCheckBox" name="overlapBox_16">
+        <property name="text">
+         <string>must not selfintersect</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QCheckBox" name="overlapBox_11">
+        <property name="text">
+         <string>must not overlap</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
    </widget>
-   <widget class="QWidget" name="formLayoutWidget_2">
-    <property name="geometry">
-     <rect>
-      <x>130</x>
-      <y>270</y>
-      <width>157</width>
-      <height>34</height>
-     </rect>
-    </property>
-    <layout class="QFormLayout" name="formLayout_2">
-     <item row="0" column="0">
-      <widget class="QPushButton" name="pushButton_3">
-       <property name="text">
-        <string>OK</string>
-       </property>
-      </widget>
+   <widget class="QWidget" name="Tolerance">
+    <attribute name="title">
+     <string>Tolerance</string>
+    </attribute>
+    <widget class="QSpinBox" name="spinBox">
+     <property name="geometry">
+      <rect>
+       <x>320</x>
+       <y>0</y>
+       <width>66</width>
+       <height>27</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>10</y>
+       <width>221</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Minimum segment length</string>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="comboBox">
+     <property name="geometry">
+      <rect>
+       <x>240</x>
+       <y>210</y>
+       <width>111</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <item>
+      <property name="text">
+       <string>Map Units</string>
+      </property>
      </item>
-     <item row="0" column="1">
-      <widget class="QPushButton" name="pushButton_4">
-       <property name="text">
-        <string>Cancel</string>
-       </property>
-      </widget>
+     <item>
+      <property name="text">
+       <string>Pixels</string>
+      </property>
      </item>
-    </layout>
+    </widget>
+    <widget class="QLabel" name="label_2">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>210</y>
+       <width>121</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Values are in</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_3">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>50</y>
+       <width>261</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Geometries distance tolerance</string>
+     </property>
+    </widget>
+    <widget class="QSpinBox" name="spinBox_2">
+     <property name="geometry">
+      <rect>
+       <x>320</x>
+       <y>40</y>
+       <width>66</width>
+       <height>27</height>
+      </rect>
+     </property>
+    </widget>
    </widget>
   </widget>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>Dialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>248</x>
+     <y>254</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>157</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>Dialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>316</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>286</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

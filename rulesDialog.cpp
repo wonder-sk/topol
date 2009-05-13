@@ -15,7 +15,7 @@
 #include "../../app/qgisapp.h"
 
 rulesDialog::rulesDialog(const QString &tableName, QgsVectorLayer *theLayer, QWidget *parent)
-: QTabWidget(parent), Ui::rulesDialog()
+: QDialog(parent), Ui::rulesDialog()
 {
   setupUi(this);
   mLayer = theLayer;
