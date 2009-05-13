@@ -33,6 +33,11 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, rulesDi
   mValidateAllButton->setIcon(QIcon(":/topol_c/topol.png"));
   mConfigureButton->setIcon(QIcon(":/topol_c/topol.png"));
   mRubberBand = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
+  rub1 = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
+  rub2 = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
+  rub1->setColor("blue");
+  rub2->setColor("red");
+  mRubberBand->setColor("green");
 
   connect(mConfigureButton, SIGNAL(clicked()), this, SLOT(configure()));
   connect(mValidateAllButton, SIGNAL(clicked()), this, SLOT(validateAll()));
@@ -64,6 +69,17 @@ void checkDock::errorListClicked(const QModelIndex& index)
   mFixBox->clear();
   mFixBox->addItem("Select automatic fix");
   mFixBox->addItems(mErrorList[row]->fixNames());
+
+  QgsFeature f;
+  QgsGeometry* g;
+  mLayer->featureAtId(mErrorList[row]->fids().values().first(), f, true, false);
+  g = f.geometry();
+  rub1->setToGeometry(g, mLayer);
+
+  mLayer->featureAtId(mErrorList[row]->fids().values()[1], f, true, false);
+  g = f.geometry();
+  rub2->setToGeometry(g, mLayer);
+
   mRubberBand->setToGeometry(mErrorList[row]->conflict(), mLayer);
 }
 
@@ -74,6 +90,10 @@ void checkDock::fix()
 
   if (row == -1)
     return;
+
+  rub1->reset();
+  rub2->reset();
+  mRubberBand->reset();
 
   if (mErrorList[row]->fix(fixName))
   {

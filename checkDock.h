@@ -34,6 +34,8 @@ private:
   QgsVectorLayer *mLayer;
   rulesDialog* mConfigureDialog;
   QgsRubberBand* mRubberBand;
+  QgsRubberBand* rub1;
+  QgsRubberBand* rub2;
   QgisApp* mQgisApp;
 
   QMap<int, QgsFeature> mFeatureMap;

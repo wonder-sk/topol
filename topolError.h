@@ -39,6 +39,7 @@ public:
   virtual QString name() { return mName; }
   virtual QgsGeometry* conflict() { return mConflict; }
   virtual QgsRectangle boundingBox() { return mBoundingBox; }
+  virtual QgsFeatureIds fids() { return mFids; }
   virtual QStringList fixNames() { return mFixMap.keys(); }
 };
 

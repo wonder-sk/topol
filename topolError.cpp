@@ -101,7 +101,7 @@ bool TopolError::fixUnionSecond()
 
 bool TopolError::fixDeleteFirst()
 {
-//TODO: skip errors associated with deleted feature
+//TODO: skips errors associated with deleted feature
   return mLayer->deleteFeature(mFids.values().first());
 }
 
@@ -115,12 +115,12 @@ TopolErrorIntersection::TopolErrorIntersection(QgsVectorLayer* theLayer, QgsRect
   mName = "Intersecting geometries";
 
   mFixMap["Select automatic fix"] = &TopolErrorIntersection::fixDummy;
-  mFixMap["Move first feature"] = &TopolErrorIntersection::fixMoveFirst;
-  mFixMap["Move second feature"] = &TopolErrorIntersection::fixMoveSecond;
-  mFixMap["Union to first feature"] = &TopolErrorIntersection::fixUnionFirst;
-  mFixMap["Union to second feature"] = &TopolErrorIntersection::fixUnionSecond;
-  mFixMap["Delete first feature"] = &TopolErrorIntersection::fixDeleteFirst;
-  mFixMap["Delete second feature"] = &TopolErrorIntersection::fixDeleteSecond;
+  mFixMap["Move blue feature"] = &TopolErrorIntersection::fixMoveFirst;
+  mFixMap["Move red feature"] = &TopolErrorIntersection::fixMoveSecond;
+  mFixMap["Union to blue feature"] = &TopolErrorIntersection::fixUnionFirst;
+  mFixMap["Union to red feature"] = &TopolErrorIntersection::fixUnionSecond;
+  mFixMap["Delete blue feature"] = &TopolErrorIntersection::fixDeleteFirst;
+  mFixMap["Delete red feature"] = &TopolErrorIntersection::fixDeleteSecond;
 }
 
 TopolErrorDangle::TopolErrorDangle(QgsVectorLayer* theLayer, QgsRectangle theBoundingBox, QgsGeometry* theConflict, QgsFeatureIds theFids) : TopolError(theLayer, theBoundingBox, theConflict, theFids)
@@ -128,7 +128,7 @@ TopolErrorDangle::TopolErrorDangle(QgsVectorLayer* theLayer, QgsRectangle theBou
   mName = "Dangling endpoint";
 
   mFixMap["Select automatic fix"] = &TopolErrorDangle::fixDummy;
-  mFixMap["Move first feature"] = &TopolErrorDangle::fixMoveFirst;
-  mFixMap["Move second feature"] = &TopolErrorDangle::fixMoveSecond;
-  mFixMap["Union to first feature"] = &TopolErrorDangle::fixSnap;
+  mFixMap["Move blue feature"] = &TopolErrorDangle::fixMoveFirst;
+  mFixMap["Move red feature"] = &TopolErrorDangle::fixMoveSecond;
+  mFixMap["Snap to segment"] = &TopolErrorDangle::fixSnap;
 }
