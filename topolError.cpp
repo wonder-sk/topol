@@ -1,7 +1,6 @@
 #include "topolError.h"
-#include "../../core/geometry_v2/qgsgeometryv2.h"
-#include "../../core/geometry_v2/qgsg2linestring.h"
 
+//TODO: fix crashing when no layer under
 bool TopolError::fix(QString fixName)
 {
 std::cout << "fix: \""<<fixName.toStdString()<<"\"\n";
@@ -68,17 +67,12 @@ bool TopolError::fixSnap()
   //snapToGeometry(point, geom, squaredTolerance, QMultiMap<double, QgsSnappingResult>, SnapToVertexAndSegment);
 
   QgsGeometry* ge = f1.geometry();
-  QgsGeometryV2 *gv2 = QgsGeometryV2::importFromOldGeometry(ge);
 
-  LineString ls = ((QgsG2LineString*)gv2)->lineString();
-  std::cout << "last: "<<ls.last();
-  ls.last() = mConflict->asPolyline().last();
-  std::cout << "last: "<<ls.last();
-  //TODO: fix crashing when no layer under
-  ((QgsG2LineString*)gv2)->setLineString(ls);
-  ge = gv2->exportToOldGeometry();
+  QgsPolyline line = ge->asPolyline();
+  line.last() = mConflict->asPolyline().last();
 
-  return mLayer->changeGeometry(f1.id(), ge);
+  //TODO: this will cause memory leaks
+  return mLayer->changeGeometry(f1.id(), QgsGeometry::fromPolyline(line));
 }
 
 bool TopolError::fixUnionFirst()

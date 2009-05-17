@@ -18,8 +18,6 @@
 
 #include "rulesDialog.h"
 #include "../../app/qgisapp.h"
-#include "../../core/geometry_v2/qgsgeometryv2.h"
-#include "../../core/geometry_v2/qgsg2linestring.h"
 
 //TODO: fix crashing when no layer under
 checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, rulesDialog* theConfigureDialog, QWidget* parent)
@@ -115,16 +113,13 @@ void checkDock::fix()
 QgsGeometry* checkEndpoints(QgsGeometry* g1, QgsGeometry* g2)
 {
 	//TODO:MultiLines
-  QgsGeometryV2* g1v2 = QgsGeometryV2::importFromOldGeometry(g1);
-  QgsGeometryV2* g2v2 = QgsGeometryV2::importFromOldGeometry(g2);
-
-  if (!g1v2 || !g2v2)
+  if (!g1 || !g2)
     return 0;
 
-  if (g1v2->type() != GeomLineString || g2v2->type() != GeomLineString)
+  if (g1->type() != QGis::Line || g2->type() != QGis::Line)
     return 0;
 
-  QgsPoint endPoint = ((QgsG2LineString*)g1v2)->lineString().last();
+  QgsPoint endPoint = g1->asPolyline().last();
   QgsGeometry *g = QgsGeometry::fromPoint(endPoint);
   if (g2->distance(*g) < 0.1)
   {
@@ -133,7 +128,7 @@ QgsGeometry* checkEndpoints(QgsGeometry* g1, QgsGeometry* g2)
     g2->closestSegmentWithContext(endPoint, minDistPoint, before);
     delete g;
     
-    LineString ls;
+    QgsPolyline ls;
     ls << endPoint << minDistPoint;
     g = QgsGeometry::fromPolyline(ls);
     return g;
