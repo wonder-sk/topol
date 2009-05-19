@@ -230,39 +230,6 @@
       <string>Minimum segment length</string>
      </property>
     </widget>
-    <widget class="QComboBox" name="comboBox">
-     <property name="geometry">
-      <rect>
-       <x>240</x>
-       <y>210</y>
-       <width>111</width>
-       <height>27</height>
-      </rect>
-     </property>
-     <item>
-      <property name="text">
-       <string>Map Units</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>Pixels</string>
-      </property>
-     </item>
-    </widget>
-    <widget class="QLabel" name="label_2">
-     <property name="geometry">
-      <rect>
-       <x>20</x>
-       <y>210</y>
-       <width>121</width>
-       <height>22</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Values are in</string>
-     </property>
-    </widget>
     <widget class="QLabel" name="label_3">
      <property name="geometry">
       <rect>

@@ -32,12 +32,17 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, rulesDi
   mValidateAllButton->setIcon(QIcon(":/topol_c/topol.png"));
   mConfigureButton->setIcon(QIcon(":/topol_c/topol.png"));
 
-  mRubberBand = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
   rub1 = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
   rub2 = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
+  mRubberBand = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
+
   rub1->setColor("blue");
   rub2->setColor("red");
   mRubberBand->setColor("gold");
+
+  rub1->setWidth(3);
+  rub2->setWidth(3);
+  mRubberBand->setWidth(3);
 
   connect(mConfigureButton, SIGNAL(clicked()), this, SLOT(configure()));
   connect(mValidateAllButton, SIGNAL(clicked()), this, SLOT(validateAll()));
@@ -49,6 +54,8 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, rulesDi
 checkDock::~checkDock()
 {
   delete mRubberBand;
+  delete rub1;
+  delete rub2;
 
   QList<TopolError*>::Iterator it = mErrorList.begin();
   for (; it != mErrorList.end(); ++it)
@@ -100,14 +107,10 @@ void checkDock::fix()
     mErrorList.removeAt(row);
     delete mErrorListView->takeItem(row);
     mComment->setText(QString("%1 errors were found").arg(mErrorListView->count()));
-    mRubberBand->reset();
-    rub1->reset();
-    rub2->reset();
     mLayer->triggerRepaint();
   }
   else
     QMessageBox::information(this, "Topology fix error", "Fixing failed!");
-    //mComment->setText("Error not fixed!");
 }
 
 QgsGeometry* checkEndpoints(QgsGeometry* g1, QgsGeometry* g2)
@@ -140,9 +143,9 @@ QgsGeometry* checkEndpoints(QgsGeometry* g1, QgsGeometry* g2)
 
 void checkDock::checkDanglingEndpoints()
 {
-  QMap<int, QgsFeature>::Iterator it, jit;
-  for (it = mFeatureMap.begin(); it != mFeatureMap.end(); ++it)
-    for (jit = mFeatureMap.begin(); jit != mFeatureMap.end(); ++jit)
+  /*QMap<int, QgsFeature>::Iterator it, jit;
+  for (it = mFeatureList.begin(); it != mFeatureList.end(); ++it)
+    for (jit = mFeatureList.begin(); jit != mFeatureList.end(); ++jit)
     {
       if (it.key() >= jit.key())
         continue;
@@ -179,20 +182,20 @@ void checkDock::checkDanglingEndpoints()
 	  }
 	}
       }
-    }
+    } */
 }
 
 void checkDock::checkIntersections()
 {
-  QMap<int, QgsFeature>::Iterator it, jit;
-  for (it = mFeatureMap.begin(); it != mFeatureMap.end(); ++it)
-    for (jit = mFeatureMap.begin(); jit != mFeatureMap.end(); ++jit)
+  QList<FeatureLayer>::Iterator it, jit;
+  for (it = mFeatureList.begin(); it != mFeatureList.end(); ++it)
+    for (jit = mFeatureList.begin(); jit != mFeatureList.end(); ++jit)
     {
-      if (it.key() >= jit.key())
+      if (it->feature.id() >= jit->feature.id())
         continue;
 
-      QgsGeometry* g1 = it.value().geometry();
-      QgsGeometry* g2 = jit.value().geometry();
+      QgsGeometry* g1 = it->feature.geometry();
+      QgsGeometry* g2 = jit->feature.geometry();
 
       if (g1->intersects(g2))
       {
@@ -204,11 +207,11 @@ void checkDock::checkIntersections()
 	  c = new QgsGeometry;
 
 	QgsFeatureIds fids;
-	fids << it.key() << jit.key();
-	TopolErrorIntersection* err = new TopolErrorIntersection(mLayer, r, c, fids);
+	fids << it->feature.id() << jit->feature.id();
+	TopolErrorIntersection* err = new TopolErrorIntersection(it->layer, r, c, fids);
 
 	mErrorList << err;
-        mErrorListView->addItem(err->name() + QString(" %1 %2").arg(it.key()).arg(jit.key()));
+        mErrorListView->addItem(err->name() + QString(" %1 %2").arg(it->feature.id()).arg(jit->feature.id()));
       }
     }
 }
@@ -242,20 +245,25 @@ void checkDock::checkSelfIntersections()
 void checkDock::validate(QgsRectangle rect)
 {
   mErrorListView->clear();
-  mFeatureMap.clear();
-  //mLayer = QgisApp::instance()->activeLayer();
+  mFeatureList.clear();
   mLayer->select(QgsAttributeList(), rect);
 
+  QgsMapLayerRegistry *reg = QgsMapLayerRegistry::instance();
+  QList<QgsMapLayer *> layerList = reg->mapLayers().values();
+  QList<QgsMapLayer *>::ConstIterator it = layerList.begin();
   QgsFeature f;
-  while (mLayer->nextFeature(f))
-  {
-    if (f.geometry())
-      mFeatureMap[f.id()] = f;
-  }
+
+  //TODO:ids will clash
+  for (; it != layerList.end(); ++it)
+    while (((QgsVectorLayer*)(*it))->nextFeature(f))
+    {
+      if (f.geometry())
+        mFeatureList << FeatureLayer((QgsVectorLayer*)*it, f);
+    }
 
   checkIntersections();
-  checkSelfIntersections();
-  checkDanglingEndpoints();
+  //checkSelfIntersections();
+  //checkDanglingEndpoints();
 
   /* TODO: doesn't work yet
   QgsRectangle zoom;
