@@ -65,7 +65,7 @@
       <item row="4" column="0">
        <widget class="QCheckBox" name="overlapBox_3">
         <property name="text">
-         <string>covered by endpoint</string>
+         <string>covered by line endpoint</string>
         </property>
        </widget>
       </item>

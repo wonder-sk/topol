@@ -1,6 +1,7 @@
 #include "topolError.h"
 
 //TODO: fix crashing when no layer under
+// fix crashing when feature is deleted
 bool TopolError::fix(QString fixName)
 {
   std::cout << "fix: \""<<fixName.toStdString()<<"\"\n";
@@ -36,7 +37,6 @@ bool TopolError::fixMoveSecond()
 
 bool TopolError::fixUnion(FeatureLayer fl1, FeatureLayer fl2)
 {
-//TODO test
   bool ok;
   QgsFeature f1, f2;
   ok = fl1.layer->featureAtId(fl1.feature.id(), f1, true, false);
@@ -88,14 +88,14 @@ bool TopolError::fixUnionSecond()
 
 bool TopolError::fixDeleteFirst()
 {
-//TODO: need to update error list - deleted feature could be involved in many errors!
-  FeatureLayer fl = mFeaturePairs[1];
+  FeatureLayer fl = mFeaturePairs.first();
   return fl.layer->deleteFeature(fl.feature.id());
 }
 
 bool TopolError::fixDeleteSecond()
 {
-  FeatureLayer fl = mFeaturePairs.first();
+//TODO: need to update error list - deleted feature could be involved in many errors!
+  FeatureLayer fl = mFeaturePairs[1];
   return fl.layer->deleteFeature(fl.feature.id());
 }
 
@@ -125,4 +125,18 @@ TopolErrorDangle::TopolErrorDangle(QgsRectangle theBoundingBox, QgsGeometry* the
   mFixMap["Move blue feature"] = &TopolErrorDangle::fixMoveFirst;
   mFixMap["Move red feature"] = &TopolErrorDangle::fixMoveSecond;
   mFixMap["Snap to segment"] = &TopolErrorDangle::fixSnap;
+}
+
+TopolErrorContains::TopolErrorContains(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : TopolError(theBoundingBox, theConflict, theFeaturePairs)
+{
+  mName = "Point in polygon";
+  mFixMap["Select automatic fix"] = &TopolErrorContains::fixDummy;
+  mFixMap["Delete point"] = &TopolErrorContains::fixDeleteSecond;
+}
+
+TopolErrorCovered::TopolErrorCovered(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : TopolError(theBoundingBox, theConflict, theFeaturePairs)
+{
+  mName = "Point not covered by segment";
+  mFixMap["Select automatic fix"] = &TopolErrorCovered::fixDummy;
+  mFixMap["Delete point"] = &TopolErrorCovered::fixDeleteFirst;
 }

@@ -17,9 +17,9 @@
 #include <qgslogger.h>
 
 #include "rulesDialog.h"
+#include "geosFunctions.h"
 #include "../../app/qgisapp.h"
 
-//TODO: fix crashing when no layer under
 checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, rulesDialog* theConfigureDialog, QWidget* parent)
 : QDockWidget(parent), Ui::checkDock()
 {
@@ -147,12 +147,14 @@ void checkDock::checkDanglingEndpoints()
 {
   QList<FeatureLayer>::Iterator it, jit;
   for (it = mFeatureList.begin(); it != mFeatureList.end(); ++it)
+  {
+    QgsGeometry* g1 = it->feature.geometry();
+
     for (jit = mFeatureList.begin(); jit != mFeatureList.end(); ++jit)
     {
       if (it->feature.id() >= jit->feature.id())
         continue;
 
-      QgsGeometry* g1 = it->feature.geometry();
       QgsGeometry* g2 = jit->feature.geometry();
 
       //TODO: read from settings
@@ -183,26 +185,29 @@ void checkDock::checkDanglingEndpoints()
 	  }
 
 	  mErrorList << err;
-          mErrorListView->addItem(err->name());
-          //mErrorListView->addItem(err->name() + QString(" %1 %2").arg(it->feature.id()).arg(jit->feature.id()));
+	  // TODO: ids from different layers can be same
+	  // write id and layer name instead?
+          mErrorListView->addItem(err->name() + QString(" %1 %2").arg(it->feature.id()).arg(jit->feature.id()));
 	}
       }
     }
+  }
 }
 
 void checkDock::checkIntersections()
 {
   QList<FeatureLayer>::Iterator it, jit;
   for (it = mFeatureList.begin(); it != mFeatureList.end(); ++it)
+  {
+    QgsGeometry* g1 = it->feature.geometry();
+
     for (jit = mFeatureList.begin(); jit != mFeatureList.end(); ++jit)
     {
 	    //TODO: ids could be same in different layers
       if (it->feature.id() >= jit->feature.id())
         continue;
 
-      QgsGeometry* g1 = it->feature.geometry();
       QgsGeometry* g2 = jit->feature.geometry();
-
       if (g1->intersects(g2))
       {
         QgsRectangle r = g1->boundingBox();
@@ -220,32 +225,79 @@ void checkDock::checkIntersections()
         mErrorListView->addItem(err->name() + QString(" %1 %2").arg(it->feature.id()).arg(jit->feature.id()));
       }
     }
+  }
+}
+
+void checkDock::checkPointInsidePolygon()
+{
+  QList<FeatureLayer>::Iterator it, jit;
+  for (it = mFeatureList.begin(); it != mFeatureList.end(); ++it)
+  {
+    QgsGeometry* g1 = it->feature.geometry();
+    if (g1->type() != QGis::Polygon)
+      continue;
+
+    for (jit = mFeatureList.begin(); jit != mFeatureList.end(); ++jit)
+    {
+      QgsGeometry* g2 = jit->feature.geometry();
+
+      if (g2->type() != QGis::Point)
+        continue;
+
+      QgsPoint pt  = g2->asPoint();
+      if (g1->contains(&pt))
+      {
+	QList<FeatureLayer> fls;
+	fls << *it << *jit;
+	TopolErrorContains* err = new TopolErrorContains(g1->boundingBox(), g2, fls);
+
+	mErrorList << err;
+        mErrorListView->addItem(err->name() + QString(" %1 %2").arg(it->feature.id()).arg(jit->feature.id()));
+      }
+    }
+  }
+}
+
+void checkDock::checkPointCoveredBySegment()
+{
+  QList<FeatureLayer>::Iterator it, jit;
+  for (it = mFeatureList.begin(); it != mFeatureList.end(); ++it)
+  {
+    bool touched = false;
+    QgsGeometry* g1 = it->feature.geometry();
+
+    if (g1->type() != QGis::Point)
+      continue;
+
+    for (jit = mFeatureList.begin(); jit != mFeatureList.end(); ++jit)
+    {
+      QgsGeometry* g2 = jit->feature.geometry();
+
+      if (g2->type() == QGis::Point)
+        continue;
+
+      // test if point touches other geometry
+      if (touches(g1, g2))
+      {
+	touched = true;
+	break;
+      }
+    }
+
+    if (!touched)
+    {
+      QList<FeatureLayer> fls;
+      fls << *it << *it;
+      TopolErrorCovered* err = new TopolErrorCovered(g1->boundingBox(), g1, fls);
+
+      mErrorList << err;
+      mErrorListView->addItem(err->name() + QString(" %1").arg(it->feature.id()));
+    }
+  }
 }
 
 void checkDock::checkSelfIntersections()
 {
-  /*QList<TopolError>::Iterator it = mErrorList.begin();
-  QList<TopolError>::Iterator end_it = mErrorList.end();
-  QSet<TopolError> set;
-  QList<TopolError> tempList;
-
-  for (; it != end_it; ++it)
-  {
-    //set = it->fids.toSet();
-    //if (set.size() < it->fids.size())
-    if (it->fids.size() == 1)
-    {
-      tempList << TopolError();
-      tempList.last().boundingBox = it->boundingBox;
-      tempList.last().fids << it->fids;
-
-      tempList.last().conflict = it->conflict;
-      mErrorListView->addItem(mErrorNameMap[TopolSelfIntersection]);
-    }
-  }
-
-  mErrorList << tempList;
-  */
 }
 
 void checkDock::validate(QgsRectangle rect)
@@ -267,18 +319,10 @@ void checkDock::validate(QgsRectangle rect)
   }
 
   checkIntersections();
-  //checkSelfIntersections();
+  checkPointInsidePolygon();
   checkDanglingEndpoints();
-
-  /* TODO: doesn't work yet
-  QgsRectangle zoom;
-  ErrorList::ConstIterator it = mErrorList.begin();
-  for (; it != mErrorList.end(); ++it)
-    zoom.combineExtentWith(&(*it)->boundingBox());
-
-  std::cout << "zoom:"<<zoom;
-  mQgisApp->mapCanvas()->setExtent(zoom);
-  */
+  checkPointCoveredBySegment();
+  //checkSelfIntersections();
 
   mComment->setText(QString("%1 errors were found").arg(mErrorListView->count()));
   rub1->reset();

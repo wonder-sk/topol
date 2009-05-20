@@ -71,4 +71,16 @@ public:
   TopolErrorDangle(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs);
 };
 
+class TopolErrorContains : public TopolError
+{
+public:
+  TopolErrorContains(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs);
+};
+
+class TopolErrorCovered : public TopolError
+{
+public:
+  TopolErrorCovered(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs);
+};
+
 #endif
