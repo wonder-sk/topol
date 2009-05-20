@@ -41,8 +41,9 @@ protected:
   bool fixDeleteSecond();
 
   //helper fix functions
-  bool fixMove(int id1, int id2);
-  bool fixUnion(int id1, int id2);
+  bool fixMove(FeatureLayer fl1, FeatureLayer fl2);
+  bool fixUnion(FeatureLayer fl1, FeatureLayer fl2);
+  //bool fixUnion(int id1, int id2);
 
 public:
   //TopolError(QgsVectorLayer* theLayer, QgsRectangle theBoundingBox, QgsGeometry* theConflict, QgsFeatureIds theFids) : mLayer(theLayer), mBoundingBox(theBoundingBox), mConflict(theConflict), mFids(theFids) {};

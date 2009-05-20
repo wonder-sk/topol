@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>rulesDialog</class>
- <widget class="QDialog" name="Dialog">
+ <widget class="QDialog" name="rulesDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -39,7 +39,7 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>3</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="Points">
     <attribute name="title">
@@ -100,17 +100,10 @@
       </rect>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
-      <item row="3" column="0">
-       <widget class="QCheckBox" name="overlapBox_5">
-        <property name="text">
-         <string>must not overlap</string>
-        </property>
-       </widget>
-      </item>
       <item row="5" column="0">
        <widget class="QCheckBox" name="overlapBox_6">
         <property name="text">
-         <string>dangling endpoint</string>
+         <string>dangling endpoints</string>
         </property>
         <property name="checked">
          <bool>true</bool>
@@ -120,7 +113,7 @@
       <item row="1" column="0">
        <widget class="QCheckBox" name="overlapBox_7">
         <property name="text">
-         <string>lines larger than tolerance</string>
+         <string>segments larger than tolerance</string>
         </property>
        </widget>
       </item>
@@ -141,17 +134,17 @@
         </property>
        </widget>
       </item>
-      <item row="7" column="0">
-       <widget class="QCheckBox" name="overlapBox_10">
-        <property name="text">
-         <string>self-intersect</string>
-        </property>
-       </widget>
-      </item>
       <item row="4" column="0">
        <widget class="QCheckBox" name="overlapBox_12">
         <property name="text">
-         <string>must touch other line</string>
+         <string>unconnected lines</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QCheckBox" name="overlapBox_10">
+        <property name="text">
+         <string>must not self intersect</string>
         </property>
        </widget>
       </item>
@@ -257,38 +250,5 @@
   </widget>
  </widget>
  <resources/>
- <connections>
-  <connection>
-   <sender>buttonBox</sender>
-   <signal>accepted()</signal>
-   <receiver>Dialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>248</x>
-     <y>254</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>157</x>
-     <y>274</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>buttonBox</sender>
-   <signal>rejected()</signal>
-   <receiver>Dialog</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>316</x>
-     <y>260</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>286</x>
-     <y>274</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

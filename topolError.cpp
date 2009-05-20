@@ -3,45 +3,44 @@
 //TODO: fix crashing when no layer under
 bool TopolError::fix(QString fixName)
 {
-std::cout << "fix: \""<<fixName.toStdString()<<"\"\n";
+  std::cout << "fix: \""<<fixName.toStdString()<<"\"\n";
   (this->*mFixMap[fixName])();
 }
 
-bool TopolError::fixMove(int id1, int id2)
-{/*
+bool TopolError::fixMove(FeatureLayer fl1, FeatureLayer fl2)
+{
   bool ok;
   QgsFeature f1, f2;
-  ok = mLayer->featureAtId(id1, f1, true, false);
-  ok = ok && mLayer->featureAtId(id2, f2, true, false);
+  ok = fl1.layer->featureAtId(fl1.feature.id(), f1, true, false);
+  ok = ok && fl2.layer->featureAtId(fl2.feature.id(), f2, true, false);
 
   if (!ok)
     return false;
 
   // 0 means success
   if(!f1.geometry()->makeDifference(f2.geometry()))
-    return mLayer->changeGeometry(f1.id(), f1.geometry());
-*/
+    return fl1.layer->changeGeometry(f1.id(), f1.geometry());
+
   return false;
 }
 
 bool TopolError::fixMoveFirst()
 {
-  //return fixMove(mFids.values().first(), mFids.values()[1]);
-  return false;
+  return fixMove(mFeaturePairs.first(), mFeaturePairs[1]);
 }
 
 bool TopolError::fixMoveSecond()
 {
-  //return fixMove(mFids.values()[1], mFids.values().first());
-  return false;
+  return fixMove(mFeaturePairs[1], mFeaturePairs.first());
 }
 
-bool TopolError::fixUnion(int id1, int id2)
-{/*
+bool TopolError::fixUnion(FeatureLayer fl1, FeatureLayer fl2)
+{
+//TODO test
   bool ok;
   QgsFeature f1, f2;
-  ok = mLayer->featureAtId(id1, f1, true, false);
-  ok = ok && mLayer->featureAtId(id2, f2, true, false);
+  ok = fl1.layer->featureAtId(fl1.feature.id(), f1, true, false);
+  ok = ok && fl2.layer->featureAtId(fl2.feature.id(), f2, true, false);
 
   if (!ok)
     return false;
@@ -50,45 +49,41 @@ bool TopolError::fixUnion(int id1, int id2)
   if (!g)
     return false;
 
-  if (mLayer->deleteFeature(f2.id()))
-    return mLayer->changeGeometry(f1.id(), g);
-*/
+  if (fl2.layer->deleteFeature(f2.id()))
+    return fl1.layer->changeGeometry(f1.id(), g);
+
   return false;
 }
 
 bool TopolError::fixSnap()
-{/*
+{
   bool ok;
   QgsFeature f1, f2;
-  ok = mLayer->featureAtId(mFids.values().first(), f1, true, false);
-  ok = ok && mLayer->featureAtId(mFids.values()[1], f2, true, false);
+  FeatureLayer fl = mFeaturePairs[1];
+  ok = fl.layer->featureAtId(fl.feature.id(), f2, true, false);
+  fl = mFeaturePairs.first();
+  ok = ok && fl.layer->featureAtId(fl.feature.id(), f1, true, false);
 
   if (!ok)
     return false;
-
-  //snapToGeometry(point, geom, squaredTolerance, QMultiMap<double, QgsSnappingResult>, SnapToVertexAndSegment);
 
   QgsGeometry* ge = f1.geometry();
 
   QgsPolyline line = ge->asPolyline();
   line.last() = mConflict->asPolyline().last();
 
-  //TODO: this will cause memory leaks
-  return mLayer->changeGeometry(f1.id(), QgsGeometry::fromPolyline(line));
-  */
-  return false;
+  //TODO: this will cause memory leaks - creates new QgsGeometry object
+  return fl.layer->changeGeometry(f1.id(), QgsGeometry::fromPolyline(line));
 }
 
 bool TopolError::fixUnionFirst()
 {
-  //return fixUnion(mFids.values().first(), mFids.values()[1]);
-  return false;
+  return fixUnion(mFeaturePairs.first(), mFeaturePairs[1]);
 }
 
 bool TopolError::fixUnionSecond()
 {
-  //return fixUnion(mFids.values()[1], mFids.values().first());
-  return false;
+  return fixUnion(mFeaturePairs[1], mFeaturePairs.first());
 }
 
 bool TopolError::fixDeleteFirst()
@@ -104,7 +99,6 @@ bool TopolError::fixDeleteSecond()
   return fl.layer->deleteFeature(fl.feature.id());
 }
 
-//TopolErrorIntersection::TopolErrorIntersection(QgsVectorLayer* theLayer, QgsRectangle theBoundingBox, QgsGeometry* theConflict, QgsFeatureIds theFids) : TopolError(theLayer, theBoundingBox, theConflict, theFids)
 TopolErrorIntersection::TopolErrorIntersection(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : TopolError(theBoundingBox, theConflict, theFeaturePairs)
 {
   mName = "Intersecting geometries";
@@ -112,13 +106,17 @@ TopolErrorIntersection::TopolErrorIntersection(QgsRectangle theBoundingBox, QgsG
   mFixMap["Select automatic fix"] = &TopolErrorIntersection::fixDummy;
   mFixMap["Move blue feature"] = &TopolErrorIntersection::fixMoveFirst;
   mFixMap["Move red feature"] = &TopolErrorIntersection::fixMoveSecond;
-  mFixMap["Union to blue feature"] = &TopolErrorIntersection::fixUnionFirst;
-  mFixMap["Union to red feature"] = &TopolErrorIntersection::fixUnionSecond;
   mFixMap["Delete blue feature"] = &TopolErrorIntersection::fixDeleteFirst;
   mFixMap["Delete red feature"] = &TopolErrorIntersection::fixDeleteSecond;
+
+  // allow union only when both features have the same geometry type
+  if (theFeaturePairs.first().feature.geometry()->type() == theFeaturePairs[1].feature.geometry()->type())
+  {
+    mFixMap["Union to blue feature"] = &TopolErrorIntersection::fixUnionFirst;
+    mFixMap["Union to red feature"] = &TopolErrorIntersection::fixUnionSecond;
+  }
 }
 
-//TopolErrorDangle::TopolErrorDangle(QgsVectorLayer* theLayer, QgsRectangle theBoundingBox, QgsGeometry* theConflict, QgsFeatureIds theFids) : TopolError(theLayer, theBoundingBox, theConflict, theFids)
 TopolErrorDangle::TopolErrorDangle(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : TopolError(theBoundingBox, theConflict, theFeaturePairs)
 {
   mName = "Dangling endpoint";

@@ -145,16 +145,17 @@ QgsGeometry* checkEndpoints(QgsGeometry* g1, QgsGeometry* g2)
 
 void checkDock::checkDanglingEndpoints()
 {
-  /*QMap<int, QgsFeature>::Iterator it, jit;
+  QList<FeatureLayer>::Iterator it, jit;
   for (it = mFeatureList.begin(); it != mFeatureList.end(); ++it)
     for (jit = mFeatureList.begin(); jit != mFeatureList.end(); ++jit)
     {
-      if (it.key() >= jit.key())
+      if (it->feature.id() >= jit->feature.id())
         continue;
 
-      QgsGeometry* g1 = it.value().geometry();
-      QgsGeometry* g2 = jit.value().geometry();
+      QgsGeometry* g1 = it->feature.geometry();
+      QgsGeometry* g2 = jit->feature.geometry();
 
+      //TODO: read from settings
       if (g1->distance(*g2) < 0.1)
       {
 	QgsGeometry *c, *d;
@@ -163,28 +164,30 @@ void checkDock::checkDanglingEndpoints()
           QgsRectangle r = g1->boundingBox();
 	  r.combineExtentWith(&g2->boundingBox());
 
-	  QgsFeatureIds fids;
-	  fids << it.key() << jit.key();
-	  
+	  QList<FeatureLayer> fls;
 	  TopolErrorDangle* err;
+
           if (c)
 	  {
-	    fids << it.key() << jit.key();
-            err = new TopolErrorDangle(mLayer, r, c, fids);
+	    fls << *it << *jit;
+            err = new TopolErrorDangle(r, c, fls);
+            mErrorListView->addItem(err->name());
+	    mErrorList << err;
+	  }
+	  else if (d)
+	  {
+	    fls << *jit << *it;
+            err = new TopolErrorDangle(r, d, fls);
             mErrorListView->addItem(err->name());
 	    mErrorList << err;
 	  }
 
-          if (d)
-	  {
-	    fids << jit.key() << it.key();
-            err = new TopolErrorDangle(mLayer, r, d, fids);
-            mErrorListView->addItem(err->name());
-	    mErrorList << err;
-	  }
+	  mErrorList << err;
+          mErrorListView->addItem(err->name());
+          //mErrorListView->addItem(err->name() + QString(" %1 %2").arg(it->feature.id()).arg(jit->feature.id()));
 	}
       }
-    } */
+    }
 }
 
 void checkDock::checkIntersections()
@@ -193,6 +196,7 @@ void checkDock::checkIntersections()
   for (it = mFeatureList.begin(); it != mFeatureList.end(); ++it)
     for (jit = mFeatureList.begin(); jit != mFeatureList.end(); ++jit)
     {
+	    //TODO: ids could be same in different layers
       if (it->feature.id() >= jit->feature.id())
         continue;
 
@@ -264,7 +268,7 @@ void checkDock::validate(QgsRectangle rect)
 
   checkIntersections();
   //checkSelfIntersections();
-  //checkDanglingEndpoints();
+  checkDanglingEndpoints();
 
   /* TODO: doesn't work yet
   QgsRectangle zoom;
