@@ -79,11 +79,13 @@ void checkDock::errorListClicked(const QModelIndex& index)
 
   QgsFeature f;
   QgsGeometry* g;
-  mLayer->featureAtId(mErrorList[row]->fids().values().first(), f, true, false);
+  FeatureLayer fl = mErrorList[row]->featurePairs().first();
+  fl.layer->featureAtId(fl.feature.id(), f, true, false);
   g = f.geometry();
   rub1->setToGeometry(g, mLayer);
 
-  mLayer->featureAtId(mErrorList[row]->fids().values()[1], f, true, false);
+  fl = mErrorList[row]->featurePairs()[1];
+  fl.layer->featureAtId(fl.feature.id(), f, true, false);
   g = f.geometry();
   rub2->setToGeometry(g, mLayer);
 
@@ -206,9 +208,9 @@ void checkDock::checkIntersections()
 	if (!c)
 	  c = new QgsGeometry;
 
-	QgsFeatureIds fids;
-	fids << it->feature.id() << jit->feature.id();
-	TopolErrorIntersection* err = new TopolErrorIntersection(it->layer, r, c, fids);
+	QList<FeatureLayer> fls;
+	fls << *it << *jit;
+	TopolErrorIntersection* err = new TopolErrorIntersection(r, c, fls);
 
 	mErrorList << err;
         mErrorListView->addItem(err->name() + QString(" %1 %2").arg(it->feature.id()).arg(jit->feature.id()));
@@ -246,20 +248,19 @@ void checkDock::validate(QgsRectangle rect)
 {
   mErrorListView->clear();
   mFeatureList.clear();
-  mLayer->select(QgsAttributeList(), rect);
 
   QgsMapLayerRegistry *reg = QgsMapLayerRegistry::instance();
   QList<QgsMapLayer *> layerList = reg->mapLayers().values();
   QList<QgsMapLayer *>::ConstIterator it = layerList.begin();
   QgsFeature f;
 
-  //TODO:ids will clash
   for (; it != layerList.end(); ++it)
+  {
+    ((QgsVectorLayer*)(*it))->select(QgsAttributeList(), rect);
     while (((QgsVectorLayer*)(*it))->nextFeature(f))
-    {
       if (f.geometry())
         mFeatureList << FeatureLayer((QgsVectorLayer*)*it, f);
-    }
+  }
 
   checkIntersections();
   //checkSelfIntersections();

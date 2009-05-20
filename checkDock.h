@@ -15,18 +15,6 @@ class QgisApp;
 
 typedef QList<TopolError*> ErrorList;
 
-class FeatureLayer
-{
-public:
-  FeatureLayer(QgsVectorLayer* theLayer, QgsFeature theFeature)
-  {
-    layer = theLayer; feature = theFeature;
-  }
-
-  QgsVectorLayer* layer;
-  QgsFeature feature;
-};
-
 class checkDock : public QDockWidget, public Ui::checkDock
 {
 Q_OBJECT
