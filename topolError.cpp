@@ -147,3 +147,10 @@ TopolErrorInside::TopolErrorInside(QgsRectangle theBoundingBox, QgsGeometry* the
   mFixMap["Select automatic fix"] = &TopolErrorInside::fixDummy;
   mFixMap["Delete feature inside"] = &TopolErrorInside::fixDeleteSecond;
 }
+
+TopolErrorShort::TopolErrorShort(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : TopolError(theBoundingBox, theConflict, theFeaturePairs)
+{
+  mName = "Segment too short";
+  mFixMap["Select automatic fix"] = &TopolErrorShort::fixDummy;
+  mFixMap["Delete feature"] = &TopolErrorShort::fixDeleteFirst;
+}

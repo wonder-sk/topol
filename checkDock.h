@@ -47,6 +47,7 @@ private:
   void checkDanglingEndpoints();
   //void checkPointInsidePolygon();
   void checkPolygonContains();
+  void checkSegmentLength();
   void checkPointCoveredBySegment();
   void validate(QgsRectangle rect);
 };
