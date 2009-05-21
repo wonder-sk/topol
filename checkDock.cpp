@@ -355,7 +355,7 @@ void checkDock::checkSegmentLength()
       case QGis::Polygon:
         pol = g1->asPolygon();
 
-	//TODO: jump out of outer cycle
+	/*//TODO: jump out of outer cycle
 	for (int i = 0; i < pol.size(); ++i)
 	  for (int j = 1; j < pol[i].size(); ++j)
 	    if (pol[i][j-1].sqrDist(pol[i][j]) < 0.1)
@@ -363,11 +363,11 @@ void checkDock::checkSegmentLength()
 	      fls.clear();
               fls << *it << *it;
 	      segm.clear();
-	      segm << ls[i-1] << ls[i];
+	      segm << pol[i][j-1] << pol[i][j];
               err = new TopolErrorShort(g1->boundingBox(), QgsGeometry::fromPolyline(segm), fls);
               mErrorList << err;
               mErrorListView->addItem(err->name() + QString(" %1").arg(it->feature.id()));
-	    }
+	    }*/
       break;
       default:
         continue;
