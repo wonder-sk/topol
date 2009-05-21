@@ -228,6 +228,7 @@ void checkDock::checkIntersections()
   }
 }
 
+/*
 void checkDock::checkPointInsidePolygon()
 {
   QList<FeatureLayer>::Iterator it, jit;
@@ -250,6 +251,34 @@ void checkDock::checkPointInsidePolygon()
 	QList<FeatureLayer> fls;
 	fls << *it << *jit;
 	TopolErrorContains* err = new TopolErrorContains(g1->boundingBox(), g2, fls);
+
+	mErrorList << err;
+        mErrorListView->addItem(err->name() + QString(" %1 %2").arg(it->feature.id()).arg(jit->feature.id()));
+      }
+    }
+  }
+}*/
+
+void checkDock::checkPolygonContains()
+{
+  QList<FeatureLayer>::Iterator it, jit;
+  for (it = mFeatureList.begin(); it != mFeatureList.end(); ++it)
+  {
+    QgsGeometry* g1 = it->feature.geometry();
+    if (g1->type() != QGis::Polygon)
+      continue;
+
+    for (jit = mFeatureList.begin(); jit != mFeatureList.end(); ++jit)
+    {
+      //if (it->feature.id() == jit->feature.id())
+        //continue;
+
+      QgsGeometry* g2 = jit->feature.geometry();
+      if (contains(g1, g2))
+      {
+	QList<FeatureLayer> fls;
+	fls << *it << *jit;
+	TopolErrorInside* err = new TopolErrorInside(g1->boundingBox(), g2, fls);
 
 	mErrorList << err;
         mErrorListView->addItem(err->name() + QString(" %1 %2").arg(it->feature.id()).arg(jit->feature.id()));
@@ -319,7 +348,8 @@ void checkDock::validate(QgsRectangle rect)
   }
 
   checkIntersections();
-  checkPointInsidePolygon();
+  //checkPointInsidePolygon();
+  checkPolygonContains();
   checkDanglingEndpoints();
   checkPointCoveredBySegment();
   //checkSelfIntersections();

@@ -55,3 +55,29 @@ bool touches(QgsGeometry* g1, QgsGeometry* g2)
     return false;
   }
 }
+
+bool overlaps(QgsGeometry* g1, QgsGeometry* g2)
+{
+  try
+  {
+    if (1 == GEOSOverlaps(g1->asGeos(), g2->asGeos()))
+      return true;
+  }
+  catch (GEOSException &e) 
+  {
+    return false;
+  }
+}
+
+bool contains(QgsGeometry* g1, QgsGeometry* g2)
+{
+  try
+  {
+    if (1 == GEOSContains(g1->asGeos(), g2->asGeos()))
+      return true;
+  }
+  catch (GEOSException &e) 
+  {
+    return false;
+  }
+}

@@ -45,7 +45,8 @@ private:
   void checkIntersections();
   void checkSelfIntersections();
   void checkDanglingEndpoints();
-  void checkPointInsidePolygon();
+  //void checkPointInsidePolygon();
+  void checkPolygonContains();
   void checkPointCoveredBySegment();
   void validate(QgsRectangle rect);
 };

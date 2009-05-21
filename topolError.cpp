@@ -127,16 +127,23 @@ TopolErrorDangle::TopolErrorDangle(QgsRectangle theBoundingBox, QgsGeometry* the
   mFixMap["Snap to segment"] = &TopolErrorDangle::fixSnap;
 }
 
-TopolErrorContains::TopolErrorContains(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : TopolError(theBoundingBox, theConflict, theFeaturePairs)
+/*TopolErrorContains::TopolErrorContains(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : TopolError(theBoundingBox, theConflict, theFeaturePairs)
 {
-  mName = "Point in polygon";
+  mName = "Feature inside polygon";
   mFixMap["Select automatic fix"] = &TopolErrorContains::fixDummy;
   mFixMap["Delete point"] = &TopolErrorContains::fixDeleteSecond;
-}
+}*/
 
 TopolErrorCovered::TopolErrorCovered(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : TopolError(theBoundingBox, theConflict, theFeaturePairs)
 {
   mName = "Point not covered by segment";
   mFixMap["Select automatic fix"] = &TopolErrorCovered::fixDummy;
   mFixMap["Delete point"] = &TopolErrorCovered::fixDeleteFirst;
+}
+
+TopolErrorInside::TopolErrorInside(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : TopolError(theBoundingBox, theConflict, theFeaturePairs)
+{
+  mName = "Feature inside polygon";
+  mFixMap["Select automatic fix"] = &TopolErrorInside::fixDummy;
+  mFixMap["Delete feature inside"] = &TopolErrorInside::fixDeleteSecond;
 }
