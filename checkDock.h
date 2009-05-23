@@ -12,15 +12,17 @@
 
 class QgsRubberBand;
 class QgisApp;
+class checkDock;
 
 typedef QList<TopolError*> ErrorList;
+typedef void (checkDock::*testFunction)();
 
 class checkDock : public QDockWidget, public Ui::checkDock
 {
 Q_OBJECT
 
 public:
-  checkDock(const QString &tableName, QgsVectorLayer *theLayer, rulesDialog* theConfigureDialog, QWidget *parent = 0);
+  checkDock(const QString &tableName, QgsVectorLayer *theLayer, QWidget *parent = 0);
   ~checkDock();
 
 private slots:
@@ -42,13 +44,18 @@ private:
   ErrorList mErrorList;
   QgsGeometryMap mGeometryMap;
 
+  //pointers to topology test table
+  QTableWidget* mTestBox;
+
+  QMap<QString, testFunction> mTestMap;
+
   void checkIntersections();
   void checkSelfIntersections();
   void checkDanglingEndpoints();
-  //void checkPointInsidePolygon();
   void checkPolygonContains();
   void checkSegmentLength();
   void checkPointCoveredBySegment();
+
   void validate(QgsRectangle rect);
 };
 

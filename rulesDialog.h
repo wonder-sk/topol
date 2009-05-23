@@ -12,13 +12,14 @@ class rulesDialog : public QDialog, public Ui::rulesDialog
 Q_OBJECT
 
 public:
-  rulesDialog(const QString &tableName, QgsVectorLayer *theLayer, QWidget *parent = 0);
+  rulesDialog(const QString &tableName, QList<QString> tests, QList<QString>layerList, QWidget *parent);
   ~rulesDialog();
 
 private:
-  QgsVectorLayer *mLayer;
-  //QList<QCheckBox *> mBoxes;
-  //QMap<QString, CheckType> mBoxMap;
+  QTableWidget* tableWidget() { return mTestTable; }
+private slots:
+  void addTest();
+  void deleteTest();
 };
 
 #endif

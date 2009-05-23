@@ -4,6 +4,7 @@
 
 #include <qgsvectordataprovider.h>
 #include <qgsvectorlayer.h>
+#include <qgsmaplayer.h>
 #include <qgssearchstring.h>
 #include <qgssearchtreenode.h>
 #include <qgsmaplayer.h>
@@ -20,12 +21,27 @@
 #include "geosFunctions.h"
 #include "../../app/qgisapp.h"
 
-checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, rulesDialog* theConfigureDialog, QWidget* parent)
+checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QWidget* parent)
 : QDockWidget(parent), Ui::checkDock()
 {
   setupUi(this);
   mLayer = theLayer;
-  mConfigureDialog = theConfigureDialog;
+
+  QgsMapLayerRegistry *reg = QgsMapLayerRegistry::instance();
+  //QList<QString> layerNames;
+  //QList<QgsMapLayer*> layerList = reg->mapLayers().values();
+  //for (int i = 0; i < layerList.size(); ++i)
+    //layerNames << layerList[i]->name();
+
+  mTestMap["Test intersections"] = &checkDock::checkIntersections;
+  mTestMap["Test dangling endpoints"] = &checkDock::checkDanglingEndpoints;
+  mTestMap["Test self intersections"] = &checkDock::checkSelfIntersections;
+  mTestMap["Test features inside polygon"] = &checkDock::checkPolygonContains;
+  mTestMap["Test points not covered by segments"] = &checkDock::checkPointCoveredBySegment;
+  mTestMap["Test segment lengths"] = &checkDock::checkSegmentLength;
+
+  mConfigureDialog = new rulesDialog("Rules", mTestMap.keys(), reg->mapLayers().keys(), parent);
+  
   mQgisApp = QgisApp::instance();
 
   mValidateExtentButton->setIcon(QIcon(":/topol_c/topol.png"));
@@ -54,6 +70,7 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, rulesDi
 checkDock::~checkDock()
 {
   delete mRubberBand;
+  delete mConfigureDialog;
   delete rub1;
   delete rub2;
 
@@ -389,6 +406,7 @@ void checkDock::validate(QgsRectangle rect)
   QList<QgsMapLayer *>::ConstIterator it = layerList.begin();
   QgsFeature f;
 
+  //TODO: don't put everything into one bag
   for (; it != layerList.end(); ++it)
   {
     ((QgsVectorLayer*)(*it))->select(QgsAttributeList(), rect);
@@ -397,8 +415,14 @@ void checkDock::validate(QgsRectangle rect)
         mFeatureList << FeatureLayer((QgsVectorLayer*)*it, f);
   }
 
+  /*
+  for (i = 0; i < mTestBox->rowCount(); ++i)
+  {
+    params = getTestParameters(mTestBox, i);
+    runTest(params);
+  }*/
+
   checkIntersections();
-  //checkPointInsidePolygon();
   checkPolygonContains();
   checkSegmentLength();
   checkDanglingEndpoints();
