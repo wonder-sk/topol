@@ -143,10 +143,7 @@ void Topol::unload()
   // remove the GUI
   mQGisIface->removePluginMenu("&Topol",mQActionPointer);
   mQGisIface->removeToolBarIcon(mQActionPointer);
-  mQGisIface->removePluginMenu("&Rules",mRulesPointer);
-  mQGisIface->removeToolBarIcon(mRulesPointer);
   delete mQActionPointer;
-  delete mRulesPointer;
 }
 
 

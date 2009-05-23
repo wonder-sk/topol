@@ -96,7 +96,6 @@ private:
   QgisInterface *mQGisIface;
   //!pointer to the qaction for this plugin
   QAction * mQActionPointer;
-  QAction * mRulesPointer;
   ////////////////////////////////////////////////////////////////////
   //
   // ADD YOUR OWN PROPERTY DECLARATIONS AFTER THIS POINT.....
