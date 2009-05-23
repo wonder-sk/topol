@@ -10,6 +10,7 @@
 #include "rulesDialog.h"
 #include "topolError.h"
 
+class QgsMapLayerRegistry;
 class QgsRubberBand;
 class QgisApp;
 class checkDock;
@@ -40,14 +41,17 @@ private:
   QgsRubberBand* rub2;
   QgisApp* mQgisApp;
 
+  double mTolerance;
+
   QList<FeatureLayer> mFeatureList;
   ErrorList mErrorList;
   QgsGeometryMap mGeometryMap;
 
   //pointers to topology test table
-  QTableWidget* mTestBox;
+  QTableWidget* mTestTable;
 
   QMap<QString, testFunction> mTestMap;
+  QgsMapLayerRegistry* mLayerRegistry;
 
   void checkIntersections();
   void checkSelfIntersections();
@@ -56,7 +60,8 @@ private:
   void checkSegmentLength();
   void checkPointCoveredBySegment();
 
-  void validate(QgsRectangle rect);
+  void runTests(QgsRectangle extent);
+  void validate(QgsRectangle extent);
 };
 
 #endif

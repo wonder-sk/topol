@@ -22,7 +22,6 @@ rulesDialog::rulesDialog(const QString &tableName, QList<QString> tests, QList<Q
   mTestBox->addItems(QStringList(tests));
   mLayer1Box->addItems(QStringList(layerList));
   mLayer2Box->addItems(QStringList(layerList));
-  std::cout << tests.first().toStdString();
 
   connect(mAddTestButton, SIGNAL(clicked()), this, SLOT(addTest()));
   connect(mDeleteTestButton, SIGNAL(clicked()), this, SLOT(deleteTest()));

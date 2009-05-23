@@ -21,26 +21,28 @@
 #include "geosFunctions.h"
 #include "../../app/qgisapp.h"
 
+//TODO: get rid of those global variables (mTolerance, mFeatureList, ...
+//	especially mFeatureList is stupid
 checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QWidget* parent)
 : QDockWidget(parent), Ui::checkDock()
 {
   setupUi(this);
-  mLayer = theLayer;
 
-  QgsMapLayerRegistry *reg = QgsMapLayerRegistry::instance();
-  //QList<QString> layerNames;
-  //QList<QgsMapLayer*> layerList = reg->mapLayers().values();
-  //for (int i = 0; i < layerList.size(); ++i)
-    //layerNames << layerList[i]->name();
+  mTolerance = 0;
+  mLayer = theLayer;
+  mLayerRegistry = QgsMapLayerRegistry::instance();
 
   mTestMap["Test intersections"] = &checkDock::checkIntersections;
   mTestMap["Test dangling endpoints"] = &checkDock::checkDanglingEndpoints;
-  mTestMap["Test self intersections"] = &checkDock::checkSelfIntersections;
+  //mTestMap["Test self intersections"] = &checkDock::checkSelfIntersections;
   mTestMap["Test features inside polygon"] = &checkDock::checkPolygonContains;
   mTestMap["Test points not covered by segments"] = &checkDock::checkPointCoveredBySegment;
   mTestMap["Test segment lengths"] = &checkDock::checkSegmentLength;
 
-  mConfigureDialog = new rulesDialog("Rules", mTestMap.keys(), reg->mapLayers().keys(), parent);
+  //TODO: update layer combobox, when layer added, deleted
+  mConfigureDialog = new rulesDialog("Rules", mTestMap.keys(), mLayerRegistry->mapLayers().keys(), parent);
+  std::cout << mLayerRegistry->mapLayers().keys().first().toStdString();
+  mTestTable = mConfigureDialog->testTable();
   
   mQgisApp = QgisApp::instance();
 
@@ -132,7 +134,7 @@ void checkDock::fix()
     QMessageBox::information(this, "Topology fix error", "Fixing failed!");
 }
 
-QgsGeometry* checkEndpoints(QgsGeometry* g1, QgsGeometry* g2)
+QgsGeometry* checkEndpoints(QgsGeometry* g1, QgsGeometry* g2, double tolerance)
 {
 	//TODO:MultiLines
   if (!g1 || !g2)
@@ -143,7 +145,7 @@ QgsGeometry* checkEndpoints(QgsGeometry* g1, QgsGeometry* g2)
 
   QgsPoint endPoint = g1->asPolyline().last();
   QgsGeometry *g = QgsGeometry::fromPoint(endPoint);
-  if (g2->distance(*g) < 0.1)
+  if (g2->distance(*g) < tolerance)
   {
     int before;
     QgsPoint minDistPoint;  
@@ -175,10 +177,10 @@ void checkDock::checkDanglingEndpoints()
       QgsGeometry* g2 = jit->feature.geometry();
 
       //TODO: read from settings
-      if (g1->distance(*g2) < 0.1)
+      if (g1->distance(*g2) < mTolerance)
       {
 	QgsGeometry *c, *d;
-	if ((c = checkEndpoints(g1, g2)) || (d = checkEndpoints(g2, g1)))
+	if ((c = checkEndpoints(g1, g2, mTolerance)) || (d = checkEndpoints(g2, g1, mTolerance)))
 	{
           QgsRectangle r = g1->boundingBox();
 	  r.combineExtentWith(&g2->boundingBox());
@@ -358,7 +360,7 @@ void checkDock::checkSegmentLength()
 
 	for (int i = 1; i < ls.size(); ++i)
 	{
-	  if (ls[i-1].sqrDist(ls[i]) < 0.1)
+	  if (ls[i-1].sqrDist(ls[i]) < mTolerance)
 	  {
 	    fls.clear();
             fls << *it << *it;
@@ -375,7 +377,7 @@ void checkDock::checkSegmentLength()
 	/*//TODO: jump out of outer cycle
 	for (int i = 0; i < pol.size(); ++i)
 	  for (int j = 1; j < pol[i].size(); ++j)
-	    if (pol[i][j-1].sqrDist(pol[i][j]) < 0.1)
+	    if (pol[i][j-1].sqrDist(pol[i][j]) < mTolerance)
 	    {
 	      fls.clear();
               fls << *it << *it;
@@ -392,15 +394,53 @@ void checkDock::checkSegmentLength()
   }
 }
 
-void checkDock::checkSelfIntersections()
+/*void checkDock::checkSelfIntersections()
 {
+}*/
+
+void checkDock::runTests(QgsRectangle extent)
+{
+  for (int i = 0; i < mTestTable->rowCount(); ++i)
+  {
+    QString test = mTestTable->itemAt(i, 0)->text();
+    QString layer1Str = mTestTable->item(i, 1)->text();
+    QString layer2Str = mTestTable->item(i, 2)->text();
+
+    QString toleranceStr = mTestTable->itemAt(i, 3)->text();
+
+    QgsVectorLayer* layer1 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer1Str];
+    QgsVectorLayer* layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
+
+    if (!layer1 || !layer2)
+    {
+      std::cout << "layers " << layer1Str.toStdString() << " and " << layer2Str.toStdString() << " not found in registry!" << std::flush;
+      return;
+    }
+
+    //(this->*mTestMap[test])(layer1, layer2, toleranceStr.toDouble());
+    //TODO: this is temporary and stupid
+    mTolerance = toleranceStr.toDouble();
+    QgsFeature f;
+
+    layer1->select(QgsAttributeList(), extent);
+    while (layer1->nextFeature(f))
+      if (f.geometry())
+        mFeatureList << FeatureLayer(layer1, f);
+
+    layer2->select(QgsAttributeList(), extent);
+    while (layer2->nextFeature(f))
+      if (f.geometry())
+        mFeatureList << FeatureLayer(layer2, f);
+
+    (this->*mTestMap[test])();
+  }
 }
 
-void checkDock::validate(QgsRectangle rect)
+void checkDock::validate(QgsRectangle extent)
 {
   mErrorListView->clear();
   mFeatureList.clear();
-
+/*
   QgsMapLayerRegistry *reg = QgsMapLayerRegistry::instance();
   QList<QgsMapLayer *> layerList = reg->mapLayers().values();
   QList<QgsMapLayer *>::ConstIterator it = layerList.begin();
@@ -409,26 +449,23 @@ void checkDock::validate(QgsRectangle rect)
   //TODO: don't put everything into one bag
   for (; it != layerList.end(); ++it)
   {
-    ((QgsVectorLayer*)(*it))->select(QgsAttributeList(), rect);
+    ((QgsVectorLayer*)(*it))->select(QgsAttributeList(), extent);
     while (((QgsVectorLayer*)(*it))->nextFeature(f))
       if (f.geometry())
         mFeatureList << FeatureLayer((QgsVectorLayer*)*it, f);
   }
+  */
 
-  /*
-  for (i = 0; i < mTestBox->rowCount(); ++i)
-  {
-    params = getTestParameters(mTestBox, i);
-    runTest(params);
-  }*/
+  std::cout << "bude test\n" << std::flush; 
+  runTests(extent);
 
-  checkIntersections();
+  /*checkIntersections();
   checkPolygonContains();
   checkSegmentLength();
   checkDanglingEndpoints();
   checkPointCoveredBySegment();
   //checkSelfIntersections();
-
+*/
   mComment->setText(QString("%1 errors were found").arg(mErrorListView->count()));
   rub1->reset();
   rub2->reset();

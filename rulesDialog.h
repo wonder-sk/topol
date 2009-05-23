@@ -14,9 +14,7 @@ Q_OBJECT
 public:
   rulesDialog(const QString &tableName, QList<QString> tests, QList<QString>layerList, QWidget *parent);
   ~rulesDialog();
-
-private:
-  QTableWidget* tableWidget() { return mTestTable; }
+  QTableWidget* testTable() { return mTestTable; }
 private slots:
   void addTest();
   void deleteTest();
