@@ -1,3 +1,20 @@
+/***************************************************************************
+  checkDock.cpp 
+  TOPOLogy checker
+  -------------------
+         date                 : May 2009
+         copyright            : Vita Cizek
+         email                : weetya (at) gmail.com
+
+ ***************************************************************************
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ ***************************************************************************/
+
 #include <QtGui>
 
 #include "checkDock.h"
@@ -39,7 +56,6 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QWidget
   mTestMap["Test points not covered by segments"] = &checkDock::checkPointCoveredBySegment;
   mTestMap["Test segment lengths"] = &checkDock::checkSegmentLength;
 
-  //TODO: update layer combobox, when layer added, deleted
   mConfigureDialog = new rulesDialog("Rules", mTestMap.keys(), mLayerRegistry->mapLayers().keys(), parent);
   std::cout << mLayerRegistry->mapLayers().keys().first().toStdString();
   mTestTable = mConfigureDialog->testTable();
@@ -67,6 +83,8 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QWidget
   connect(mValidateExtentButton, SIGNAL(clicked()), this, SLOT(validateExtent()));
   connect(mFixButton, SIGNAL(clicked()), this, SLOT(fix()));
   connect(mErrorListView, SIGNAL(clicked(const QModelIndex &)), this, SLOT(errorListClicked(const QModelIndex &)));
+  connect(mLayerRegistry, SIGNAL(layerWillBeRemoved(QString)), mConfigureDialog, SLOT(removeLayer(QString)));
+  connect(mLayerRegistry, SIGNAL(layerWasAdded(QgsMapLayer*)), mConfigureDialog, SLOT(addLayer(QgsMapLayer*)));
 }
 
 checkDock::~checkDock()
@@ -176,7 +194,6 @@ void checkDock::checkDanglingEndpoints()
 
       QgsGeometry* g2 = jit->feature.geometry();
 
-      //TODO: read from settings
       if (g1->distance(*g2) < mTolerance)
       {
 	QgsGeometry *c, *d;
@@ -446,7 +463,6 @@ void checkDock::validate(QgsRectangle extent)
   QList<QgsMapLayer *>::ConstIterator it = layerList.begin();
   QgsFeature f;
 
-  //TODO: don't put everything into one bag
   for (; it != layerList.end(); ++it)
   {
     ((QgsVectorLayer*)(*it))->select(QgsAttributeList(), extent);

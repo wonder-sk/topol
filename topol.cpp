@@ -1,8 +1,8 @@
 /***************************************************************************
   topol.cpp 
-  Better attribute table
+  TOPOLogy checker
   -------------------
-         begin                : 2008
+         begin                : May 2009
          copyright            : Vita Cizek
          email                : weetya (at) gmail.com
 
@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/*  $Id: plugin.cpp 8053 2008-01-26 13:59:53Z timlinux $ */
 
 //
 // QGIS Specific includes
@@ -26,7 +25,7 @@
 #include <qgisgui.h>
 
 #include "topol.h"
-#include "rulesDialog.h"
+//#include "rulesDialog.h"
 #include "checkDock.h"
 
 //
