@@ -38,14 +38,13 @@
 #include "geosFunctions.h"
 #include "../../app/qgisapp.h"
 
-//TODO: get rid of those global variables (mTolerance, mFeatureList, ...
+//TODO: get rid of those global variables (, mFeatureList, ...
 //	especially mFeatureList is stupid
 checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QWidget* parent)
 : QDockWidget(parent), Ui::checkDock()
 {
   setupUi(this);
 
-  mTolerance = 0;
   mLayer = theLayer;
   mLayerRegistry = QgsMapLayerRegistry::instance();
 
@@ -66,17 +65,17 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QWidget
   mValidateAllButton->setIcon(QIcon(":/topol_c/topol.png"));
   mConfigureButton->setIcon(QIcon(":/topol_c/topol.png"));
 
-  rub1 = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
-  rub2 = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
-  mRubberBand = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
+  mRBFeature1 = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
+  mRBFeature2 = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
+  mRBConflict = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
 
-  rub1->setColor("blue");
-  rub2->setColor("red");
-  mRubberBand->setColor("gold");
+  mRBFeature1->setColor("blue");
+  mRBFeature2->setColor("red");
+  mRBConflict->setColor("gold");
 
-  rub1->setWidth(3);
-  rub2->setWidth(3);
-  mRubberBand->setWidth(3);
+  mRBFeature1->setWidth(3);
+  mRBFeature2->setWidth(3);
+  mRBConflict->setWidth(3);
 
   connect(mConfigureButton, SIGNAL(clicked()), this, SLOT(configure()));
   connect(mValidateAllButton, SIGNAL(clicked()), this, SLOT(validateAll()));
@@ -89,10 +88,10 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QWidget
 
 checkDock::~checkDock()
 {
-  delete mRubberBand;
+  delete mRBConflict;
+  delete mRBFeature1;
+  delete mRBFeature2;
   delete mConfigureDialog;
-  delete rub1;
-  delete rub2;
 
   QList<TopolError*>::Iterator it = mErrorList.begin();
   for (; it != mErrorList.end(); ++it)
@@ -119,14 +118,14 @@ void checkDock::errorListClicked(const QModelIndex& index)
   FeatureLayer fl = mErrorList[row]->featurePairs().first();
   fl.layer->featureAtId(fl.feature.id(), f, true, false);
   g = f.geometry();
-  rub1->setToGeometry(g, mLayer);
+  mRBFeature1->setToGeometry(g, mLayer);
 
   fl = mErrorList[row]->featurePairs()[1];
   fl.layer->featureAtId(fl.feature.id(), f, true, false);
   g = f.geometry();
-  rub2->setToGeometry(g, mLayer);
+  mRBFeature2->setToGeometry(g, mLayer);
 
-  mRubberBand->setToGeometry(mErrorList[row]->conflict(), mLayer);
+  mRBConflict->setToGeometry(mErrorList[row]->conflict(), mLayer);
 }
 
 void checkDock::fix()
@@ -137,9 +136,9 @@ void checkDock::fix()
   if (row == -1)
     return;
 
-  rub1->reset();
-  rub2->reset();
-  mRubberBand->reset();
+  mRBFeature1->reset();
+  mRBFeature2->reset();
+  mRBConflict->reset();
 
   if (mErrorList[row]->fix(fixName))
   {
@@ -180,7 +179,7 @@ QgsGeometry* checkEndpoints(QgsGeometry* g1, QgsGeometry* g2, double tolerance)
   return 0;
 }
 
-void checkDock::checkDanglingEndpoints()
+void checkDock::checkDanglingEndpoints(double tolerance)
 {
   QList<FeatureLayer>::Iterator it, jit;
   for (it = mFeatureList.begin(); it != mFeatureList.end(); ++it)
@@ -194,10 +193,10 @@ void checkDock::checkDanglingEndpoints()
 
       QgsGeometry* g2 = jit->feature.geometry();
 
-      if (g1->distance(*g2) < mTolerance)
+      if (g1->distance(*g2) < tolerance)
       {
 	QgsGeometry *c, *d;
-	if ((c = checkEndpoints(g1, g2, mTolerance)) || (d = checkEndpoints(g2, g1, mTolerance)))
+	if ((c = checkEndpoints(g1, g2, tolerance)) || (d = checkEndpoints(g2, g1, tolerance)))
 	{
           QgsRectangle r = g1->boundingBox();
 	  r.combineExtentWith(&g2->boundingBox());
@@ -227,7 +226,7 @@ void checkDock::checkDanglingEndpoints()
   }
 }
 
-void checkDock::checkIntersections()
+void checkDock::checkIntersections(double tolerance)
 {
   QList<FeatureLayer>::Iterator it, jit;
   for (it = mFeatureList.begin(); it != mFeatureList.end(); ++it)
@@ -292,7 +291,7 @@ void checkDock::checkPointInsidePolygon()
   }
 }*/
 
-void checkDock::checkPolygonContains()
+void checkDock::checkPolygonContains(double tolerance)
 {
   QList<FeatureLayer>::Iterator it, jit;
   for (it = mFeatureList.begin(); it != mFeatureList.end(); ++it)
@@ -320,7 +319,7 @@ void checkDock::checkPolygonContains()
   }
 }
 
-void checkDock::checkPointCoveredBySegment()
+void checkDock::checkPointCoveredBySegment(double tolerance)
 {
   QList<FeatureLayer>::Iterator it, jit;
   for (it = mFeatureList.begin(); it != mFeatureList.end(); ++it)
@@ -358,7 +357,7 @@ void checkDock::checkPointCoveredBySegment()
   }
 }
 
-void checkDock::checkSegmentLength()
+void checkDock::checkSegmentLength(double tolerance)
 {
   //TODO: multi versions, distance from settings, more errors for one feature
   QList<FeatureLayer>::Iterator it, jit;
@@ -377,7 +376,7 @@ void checkDock::checkSegmentLength()
 
 	for (int i = 1; i < ls.size(); ++i)
 	{
-	  if (ls[i-1].sqrDist(ls[i]) < mTolerance)
+	  if (ls[i-1].sqrDist(ls[i]) < tolerance)
 	  {
 	    fls.clear();
             fls << *it << *it;
@@ -394,7 +393,7 @@ void checkDock::checkSegmentLength()
 	/*//TODO: jump out of outer cycle
 	for (int i = 0; i < pol.size(); ++i)
 	  for (int j = 1; j < pol[i].size(); ++j)
-	    if (pol[i][j-1].sqrDist(pol[i][j]) < mTolerance)
+	    if (pol[i][j-1].sqrDist(pol[i][j]) < tolerance)
 	    {
 	      fls.clear();
               fls << *it << *it;
@@ -411,7 +410,7 @@ void checkDock::checkSegmentLength()
   }
 }
 
-/*void checkDock::checkSelfIntersections()
+/*void checkDock::checkSelfIntersections(double tolerance)
 {
 }*/
 
@@ -435,8 +434,6 @@ void checkDock::runTests(QgsRectangle extent)
     }
 
     //(this->*mTestMap[test])(layer1, layer2, toleranceStr.toDouble());
-    //TODO: this is temporary and stupid
-    mTolerance = toleranceStr.toDouble();
     QgsFeature f;
 
     layer1->select(QgsAttributeList(), extent);
@@ -449,7 +446,8 @@ void checkDock::runTests(QgsRectangle extent)
       if (f.geometry())
         mFeatureList << FeatureLayer(layer2, f);
 
-    (this->*mTestMap[test])();
+    //call test routine
+    (this->*mTestMap[test])(toleranceStr.toDouble());
   }
 }
 
@@ -457,35 +455,13 @@ void checkDock::validate(QgsRectangle extent)
 {
   mErrorListView->clear();
   mFeatureList.clear();
-/*
-  QgsMapLayerRegistry *reg = QgsMapLayerRegistry::instance();
-  QList<QgsMapLayer *> layerList = reg->mapLayers().values();
-  QList<QgsMapLayer *>::ConstIterator it = layerList.begin();
-  QgsFeature f;
 
-  for (; it != layerList.end(); ++it)
-  {
-    ((QgsVectorLayer*)(*it))->select(QgsAttributeList(), extent);
-    while (((QgsVectorLayer*)(*it))->nextFeature(f))
-      if (f.geometry())
-        mFeatureList << FeatureLayer((QgsVectorLayer*)*it, f);
-  }
-  */
-
-  std::cout << "bude test\n" << std::flush; 
   runTests(extent);
-
-  /*checkIntersections();
-  checkPolygonContains();
-  checkSegmentLength();
-  checkDanglingEndpoints();
-  checkPointCoveredBySegment();
-  //checkSelfIntersections();
-*/
   mComment->setText(QString("%1 errors were found").arg(mErrorListView->count()));
-  rub1->reset();
-  rub2->reset();
-  mRubberBand->reset();
+
+  mRBFeature1->reset();
+  mRBFeature2->reset();
+  mRBConflict->reset();
 }
 
 void checkDock::validateExtent()

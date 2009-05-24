@@ -33,7 +33,7 @@ class QgisApp;
 class checkDock;
 
 typedef QList<TopolError*> ErrorList;
-typedef void (checkDock::*testFunction)();
+typedef void (checkDock::*testFunction)(double);
 
 class checkDock : public QDockWidget, public Ui::checkDock
 {
@@ -53,29 +53,27 @@ private slots:
 private:
   QgsVectorLayer *mLayer;
   rulesDialog* mConfigureDialog;
-  QgsRubberBand* mRubberBand;
-  QgsRubberBand* rub1;
-  QgsRubberBand* rub2;
+  QgsRubberBand* mRBConflict;
+  QgsRubberBand* mRBFeature1;
+  QgsRubberBand* mRBFeature2;
   QgisApp* mQgisApp;
-
-  double mTolerance;
 
   QList<FeatureLayer> mFeatureList;
   ErrorList mErrorList;
   QgsGeometryMap mGeometryMap;
 
-  //pointers to topology test table
+  //pointer to topology tests table
   QTableWidget* mTestTable;
 
   QMap<QString, testFunction> mTestMap;
   QgsMapLayerRegistry* mLayerRegistry;
 
-  void checkIntersections();
-  void checkSelfIntersections();
-  void checkDanglingEndpoints();
-  void checkPolygonContains();
-  void checkSegmentLength();
-  void checkPointCoveredBySegment();
+  void checkIntersections(double tolerance);
+  void checkSelfIntersections(double tolerance);
+  void checkDanglingEndpoints(double tolerance);
+  void checkPolygonContains(double tolerance);
+  void checkSegmentLength(double tolerance);
+  void checkPointCoveredBySegment(double tolerance);
 
   void runTests(QgsRectangle extent);
   void validate(QgsRectangle extent);

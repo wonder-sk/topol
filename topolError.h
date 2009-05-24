@@ -43,9 +43,7 @@ protected:
   QString mName;
   QgsRectangle mBoundingBox;  
   QgsGeometry* mConflict;
-  //QgsFeatureIds mFids;
   QList<FeatureLayer> mFeaturePairs;
-  //QgsVectorLayer* mLayer;
   QMap<QString, fixFunction> mFixMap;
 
   bool fixDummy() { return false; }
@@ -60,10 +58,8 @@ protected:
   //helper fix functions
   bool fixMove(FeatureLayer fl1, FeatureLayer fl2);
   bool fixUnion(FeatureLayer fl1, FeatureLayer fl2);
-  //bool fixUnion(int id1, int id2);
 
 public:
-  //TopolError(QgsVectorLayer* theLayer, QgsRectangle theBoundingBox, QgsGeometry* theConflict, QgsFeatureIds theFids) : mLayer(theLayer), mBoundingBox(theBoundingBox), mConflict(theConflict), mFids(theFids) {};
   TopolError(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : mFeaturePairs(theFeaturePairs), mBoundingBox(theBoundingBox), mConflict(theConflict) {};
 
   virtual ~TopolError() {}
@@ -71,7 +67,6 @@ public:
   virtual QString name() { return mName; }
   virtual QgsGeometry* conflict() { return mConflict; }
   virtual QgsRectangle boundingBox() { return mBoundingBox; }
-  //virtual QgsFeatureIds fids() { return mFids; }
   virtual QList<FeatureLayer> featurePairs() { return mFeaturePairs; }
   virtual QStringList fixNames() { return mFixMap.keys(); }
 };

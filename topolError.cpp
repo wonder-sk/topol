@@ -89,8 +89,11 @@ bool TopolError::fixSnap()
   QgsPolyline line = ge->asPolyline();
   line.last() = mConflict->asPolyline().last();
 
-  //TODO: this will cause memory leaks - creates new QgsGeometry object
-  return fl.layer->changeGeometry(f1.id(), QgsGeometry::fromPolyline(line));
+  QgsGeometry* newG = QgsGeometry::fromPolyline(line);
+  bool ret = fl.layer->changeGeometry(f1.id(), newG);
+  delete newG;
+
+  return ret;
 }
 
 bool TopolError::fixUnionFirst()

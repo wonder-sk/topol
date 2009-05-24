@@ -101,7 +101,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QSpinBox" name="mToleranceBox"/>
+        <widget class="QDoubleSpinBox" name="mToleranceBox"/>
        </item>
       </layout>
      </item>
