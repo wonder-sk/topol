@@ -151,5 +151,38 @@
   </layout>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>rulesDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>506</x>
+     <y>369</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>289</x>
+     <y>194</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>rulesDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>506</x>
+     <y>369</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>289</x>
+     <y>194</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

@@ -58,7 +58,9 @@ private:
   QgsRubberBand* mRBFeature2;
   QgisApp* mQgisApp;
 
-  QList<FeatureLayer> mFeatureList;
+  QList<FeatureLayer> mFeatureList1;
+  QList<FeatureLayer> mFeatureList2;
+
   ErrorList mErrorList;
   QgsGeometryMap mGeometryMap;
 
@@ -73,6 +75,7 @@ private:
   void checkDanglingEndpoints(double tolerance);
   void checkPolygonContains(double tolerance);
   void checkSegmentLength(double tolerance);
+  void checkUnconnectedLines(double tolerance);
   void checkPointCoveredBySegment(double tolerance);
 
   void runTests(QgsRectangle extent);

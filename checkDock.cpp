@@ -182,14 +182,14 @@ QgsGeometry* checkEndpoints(QgsGeometry* g1, QgsGeometry* g2, double tolerance)
 void checkDock::checkDanglingEndpoints(double tolerance)
 {
   QList<FeatureLayer>::Iterator it, jit;
-  for (it = mFeatureList.begin(); it != mFeatureList.end(); ++it)
+  for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
   {
     QgsGeometry* g1 = it->feature.geometry();
 
-    for (jit = mFeatureList.begin(); jit != mFeatureList.end(); ++jit)
+    for (jit = mFeatureList2.begin(); jit != mFeatureList2.end(); ++jit)
     {
-      if (it->feature.id() >= jit->feature.id())
-        continue;
+      //if (it->feature.id() >= jit->feature.id())
+        //continue;
 
       QgsGeometry* g2 = jit->feature.geometry();
 
@@ -226,18 +226,62 @@ void checkDock::checkDanglingEndpoints(double tolerance)
   }
 }
 
-void checkDock::checkIntersections(double tolerance)
+void checkDock::checkUnconnectedLines(double tolerance)
 {
   QList<FeatureLayer>::Iterator it, jit;
-  for (it = mFeatureList.begin(); it != mFeatureList.end(); ++it)
+  for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
   {
     QgsGeometry* g1 = it->feature.geometry();
 
-    for (jit = mFeatureList.begin(); jit != mFeatureList.end(); ++jit)
+    for (jit = mFeatureList2.begin(); jit != mFeatureList2.end(); ++jit)
+    {
+      //if (it->feature.id() >= jit->feature.id())
+        //continue;
+
+      QgsGeometry* g2 = jit->feature.geometry();
+
+      if (g1->distance(*g2) < tolerance)
+      {
+	QgsGeometry *c, *d;
+	if ((c = checkEndpoints(g1, g2, tolerance)) || (d = checkEndpoints(g2, g1, tolerance)))
+	{
+          QgsRectangle r = g1->boundingBox();
+	  r.combineExtentWith(&g2->boundingBox());
+
+	  QList<FeatureLayer> fls;
+	  TopolErrorDangle* err;
+
+          if (c)
+	  {
+	    fls << *it << *jit;
+            err = new TopolErrorDangle(r, c, fls);
+            mErrorListView->addItem(err->name() + QString(" %1 %2").arg(it->feature.id()).arg(jit->feature.id()));
+	    mErrorList << err;
+	  }
+	  else if (d)
+	  {
+	    fls << *jit << *it;
+            err = new TopolErrorDangle(r, d, fls);
+	    mErrorList << err;
+	  }
+	}
+      }
+    }
+  }
+}
+
+void checkDock::checkIntersections(double tolerance)
+{
+  QList<FeatureLayer>::Iterator it, jit;
+  for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
+  {
+    QgsGeometry* g1 = it->feature.geometry();
+
+    for (jit = mFeatureList2.begin(); jit != mFeatureList2.end(); ++jit)
     {
 	    //TODO: ids could be same in different layers
-      if (it->feature.id() >= jit->feature.id())
-        continue;
+      //if (it->feature.id() >= jit->feature.id())
+        //continue;
 
       QgsGeometry* g2 = jit->feature.geometry();
       if (g1->intersects(g2))
@@ -294,13 +338,13 @@ void checkDock::checkPointInsidePolygon()
 void checkDock::checkPolygonContains(double tolerance)
 {
   QList<FeatureLayer>::Iterator it, jit;
-  for (it = mFeatureList.begin(); it != mFeatureList.end(); ++it)
+  for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
   {
     QgsGeometry* g1 = it->feature.geometry();
     if (g1->type() != QGis::Polygon)
       continue;
 
-    for (jit = mFeatureList.begin(); jit != mFeatureList.end(); ++jit)
+    for (jit = mFeatureList2.begin(); jit != mFeatureList2.end(); ++jit)
     {
       //if (it->feature.id() == jit->feature.id())
         //continue;
@@ -322,7 +366,7 @@ void checkDock::checkPolygonContains(double tolerance)
 void checkDock::checkPointCoveredBySegment(double tolerance)
 {
   QList<FeatureLayer>::Iterator it, jit;
-  for (it = mFeatureList.begin(); it != mFeatureList.end(); ++it)
+  for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
   {
     bool touched = false;
     QgsGeometry* g1 = it->feature.geometry();
@@ -330,7 +374,7 @@ void checkDock::checkPointCoveredBySegment(double tolerance)
     if (g1->type() != QGis::Point)
       continue;
 
-    for (jit = mFeatureList.begin(); jit != mFeatureList.end(); ++jit)
+    for (jit = mFeatureList2.begin(); jit != mFeatureList2.end(); ++jit)
     {
       QgsGeometry* g2 = jit->feature.geometry();
 
@@ -361,7 +405,7 @@ void checkDock::checkSegmentLength(double tolerance)
 {
   //TODO: multi versions, distance from settings, more errors for one feature
   QList<FeatureLayer>::Iterator it, jit;
-  for (it = mFeatureList.begin(); it != mFeatureList.end(); ++it)
+  for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
   {
     QgsGeometry* g1 = it->feature.geometry();
     QgsPolygon pol;
@@ -429,24 +473,27 @@ void checkDock::runTests(QgsRectangle extent)
 
     if (!layer1 || !layer2)
     {
-      std::cout << "layers " << layer1Str.toStdString() << " and " << layer2Str.toStdString() << " not found in registry!" << std::flush;
+      std::cout << "layer " << layer1Str.toStdString() << " or " << layer2Str.toStdString() << " not found in registry!" << std::flush;
       return;
     }
 
-    //(this->*mTestMap[test])(layer1, layer2, toleranceStr.toDouble());
+    mFeatureList1.clear();
+    mFeatureList2.clear();
+
     QgsFeature f;
 
     layer1->select(QgsAttributeList(), extent);
     while (layer1->nextFeature(f))
       if (f.geometry())
-        mFeatureList << FeatureLayer(layer1, f);
+        mFeatureList1 << FeatureLayer(layer1, f);
 
     layer2->select(QgsAttributeList(), extent);
     while (layer2->nextFeature(f))
       if (f.geometry())
-        mFeatureList << FeatureLayer(layer2, f);
+        mFeatureList2 << FeatureLayer(layer2, f);
 
     //call test routine
+    //(this->*mTestMap[test])(layer1, layer2, toleranceStr.toDouble());
     (this->*mTestMap[test])(toleranceStr.toDouble());
   }
 }
@@ -454,7 +501,6 @@ void checkDock::runTests(QgsRectangle extent)
 void checkDock::validate(QgsRectangle extent)
 {
   mErrorListView->clear();
-  mFeatureList.clear();
 
   runTests(extent);
   mComment->setText(QString("%1 errors were found").arg(mErrorListView->count()));
