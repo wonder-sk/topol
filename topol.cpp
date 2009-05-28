@@ -15,27 +15,20 @@
  *                                                                         *
  ***************************************************************************/
 
-//
 // QGIS Specific includes
-//
-
 #include <qgsmaplayer.h>
 #include <qgsapplication.h>
 #include <qgisinterface.h>
 #include <qgisgui.h>
 
-#include "topol.h"
-//#include "rulesDialog.h"
-#include "checkDock.h"
-
-//
 // Qt4 Related Includes
-//
-
 #include <QAction>
 #include <QToolBar>
 #include <QFile>
 #include <QMessageBox>
+
+#include "topol.h"
+#include "checkDock.h"
 
 static const char * const sIdent = "$Id: plugin.cpp 8053 2008-01-26 13:59:53Z timlinux $";
 static const QString sName = QObject::tr("TOPOL");
@@ -102,13 +95,7 @@ void Topol::initGui()
   // Add the icon to the toolbar
   mQGisIface->addToolBarIcon(mQActionPointer);
   mQGisIface->addPluginToMenu(tr("&Topol"), mQActionPointer);
-
-  //mRulesPointer = new QAction(QIcon(":/topol/topol.png"),tr("Topology Checker"), this);
-  //connect(mRulesPointer, SIGNAL(triggered()), this, SLOT(rules()));
-  //mQGisIface->addToolBarIcon(mRulesPointer);
-  //mQGisIface->addPluginToMenu(tr("&Rules"), mRulesPointer);
   //run();
-
 }
 //method defined in interface
 void Topol::help()
@@ -122,14 +109,7 @@ void Topol::help()
 // not be enough
 void Topol::run()
 {
-  
   QgsMapLayer *myLayer = mQGisIface->activeLayer();
-
-  if (myLayer == NULL || myLayer->type() != QgsMapLayer::VectorLayer) {
-    QMessageBox::information(mQGisIface->mainWindow(), "No layer", "Select a vector layer!");
-    return;
-  }
-
   checkDock* chDock = new checkDock("Rules", (QgsVectorLayer *)(myLayer));
   mQGisIface->addDockWidget(Qt::RightDockWidgetArea, chDock);
   chDock->show();

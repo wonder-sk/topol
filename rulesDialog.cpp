@@ -36,11 +36,13 @@ rulesDialog::rulesDialog(const QString &tableName, QList<QString> tests, QList<Q
 {
   setupUi(this);
 
+  mTestTable->setSelectionBehavior(QAbstractItemView::SelectRows);
   mTestBox->addItems(QStringList(tests));
   mLayer1Box->addItems(QStringList(layerList));
   mLayer2Box->addItems(QStringList(layerList));
 
   connect(mAddTestButton, SIGNAL(clicked()), this, SLOT(addTest()));
+  connect(mAddTestButton, SIGNAL(clicked()), mTestTable, SLOT(resizeColumnsToContents()));
   connect(mDeleteTestButton, SIGNAL(clicked()), this, SLOT(deleteTest()));
 }
 

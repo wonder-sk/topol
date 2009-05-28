@@ -56,7 +56,6 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QWidget
   mTestMap["Test segment lengths"] = &checkDock::checkSegmentLength;
 
   mConfigureDialog = new rulesDialog("Rules", mTestMap.keys(), mLayerRegistry->mapLayers().keys(), parent);
-  std::cout << mLayerRegistry->mapLayers().keys().first().toStdString();
   mTestTable = mConfigureDialog->testTable();
   
   mQgisApp = QgisApp::instance();
@@ -106,7 +105,9 @@ void checkDock::configure()
 void checkDock::errorListClicked(const QModelIndex& index)
 {
   int row = index.row();
-  mQgisApp->mapCanvas()->setExtent(mErrorList[row]->boundingBox());
+  QgsRectangle r = mErrorList[row]->boundingBox();
+  r.scale(1.5);
+  mQgisApp->mapCanvas()->setExtent(r);
   mQgisApp->mapCanvas()->refresh();
 
   mFixBox->clear();
@@ -199,7 +200,8 @@ void checkDock::checkDanglingEndpoints(double tolerance)
 	if ((c = checkEndpoints(g1, g2, tolerance)) || (d = checkEndpoints(g2, g1, tolerance)))
 	{
           QgsRectangle r = g1->boundingBox();
-	  r.combineExtentWith(&g2->boundingBox());
+	  QgsRectangle r2 = g2->boundingBox();
+	  r.combineExtentWith(&r2);
 
 	  QList<FeatureLayer> fls;
 	  TopolErrorDangle* err;
@@ -246,7 +248,8 @@ void checkDock::checkUnconnectedLines(double tolerance)
 	if ((c = checkEndpoints(g1, g2, tolerance)) || (d = checkEndpoints(g2, g1, tolerance)))
 	{
           QgsRectangle r = g1->boundingBox();
-	  r.combineExtentWith(&g2->boundingBox());
+	  QgsRectangle r2 = g2->boundingBox();
+	  r.combineExtentWith(&r2);
 
 	  QList<FeatureLayer> fls;
 	  TopolErrorDangle* err;
@@ -272,9 +275,17 @@ void checkDock::checkUnconnectedLines(double tolerance)
 
 void checkDock::checkIntersections(double tolerance)
 {
+  QProgressDialog progress("Checking for intersections", "Abort", 0, mFeatureList1.size(), this);
+  progress.setWindowModality(Qt::WindowModal);
+
+  int i = 0;
   QList<FeatureLayer>::Iterator it, jit;
   for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
   {
+    progress.setValue(++i);
+    if (progress.wasCanceled())
+      break;
+
     QgsGeometry* g1 = it->feature.geometry();
 
     for (jit = mFeatureList2.begin(); jit != mFeatureList2.end(); ++jit)
@@ -287,7 +298,8 @@ void checkDock::checkIntersections(double tolerance)
       if (g1->intersects(g2))
       {
         QgsRectangle r = g1->boundingBox();
-	r.combineExtentWith(&g2->boundingBox());
+	QgsRectangle r2 = g2->boundingBox();
+	r.combineExtentWith(&r2);
 
 	QgsGeometry* c = g1->intersection(g2);
 	if (!c)
