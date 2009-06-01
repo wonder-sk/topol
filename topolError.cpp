@@ -174,3 +174,10 @@ TopolErrorShort::TopolErrorShort(QgsRectangle theBoundingBox, QgsGeometry* theCo
   mFixMap["Select automatic fix"] = &TopolErrorShort::fixDummy;
   mFixMap["Delete feature"] = &TopolErrorShort::fixDeleteFirst;
 }
+
+TopolErrorValid::TopolErrorValid(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : TopolError(theBoundingBox, theConflict, theFeaturePairs)
+{
+  mName = "Invalid geometry";
+  mFixMap["Select automatic fix"] = &TopolErrorValid::fixDummy;
+  mFixMap["Delete feature"] = &TopolErrorValid::fixDeleteFirst;
+}

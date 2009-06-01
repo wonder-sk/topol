@@ -60,6 +60,8 @@ void rulesDialog::removeLayer(QString layerId)
   mLayer2Box->removeItem(mLayer2Box->findText(layerId));
 }
 
+void addTest() {}
+
 void rulesDialog::addTest()
 {
   //sanity checks

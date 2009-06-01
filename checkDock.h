@@ -60,6 +60,7 @@ private:
 
   QList<FeatureLayer> mFeatureList1;
   QList<FeatureLayer> mFeatureList2;
+  QList<QString> mLayerNameList;
 
   ErrorList mErrorList;
   QgsGeometryMap mGeometryMap;
@@ -77,6 +78,7 @@ private:
   void checkSegmentLength(double tolerance);
   void checkUnconnectedLines(double tolerance);
   void checkPointCoveredBySegment(double tolerance);
+  void checkValid(double tolerance);
 
   void runTests(QgsRectangle extent);
   void validate(QgsRectangle extent);

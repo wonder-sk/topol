@@ -30,16 +30,16 @@
 #include <qgsfeature.h>
 #include <qgsmapcanvas.h>
 #include <qgsrubberband.h>
-
 #include <qgsproviderregistry.h>
 #include <qgslogger.h>
+#include <spatialindex/qgsspatialindex.h>
+//#include "../../core/spatialindex/qgsspatialindex.h"
 
 #include "rulesDialog.h"
 #include "geosFunctions.h"
 #include "../../app/qgisapp.h"
 
 //TODO: get rid of those global variables (, mFeatureList, ...
-//	especially mFeatureList is stupid
 checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QWidget* parent)
 : QDockWidget(parent), Ui::checkDock()
 {
@@ -54,7 +54,15 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QWidget
   mTestMap["Test features inside polygon"] = &checkDock::checkPolygonContains;
   mTestMap["Test points not covered by segments"] = &checkDock::checkPointCoveredBySegment;
   mTestMap["Test segment lengths"] = &checkDock::checkSegmentLength;
+  mTestMap["Test geometry validity"] = &checkDock::checkValid;
+/*
+  QList<QString> layerNames;
+  QList<QgsMapLayer*> layers = mLayerRegistry->mapLayers().values();
+  for (int i = 0; i < layers.size(); ++i)
+    layerNames << layers[i]->name();
 
+  mConfigureDialog = new rulesDialog("Rules", mTestMap.keys(), layerNames, parent);
+  */
   mConfigureDialog = new rulesDialog("Rules", mTestMap.keys(), mLayerRegistry->mapLayers().keys(), parent);
   mTestTable = mConfigureDialog->testTable();
   
@@ -72,15 +80,17 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QWidget
   mRBFeature2->setColor("red");
   mRBConflict->setColor("gold");
 
-  mRBFeature1->setWidth(3);
-  mRBFeature2->setWidth(3);
-  mRBConflict->setWidth(3);
+  mRBFeature1->setWidth(5);
+  mRBFeature2->setWidth(5);
+  mRBConflict->setWidth(5);
 
   connect(mConfigureButton, SIGNAL(clicked()), this, SLOT(configure()));
+
   connect(mValidateAllButton, SIGNAL(clicked()), this, SLOT(validateAll()));
   connect(mValidateExtentButton, SIGNAL(clicked()), this, SLOT(validateExtent()));
   connect(mFixButton, SIGNAL(clicked()), this, SLOT(fix()));
   connect(mErrorListView, SIGNAL(clicked(const QModelIndex &)), this, SLOT(errorListClicked(const QModelIndex &)));
+
   connect(mLayerRegistry, SIGNAL(layerWillBeRemoved(QString)), mConfigureDialog, SLOT(removeLayer(QString)));
   connect(mLayerRegistry, SIGNAL(layerWasAdded(QgsMapLayer*)), mConfigureDialog, SLOT(addLayer(QgsMapLayer*)));
 }
@@ -219,7 +229,6 @@ void checkDock::checkDanglingEndpoints(double tolerance)
             err = new TopolErrorDangle(r, d, fls);
 	    mErrorList << err;
 	  }
-
 	  // TODO: ids from different layers can be same
 	  // write id and layer name instead?
 	}
@@ -273,13 +282,57 @@ void checkDock::checkUnconnectedLines(double tolerance)
   }
 }
 
+void checkDock::checkValid(double tolerance)
+{
+  QProgressDialog progress("Checking for intersections", "Abort", 0, mFeatureList1.size(), this);
+  progress.setWindowModality(Qt::WindowModal);
+  int i = 0;
+
+  QList<FeatureLayer>::Iterator it;
+
+  for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
+  {
+    progress.setValue(++i);
+    if (progress.wasCanceled())
+      break;
+
+    QgsGeometry* g = it->feature.geometry();
+    if (!g)
+    {
+      g = new QgsGeometry;
+      std::cout <<"creating new geometry\n";
+    }
+
+    std::cout<<"geos "<< it->feature.id() <<std::flush;
+    if (!GEOSisValid(g->asGeos()))
+    {
+      QgsRectangle r = g->boundingBox();
+      QList<FeatureLayer> fls;
+      fls << *it << *it;
+
+      TopolErrorValid* err = new TopolErrorValid(r, g, fls);
+      mErrorList << err;
+      mErrorListView->addItem(err->name() + QString(" %1").arg(it->feature.id()));
+    }
+  }
+}
+
 void checkDock::checkIntersections(double tolerance)
 {
   QProgressDialog progress("Checking for intersections", "Abort", 0, mFeatureList1.size(), this);
   progress.setWindowModality(Qt::WindowModal);
 
   int i = 0;
+  QgsSpatialIndex index;
   QList<FeatureLayer>::Iterator it, jit;
+
+  for (jit = mFeatureList2.begin(); jit != mFeatureList2.end(); ++jit)
+    index.insertFeature(jit->feature);
+
+  QgsVectorLayer* layer2;
+  if (mFeatureList2.size())
+    layer2 = mFeatureList2.first().layer;
+
   for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
   {
     progress.setValue(++i);
@@ -288,11 +341,45 @@ void checkDock::checkIntersections(double tolerance)
 
     QgsGeometry* g1 = it->feature.geometry();
 
+    QList<int> crossingIds = index.intersects(g1->boundingBox());
+    std::cout << crossingIds.size() <<"\n";
+
+    for (int i = 0; i < crossingIds.size(); ++i)
+    {
+      QgsFeature f;
+      layer2->featureAtId(crossingIds[i], f, true, false);
+
+      QgsGeometry* g2 = f.geometry();
+      if (g1->intersects(g2))
+      {
+        QgsRectangle r = g1->boundingBox();
+	QgsRectangle r2 = g2->boundingBox();
+	r.combineExtentWith(&r2);
+
+	QgsGeometry* c = g1->intersection(g2);
+	if (!c)
+	  c = new QgsGeometry;
+
+	QList<FeatureLayer> fls;
+	FeatureLayer fl;
+	fl.feature = f;
+	fl.layer = layer2;
+	fls << *it << fl;
+	TopolErrorIntersection* err = new TopolErrorIntersection(r, c, fls);
+
+	mErrorList << err;
+        mErrorListView->addItem(err->name() + QString(" %1").arg(it->feature.id()));
+      }
+    }
+  }
+}
+/*
     for (jit = mFeatureList2.begin(); jit != mFeatureList2.end(); ++jit)
     {
-	    //TODO: ids could be same in different layers
+	    //TODO: check for very same ids when in one layer
       //if (it->feature.id() >= jit->feature.id())
         //continue;
+
 
       QgsGeometry* g2 = jit->feature.geometry();
       if (g1->intersects(g2))
@@ -313,8 +400,7 @@ void checkDock::checkIntersections(double tolerance)
         mErrorListView->addItem(err->name() + QString(" %1 %2").arg(it->feature.id()).arg(jit->feature.id()));
       }
     }
-  }
-}
+  }*/
 
 /*
 void checkDock::checkPointInsidePolygon()
@@ -469,6 +555,8 @@ void checkDock::checkSegmentLength(double tolerance)
 /*void checkDock::checkSelfIntersections(double tolerance)
 {
 }*/
+
+
 
 void checkDock::runTests(QgsRectangle extent)
 {

@@ -108,4 +108,10 @@ public:
   TopolErrorInside(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs);
 };
 
+class TopolErrorValid : public TopolError
+{
+public:
+  TopolErrorValid(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs);
+};
+
 #endif
