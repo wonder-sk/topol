@@ -22,6 +22,7 @@
 
 #include <qgsvectorlayer.h>
 #include <qgsgeometry.h>
+#include <spatialindex/qgsspatialindex.h>
 
 #include "ui_checkDock.h"
 #include "rulesDialog.h"
@@ -33,7 +34,7 @@ class QgisApp;
 class checkDock;
 
 typedef QList<TopolError*> ErrorList;
-typedef void (checkDock::*testFunction)(double);
+typedef void (checkDock::*testFunction)(double, QString, QString);
 
 class checkDock : public QDockWidget, public Ui::checkDock
 {
@@ -68,18 +69,20 @@ private:
   //pointer to topology tests table
   QTableWidget* mTestTable;
 
+  QMap<QString, QgsSpatialIndex*> mLayerIndexes;
   QMap<QString, testFunction> mTestMap;
   QgsMapLayerRegistry* mLayerRegistry;
 
-  void checkIntersections(double tolerance);
-  void checkSelfIntersections(double tolerance);
-  void checkDanglingEndpoints(double tolerance);
-  void checkPolygonContains(double tolerance);
-  void checkSegmentLength(double tolerance);
-  void checkUnconnectedLines(double tolerance);
-  void checkPointCoveredBySegment(double tolerance);
-  void checkValid(double tolerance);
+  void checkIntersections(double tolerance, QString layer1str, QString layer2Str);
+  void checkSelfIntersections(double tolerance, QString layer1str, QString layer2Str);
+  void checkDanglingEndpoints(double tolerance, QString layer1str, QString layer2Str);
+  void checkPolygonContains(double tolerance, QString layer1str, QString layer2Str);
+  void checkSegmentLength(double tolerance, QString layer1str, QString layer2Str);
+  void checkUnconnectedLines(double tolerance, QString layer1str, QString layer2Str);
+  void checkPointCoveredBySegment(double tolerance, QString layer1str, QString layer2Str);
+  void checkValid(double tolerance, QString layer1str, QString layer2Str);
 
+  QgsSpatialIndex* createIndex(QgsVectorLayer* layer, QgsRectangle extent);
   void runTests(QgsRectangle extent);
   void validate(QgsRectangle extent);
 };

@@ -33,7 +33,6 @@
 #include <qgsproviderregistry.h>
 #include <qgslogger.h>
 #include <spatialindex/qgsspatialindex.h>
-//#include "../../core/spatialindex/qgsspatialindex.h"
 
 #include "rulesDialog.h"
 #include "geosFunctions.h"
@@ -102,9 +101,15 @@ checkDock::~checkDock()
   delete mRBFeature2;
   delete mConfigureDialog;
 
+  // delete errors in list
   QList<TopolError*>::Iterator it = mErrorList.begin();
   for (; it != mErrorList.end(); ++it)
     delete *it;
+
+  // delete spatial indexes
+  QMap<QString, QgsSpatialIndex*>::Iterator lit = mLayerIndexes.begin();
+  for (; lit != mLayerIndexes.end(); ++lit)
+    delete *lit;
 }
 
 void checkDock::configure()
@@ -190,7 +195,7 @@ QgsGeometry* checkEndpoints(QgsGeometry* g1, QgsGeometry* g2, double tolerance)
   return 0;
 }
 
-void checkDock::checkDanglingEndpoints(double tolerance)
+void checkDock::checkDanglingEndpoints(double tolerance, QString layer1Str, QString layer2Str)
 {
   QList<FeatureLayer>::Iterator it, jit;
   for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
@@ -237,7 +242,7 @@ void checkDock::checkDanglingEndpoints(double tolerance)
   }
 }
 
-void checkDock::checkUnconnectedLines(double tolerance)
+void checkDock::checkUnconnectedLines(double tolerance, QString layer1Str, QString layer2Str)
 {
   QList<FeatureLayer>::Iterator it, jit;
   for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
@@ -282,7 +287,7 @@ void checkDock::checkUnconnectedLines(double tolerance)
   }
 }
 
-void checkDock::checkValid(double tolerance)
+void checkDock::checkValid(double tolerance, QString layer1Str, QString layer2Str)
 {
   QProgressDialog progress("Checking for intersections", "Abort", 0, mFeatureList1.size(), this);
   progress.setWindowModality(Qt::WindowModal);
@@ -303,7 +308,14 @@ void checkDock::checkValid(double tolerance)
       std::cout <<"creating new geometry\n";
     }
 
+    if (!g->asGeos())
+    {
+      std::cout << "Geos geometry is NULL\n";
+      continue;
+    }
+
     std::cout<<"geos "<< it->feature.id() <<std::flush;
+
     if (!GEOSisValid(g->asGeos()))
     {
       QgsRectangle r = g->boundingBox();
@@ -317,7 +329,7 @@ void checkDock::checkValid(double tolerance)
   }
 }
 
-void checkDock::checkIntersections(double tolerance)
+void checkDock::checkIntersections(double tolerance, QString layer1Str, QString layer2Str)
 {
   QProgressDialog progress("Checking for intersections", "Abort", 0, mFeatureList1.size(), this);
   progress.setWindowModality(Qt::WindowModal);
@@ -433,7 +445,7 @@ void checkDock::checkPointInsidePolygon()
   }
 }*/
 
-void checkDock::checkPolygonContains(double tolerance)
+void checkDock::checkPolygonContains(double tolerance, QString layer1Str, QString layer2Str)
 {
   QList<FeatureLayer>::Iterator it, jit;
   for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
@@ -461,7 +473,7 @@ void checkDock::checkPolygonContains(double tolerance)
   }
 }
 
-void checkDock::checkPointCoveredBySegment(double tolerance)
+void checkDock::checkPointCoveredBySegment(double tolerance, QString layer1Str, QString layer2Str)
 {
   QList<FeatureLayer>::Iterator it, jit;
   for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
@@ -499,7 +511,7 @@ void checkDock::checkPointCoveredBySegment(double tolerance)
   }
 }
 
-void checkDock::checkSegmentLength(double tolerance)
+void checkDock::checkSegmentLength(double tolerance, QString layer1Str, QString layer2Str)
 {
   //TODO: multi versions, distance from settings, more errors for one feature
   QList<FeatureLayer>::Iterator it, jit;
@@ -552,11 +564,22 @@ void checkDock::checkSegmentLength(double tolerance)
   }
 }
 
-/*void checkDock::checkSelfIntersections(double tolerance)
+/*void checkDock::checkSelfIntersections(double tolerance, QString layer1Str, QString layer2Str)
 {
 }*/
 
+QgsSpatialIndex* checkDock::createIndex(QgsVectorLayer* layer, QgsRectangle extent)
+{
+  QgsSpatialIndex* index = new QgsSpatialIndex();
+  layer->select(QgsAttributeList(), extent);
 
+  QgsFeature f;
+  while (layer->nextFeature(f))
+    if (f.geometry())
+      index->insertFeature(f);
+
+  return index;
+}
 
 void checkDock::runTests(QgsRectangle extent)
 {
@@ -577,11 +600,17 @@ void checkDock::runTests(QgsRectangle extent)
       return;
     }
 
+    /*if (!mLayerIndexes.contains(layer1Str))
+      mLayerIndexes[layer1Str] = createIndex(layer1, extent);
+    if (!mLayerIndexes.contains(layer2Str))
+      mLayerIndexes[layer2Str] = createIndex(layer2, extent);
+*/
     mFeatureList1.clear();
     mFeatureList2.clear();
 
     QgsFeature f;
 
+    //TODO: remove this
     layer1->select(QgsAttributeList(), extent);
     while (layer1->nextFeature(f))
       if (f.geometry())
@@ -594,7 +623,7 @@ void checkDock::runTests(QgsRectangle extent)
 
     //call test routine
     //(this->*mTestMap[test])(layer1, layer2, toleranceStr.toDouble());
-    (this->*mTestMap[test])(toleranceStr.toDouble());
+    (this->*mTestMap[test])(toleranceStr.toDouble(), layer1Str, layer2Str);
   }
 }
 
