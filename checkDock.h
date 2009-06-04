@@ -70,6 +70,7 @@ private:
   QTableWidget* mTestTable;
 
   QMap<QString, QgsSpatialIndex*> mLayerIndexes;
+  QMap<int, QgsFeature> mLayerFeatures;
   QMap<QString, testFunction> mTestMap;
   QgsMapLayerRegistry* mLayerRegistry;
 

@@ -41,12 +41,29 @@ rulesDialog::rulesDialog(const QString &tableName, QList<QString> tests, QList<Q
   mLayer1Box->addItems(QStringList(layerList));
   mLayer2Box->addItems(QStringList(layerList));
 
+  mTestConfMap["Select test for addition"];
+  mTestConfMap["Test intersections"].showLayer2 = true;
+  mTestConfMap["Test dangling endpoints"].showTolerance = true;
+  mTestConfMap["Test features inside polygon"];
+  mTestConfMap["Test points not covered by segments"];
+  mTestConfMap["Test segment lengths"].showTolerance = true;
+  mTestConfMap["Test geometry validity"];
+
   connect(mAddTestButton, SIGNAL(clicked()), this, SLOT(addTest()));
   connect(mAddTestButton, SIGNAL(clicked()), mTestTable, SLOT(resizeColumnsToContents()));
   connect(mDeleteTestButton, SIGNAL(clicked()), this, SLOT(deleteTest()));
+  connect(mTestBox, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(showControls(const QString&)));
 }
 
 rulesDialog::~rulesDialog() {}
+
+void rulesDialog::showControls(const QString& testName)
+{
+/*std::cout << mTestConfMap[testName].showLayer2 << " "<<mTestConfMap[testName].showTolerance;
+  mLayer2Box->setVisible(mTestConfMap[testName].showLayer2);
+  mToleranceBox->setVisible(mTestConfMap[testName].showTolerance);
+  */
+}
 
 void rulesDialog::addLayer(QgsMapLayer* layer)
 {

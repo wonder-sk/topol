@@ -47,13 +47,14 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QWidget
   mLayer = theLayer;
   mLayerRegistry = QgsMapLayerRegistry::instance();
 
+  //mTestMap["Test self intersections"] = &checkDock::checkSelfIntersections;
   mTestMap["Test intersections"] = &checkDock::checkIntersections;
   mTestMap["Test dangling endpoints"] = &checkDock::checkDanglingEndpoints;
-  //mTestMap["Test self intersections"] = &checkDock::checkSelfIntersections;
   mTestMap["Test features inside polygon"] = &checkDock::checkPolygonContains;
   mTestMap["Test points not covered by segments"] = &checkDock::checkPointCoveredBySegment;
   mTestMap["Test segment lengths"] = &checkDock::checkSegmentLength;
   mTestMap["Test geometry validity"] = &checkDock::checkValid;
+
 /*
   QList<QString> layerNames;
   QList<QgsMapLayer*> layers = mLayerRegistry->mapLayers().values();
@@ -143,6 +144,11 @@ void checkDock::errorListClicked(const QModelIndex& index)
 
   mRBConflict->setToGeometry(mErrorList[row]->conflict(), mLayer);
 }
+
+/*void checkDock::showControls(QString& testString)
+{
+
+}*/
 
 void checkDock::fix()
 {
@@ -358,8 +364,8 @@ void checkDock::checkIntersections(double tolerance, QString layer1Str, QString 
 
     for (int i = 0; i < crossingIds.size(); ++i)
     {
-      QgsFeature f;
-      layer2->featureAtId(crossingIds[i], f, true, false);
+      QgsFeature& f = mLayerFeatures[crossingIds[i]];
+      //layer2->featureAtId(crossingIds[i], f, true, false);
 
       QgsGeometry* g2 = f.geometry();
       if (g1->intersects(g2))
@@ -573,10 +579,16 @@ QgsSpatialIndex* checkDock::createIndex(QgsVectorLayer* layer, QgsRectangle exte
   QgsSpatialIndex* index = new QgsSpatialIndex();
   layer->select(QgsAttributeList(), extent);
 
+  //TODO: errrrr
+  mLayerFeatures.clear();
+
   QgsFeature f;
   while (layer->nextFeature(f))
     if (f.geometry())
+    { 
       index->insertFeature(f);
+      mLayerFeatures[f.id()] = f;
+    }
 
   return index;
 }
@@ -600,11 +612,11 @@ void checkDock::runTests(QgsRectangle extent)
       return;
     }
 
-    /*if (!mLayerIndexes.contains(layer1Str))
+    if (!mLayerIndexes.contains(layer1Str))
       mLayerIndexes[layer1Str] = createIndex(layer1, extent);
     if (!mLayerIndexes.contains(layer2Str))
       mLayerIndexes[layer2Str] = createIndex(layer2, extent);
-*/
+
     mFeatureList1.clear();
     mFeatureList2.clear();
 
