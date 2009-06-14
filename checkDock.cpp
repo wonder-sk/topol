@@ -359,15 +359,17 @@ void checkDock::checkIntersections(double tolerance, QString layer1Str, QString 
   
   for (it = mFeatureList1.begin(); it != FeatureListEnd; ++it)
   {
-    progress.setValue(++i);
+    if (!(++i % 50))
+      progress.setValue(i);
     if (progress.wasCanceled())
       break;
 
     QgsGeometry* g1 = it->feature.geometry();
 
     QList<int> crossingIds = index->intersects(g1->boundingBox());
+    int crossSize = crossingIds.size();
     //std::cout << crossingIds.size() <<"\n";
-    for (int i = 0; i < crossingIds.size(); ++i)
+    for (int i = 0; i < crossSize; ++i)
     {
       QgsFeature& f = mLayerFeatures[crossingIds[i]];
       if (it->feature.id() == f.id())
