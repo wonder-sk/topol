@@ -335,105 +335,6 @@ void checkDock::checkValid(double tolerance, QString layer1Str, QString layer2St
   }
 }
 
-void checkDock::checkIntersections(double tolerance, QString layer1Str, QString layer2Str)
-{
-  QProgressDialog progress("Checking for intersections", "Abort", 0, mFeatureList1.size(), this);
-  progress.setWindowModality(Qt::WindowModal);
-
-  int i = 0;
-  QgsSpatialIndex* index = mLayerIndexes[layer2Str];
-  if (!index)
-  {
-    std::cout << "No index\n";
-    return;
-  }
-
-  QList<FeatureLayer>::Iterator it, jit;
-  QList<FeatureLayer>::ConstIterator FeatureListEnd = mFeatureList1.end();
-
-  QgsVectorLayer* layer2;
-  if (mFeatureList2.size())
-    layer2 = mFeatureList2.first().layer;
-
-  QStringList itemList;
-  
-  for (it = mFeatureList1.begin(); it != FeatureListEnd; ++it)
-  {
-    if (!(++i % 50))
-      progress.setValue(i);
-    if (progress.wasCanceled())
-      break;
-
-    QgsGeometry* g1 = it->feature.geometry();
-
-    QList<int> crossingIds = index->intersects(g1->boundingBox());
-    int crossSize = crossingIds.size();
-    //std::cout << crossingIds.size() <<"\n";
-    for (int i = 0; i < crossSize; ++i)
-    {
-      QgsFeature& f = mLayerFeatures[crossingIds[i]];
-      if (it->feature.id() == f.id())
-	continue;
-
-      QgsGeometry* g2 = f.geometry();
-      if (g1->intersects(g2))
-      {
-        QgsRectangle r = g1->boundingBox();
-	QgsRectangle r2 = g2->boundingBox();
-	r.combineExtentWith(&r2);
-
-	QgsGeometry* c = g1->intersection(g2);
-	// could this for some reason this return NULL?
-	//if (!c)
-	  //c = new QgsGeometry;
-
-	QList<FeatureLayer> fls;
-	FeatureLayer fl;
-	fl.feature = f;
-	fl.layer = layer2;
-	fls << *it << fl;
-	TopolErrorIntersection* err = new TopolErrorIntersection(r, c, fls);
-
-	mErrorList << err;
-	itemList << err->name() + QString(" %1").arg(it->feature.id());
-      }
-    }
-  }
-
-  mErrorListView->addItems(itemList);
-}
-/*
-    for (jit = mFeatureList2.begin(); jit != mFeatureList2.end(); ++jit)
-    {
-	    //TODO: check for very same ids when in one layer
-      if (it->feature.id() == jit->feature.id())
-        continue;
-
-      QgsGeometry* g2 = jit->feature.geometry();
-      if (g1->intersects(g2))
-      {
-        QgsRectangle r = g1->boundingBox();
-	QgsRectangle r2 = g2->boundingBox();
-	r.combineExtentWith(&r2);
-
-	QgsGeometry* c = g1->intersection(g2);
-	if (!c)
-	  c = new QgsGeometry;
-
-	QList<FeatureLayer> fls;
-	fls << *it << *jit;
-	TopolErrorIntersection* err = new TopolErrorIntersection(r, c, fls);
-
-	mErrorList << err;
-	itemList << err->name() + QString(" %1").arg(it->feature.id());
-        //mErrorListView->addItem(err->name() + QString(" %1 %2").arg(it->feature.id()).arg(jit->feature.id()));
-      }
-    }
-  }
-  mErrorListView->addItems(itemList);
-}
-*/
-
 /*
 void checkDock::checkPointInsidePolygon()
 {
@@ -588,20 +489,88 @@ void checkDock::checkSegmentLength(double tolerance, QString layer1Str, QString 
 {
 }*/
 
+void checkDock::checkIntersections(double tolerance, QString layer1Str, QString layer2Str)
+{
+  int i = 0;
+  QgsSpatialIndex* index = mLayerIndexes[layer2Str];
+  if (!index)
+  {
+    std::cout << "No index for layer " << layer2Str << "!\n";
+    return;
+  }
+
+  QProgressDialog progress("Checking for intersections", "Abort", 0, mFeatureList1.size(), this);
+  progress.setWindowModality(Qt::WindowModal);
+
+  QList<FeatureLayer>::Iterator it;
+  QList<FeatureLayer>::ConstIterator FeatureListEnd = mFeatureList1.end();
+
+  QgsVectorLayer* layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
+  QStringList itemList;
+  
+  for (it = mFeatureList1.begin(); it != FeatureListEnd; ++it)
+  {
+    if (!(++i % 50))
+      progress.setValue(i);
+
+    if (progress.wasCanceled())
+      break;
+
+    QgsGeometry* g1 = it->feature.geometry();
+    QList<int> crossingIds = index->intersects(g1->boundingBox());
+    int crossSize = crossingIds.size();
+
+    for (int i = 0; i < crossSize; ++i)
+    {
+      int id = crossingIds[i];
+
+      if (it->feature.id() == id)
+	continue;
+
+      //QgsFeature f;
+      //layer2->featureAtId(id, f, true, false);
+      QgsFeature& f = mFeatureMap2[id].feature;
+      QgsGeometry* g2 = f.geometry();
+
+      if (g1->intersects(g2))
+      {
+        QgsRectangle r = g1->boundingBox();
+	QgsRectangle r2 = g2->boundingBox();
+	r.combineExtentWith(&r2);
+
+	QgsGeometry* c = g1->intersection(g2);
+	// could this for some reason return NULL?
+	//if (!c)
+	  //c = new QgsGeometry;
+
+	QList<FeatureLayer> fls;
+	FeatureLayer fl;
+	fl.feature = f;
+	fl.layer = layer2;
+	fls << *it << fl;
+	TopolErrorIntersection* err = new TopolErrorIntersection(r, c, fls);
+
+	mErrorList << err;
+	itemList << err->name() + QString(" %1").arg(it->feature.id());
+      }
+    }
+  }
+
+  mErrorListView->addItems(itemList);
+}
+
 QgsSpatialIndex* checkDock::createIndex(QgsVectorLayer* layer, QgsRectangle extent)
 {
+  //TODO: progressbar 
   QgsSpatialIndex* index = new QgsSpatialIndex();
   layer->select(QgsAttributeList(), extent);
-
-  //TODO: errrrr
-  mLayerFeatures.clear();
 
   QgsFeature f;
   while (layer->nextFeature(f))
     if (f.geometry())
     { 
       index->insertFeature(f);
-      mLayerFeatures[f.id()] = f;
+      mFeatureMap2[f.id()] = FeatureLayer(layer, f);
     }
 
   return index;
@@ -626,26 +595,21 @@ void checkDock::runTests(QgsRectangle extent)
       return;
     }
 
-    if (!mLayerIndexes.contains(layer1Str))
-      mLayerIndexes[layer1Str] = createIndex(layer1, extent);
+    //if (!mLayerIndexes.contains(layer1Str))
+      //mLayerIndexes[layer1Str] = createIndex(layer1, extent);
     if (!mLayerIndexes.contains(layer2Str))
       mLayerIndexes[layer2Str] = createIndex(layer2, extent);
 
     mFeatureList1.clear();
-    mFeatureList2.clear();
+    mFeatureMap2.clear();
 
     QgsFeature f;
 
-    //TODO: remove this
+    //TODO: ?
     layer1->select(QgsAttributeList(), extent);
     while (layer1->nextFeature(f))
       if (f.geometry())
         mFeatureList1 << FeatureLayer(layer1, f);
-
-    layer2->select(QgsAttributeList(), extent);
-    while (layer2->nextFeature(f))
-      if (f.geometry())
-        mFeatureList2 << FeatureLayer(layer2, f);
 
     //call test routine
     (this->*mTestMap[test])(toleranceStr.toDouble(), layer1Str, layer2Str);

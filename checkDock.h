@@ -61,6 +61,7 @@ private:
 
   QList<FeatureLayer> mFeatureList1;
   QList<FeatureLayer> mFeatureList2;
+  QMap<int, FeatureLayer> mFeatureMap2;
   QList<QString> mLayerNameList;
 
   ErrorList mErrorList;
@@ -70,7 +71,7 @@ private:
   QTableWidget* mTestTable;
 
   QMap<QString, QgsSpatialIndex*> mLayerIndexes;
-  QMap<int, QgsFeature> mLayerFeatures;
+  QMap<int, QgsGeometry*> mLayerGeometries;
   QMap<QString, testFunction> mTestMap;
   QgsMapLayerRegistry* mLayerRegistry;
 
