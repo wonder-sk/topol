@@ -248,6 +248,7 @@ void checkDock::checkDanglingEndpoints(double tolerance, QString layer1Str, QStr
   }
 }
 
+//TODO: finish
 void checkDock::checkUnconnectedLines(double tolerance, QString layer1Str, QString layer2Str)
 {
   QList<FeatureLayer>::Iterator it, jit;
@@ -295,11 +296,12 @@ void checkDock::checkUnconnectedLines(double tolerance, QString layer1Str, QStri
 
 void checkDock::checkValid(double tolerance, QString layer1Str, QString layer2Str)
 {
-  QProgressDialog progress("Checking for intersections", "Abort", 0, mFeatureList1.size(), this);
+  QProgressDialog progress("Checking geometry validity", "Abort", 0, mFeatureList1.size(), this);
   progress.setWindowModality(Qt::WindowModal);
   int i = 0;
 
   QList<FeatureLayer>::Iterator it;
+  QStringList itemList;
 
   for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
   {
@@ -308,19 +310,18 @@ void checkDock::checkValid(double tolerance, QString layer1Str, QString layer2St
       break;
 
     QgsGeometry* g = it->feature.geometry();
-    if (!g)
+    //should not happen, already checked
+    /* if (!g)
     {
       g = new QgsGeometry;
       std::cout <<"creating new geometry\n";
-    }
+    }*/
 
     if (!g->asGeos())
     {
       std::cout << "Geos geometry is NULL\n";
       continue;
     }
-
-    std::cout<<"geos "<< it->feature.id() <<std::flush;
 
     if (!GEOSisValid(g->asGeos()))
     {
@@ -330,87 +331,121 @@ void checkDock::checkValid(double tolerance, QString layer1Str, QString layer2St
 
       TopolErrorValid* err = new TopolErrorValid(r, g, fls);
       mErrorList << err;
-      mErrorListView->addItem(err->name() + QString(" %1").arg(it->feature.id()));
+      itemList << err->name() + QString(" %1").arg(it->feature.id());
     }
   }
+
+  mErrorListView->addItems(itemList);
 }
-
-/*
-void checkDock::checkPointInsidePolygon()
-{
-  QList<FeatureLayer>::Iterator it, jit;
-  for (it = mFeatureList.begin(); it != mFeatureList.end(); ++it)
-  {
-    QgsGeometry* g1 = it->feature.geometry();
-    if (g1->type() != QGis::Polygon)
-      continue;
-
-    for (jit = mFeatureList.begin(); jit != mFeatureList.end(); ++jit)
-    {
-      QgsGeometry* g2 = jit->feature.geometry();
-
-      if (g2->type() != QGis::Point)
-        continue;
-
-      QgsPoint pt  = g2->asPoint();
-      if (g1->contains(&pt))
-      {
-	QList<FeatureLayer> fls;
-	fls << *it << *jit;
-	TopolErrorContains* err = new TopolErrorContains(g1->boundingBox(), g2, fls);
-
-	mErrorList << err;
-        mErrorListView->addItem(err->name() + QString(" %1 %2").arg(it->feature.id()).arg(jit->feature.id()));
-      }
-    }
-  }
-}*/
 
 void checkDock::checkPolygonContains(double tolerance, QString layer1Str, QString layer2Str)
 {
-  QList<FeatureLayer>::Iterator it, jit;
-  for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
+  int i = 0;
+  QgsSpatialIndex* index = mLayerIndexes[layer2Str];
+  if (!index)
   {
+    std::cout << "No index for layer " << layer2Str.toStdString() << "!\n";
+    return;
+  }
+
+  QProgressDialog progress("Checking polygons for inside features", "Abort", 0, mFeatureList1.size(), this);
+  progress.setWindowModality(Qt::WindowModal);
+
+  QgsVectorLayer* layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
+  QStringList itemList;
+
+  QList<FeatureLayer>::Iterator it;
+  QList<FeatureLayer>::ConstIterator FeatureListEnd = mFeatureList1.end();
+  for (it = mFeatureList1.begin(); it != FeatureListEnd; ++it)
+  {
+    if (!(++i % 100))
+      progress.setValue(i);
+
+    if (progress.wasCanceled())
+      break;
+
     QgsGeometry* g1 = it->feature.geometry();
+    QgsRectangle bb = g1->boundingBox();
     if (g1->type() != QGis::Polygon)
-      continue;
+      break;
 
-    for (jit = mFeatureList2.begin(); jit != mFeatureList2.end(); ++jit)
+    QList<int> crossingIds;
+    crossingIds = index->intersects(bb);
+    int crossSize = crossingIds.size();
+    
+    QList<int>::Iterator cit = crossingIds.begin();
+    QList<int>::ConstIterator crossingIdsEnd = crossingIds.end();
+
+    for (; cit != crossingIdsEnd; ++cit)
     {
-      //if (it->feature.id() == jit->feature.id())
-        //continue;
+      QgsFeature& f = mFeatureMap2[*cit].feature;
+      QgsGeometry* g2 = f.geometry();
 
-      QgsGeometry* g2 = jit->feature.geometry();
       if (contains(g1, g2))
       {
 	QList<FeatureLayer> fls;
-	fls << *it << *jit;
-	TopolErrorInside* err = new TopolErrorInside(g1->boundingBox(), g2, fls);
+	FeatureLayer fl;
+	fl.feature = f;
+	fl.layer = layer2;
+	fls << *it << fl;
+	TopolErrorInside* err = new TopolErrorInside(bb, g2, fls);
 
 	mErrorList << err;
-        mErrorListView->addItem(err->name() + QString(" %1 %2").arg(it->feature.id()).arg(jit->feature.id()));
+        itemList << QString(" %1 x %1").arg(it->feature.id()).arg(f.id());
       }
     }
   }
+
+  mErrorListView->addItems(itemList);
 }
 
 void checkDock::checkPointCoveredBySegment(double tolerance, QString layer1Str, QString layer2Str)
 {
-  QList<FeatureLayer>::Iterator it, jit;
+  int i = 0;
+  QgsSpatialIndex* index = mLayerIndexes[layer2Str];
+  if (!index)
+  {
+    std::cout << "No index for layer " << layer2Str.toStdString() << "!\n";
+    return;
+  }
+
+  QProgressDialog progress("Checking for intersections", "Abort", 0, mFeatureList1.size(), this);
+  progress.setWindowModality(Qt::WindowModal);
+
+  QgsVectorLayer* layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
+  if (layer2->geometryType() == QGis::Point)
+    return;
+
+  QStringList itemList;
+
+  QList<FeatureLayer>::Iterator it;
+  QList<FeatureLayer>::ConstIterator FeatureListEnd = mFeatureList1.end();
   for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
   {
-    bool touched = false;
+    if (!(++i % 100))
+      progress.setValue(i);
+
+    if (progress.wasCanceled())
+      break;
+
     QgsGeometry* g1 = it->feature.geometry();
-
+    QgsRectangle bb = g1->boundingBox();
     if (g1->type() != QGis::Point)
-      continue;
+      break;
 
-    for (jit = mFeatureList2.begin(); jit != mFeatureList2.end(); ++jit)
+    QList<int> crossingIds;
+    crossingIds = index->intersects(bb);
+    int crossSize = crossingIds.size();
+    
+    QList<int>::Iterator cit = crossingIds.begin();
+    QList<int>::ConstIterator crossingIdsEnd = crossingIds.end();
+
+    bool touched = false;
+
+    for (; cit != crossingIdsEnd; ++cit)
     {
-      QgsGeometry* g2 = jit->feature.geometry();
-
-      if (g2->type() == QGis::Point)
-        continue;
+      QgsFeature& f = mFeatureMap2[*cit].feature;
+      QgsGeometry* g2 = f.geometry();
 
       // test if point touches other geometry
       if (touches(g1, g2))
@@ -424,19 +459,35 @@ void checkDock::checkPointCoveredBySegment(double tolerance, QString layer1Str, 
     {
       QList<FeatureLayer> fls;
       fls << *it << *it;
-      TopolErrorCovered* err = new TopolErrorCovered(g1->boundingBox(), g1, fls);
+      TopolErrorCovered* err = new TopolErrorCovered(bb, g1, fls);
 
       mErrorList << err;
-      mErrorListView->addItem(err->name() + QString(" %1").arg(it->feature.id()));
+      itemList << QString(" %1").arg(it->feature.id());
     }
   }
+
+  mErrorListView->addItems(itemList);
 }
 
 void checkDock::checkSegmentLength(double tolerance, QString layer1Str, QString layer2Str)
 {
   //TODO: multi versions, distance from settings, more errors for one feature
-  QList<FeatureLayer>::Iterator it, jit;
-  for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
+  int i = 0;
+  QgsSpatialIndex* index = mLayerIndexes[layer2Str];
+  if (!index)
+  {
+    std::cout << "No index for layer " << layer2Str.toStdString() << "!\n";
+    return;
+  }
+
+  QProgressDialog progress("Checking segment length", "Abort", 0, mFeatureList1.size(), this);
+  progress.setWindowModality(Qt::WindowModal);
+
+  QStringList itemList;
+
+  QList<FeatureLayer>::Iterator it;
+  QList<FeatureLayer>::ConstIterator FeatureListEnd = mFeatureList1.end();
+  for (it = mFeatureList1.begin(); it != FeatureListEnd; ++it)
   {
     QgsGeometry* g1 = it->feature.geometry();
     QgsPolygon pol;
@@ -459,9 +510,10 @@ void checkDock::checkSegmentLength(double tolerance, QString layer1Str, QString 
 	    segm << ls[i-1] << ls[i];
             err = new TopolErrorShort(g1->boundingBox(), QgsGeometry::fromPolyline(segm), fls);
             mErrorList << err;
-            mErrorListView->addItem(err->name() + QString(" %1").arg(it->feature.id()));
+            itemList << err->name() + QString(" %1").arg(it->feature.id());
 	  }
 	}
+      break;
       case QGis::Polygon:
         pol = g1->asPolygon();
 
@@ -483,12 +535,14 @@ void checkDock::checkSegmentLength(double tolerance, QString layer1Str, QString 
         continue;
     }
   }
+
+  mErrorListView->addItems(itemList);
 }
 
 /*void checkDock::checkSelfIntersections(double tolerance, QString layer1Str, QString layer2Str)
 {
 }*/
-
+/*
 QList<QgsRectangle> splitRectangle(QgsRectangle r, int split)
 {
   QList<QgsRectangle> rs;
@@ -517,7 +571,7 @@ QList<QgsRectangle> crossingRectangles(QgsGeometry* g)
 {
   QList<QgsRectangle> crossRectangles;
   QgsRectangle r = g->boundingBox();
-  QList<QgsRectangle> tiles = splitRectangle(r, 2);
+  QList<QgsRectangle> tiles = splitRectangle(r, 1);
   QList<QgsRectangle>::ConstIterator it = tiles.begin();
   QList<QgsRectangle>::ConstIterator tilesEnd = tiles.end();
 
@@ -527,6 +581,15 @@ QList<QgsRectangle> crossingRectangles(QgsGeometry* g)
 
   return crossRectangles;
 }
+*/
+
+/*inline bool setProgress(QProgressDialog& progress, int &i)
+{
+    if (!(++i % 100))
+      progress.setValue(i);
+
+    return progress.wasCanceled();
+}*/
 
 void checkDock::checkIntersections(double tolerance, QString layer1Str, QString layer2Str)
 {
@@ -558,9 +621,10 @@ void checkDock::checkIntersections(double tolerance, QString layer1Str, QString 
     QgsGeometry* g1 = it->feature.geometry();
     QgsRectangle bb = g1->boundingBox();
 
+    QList<int> crossingIds;
+    crossingIds = index->intersects(bb);
+    /*
     QSet<int> crossingIds;
-    //QList<int> crossingIds;
-    //crossingIds = index->intersects(bb);
     QList<QgsRectangle> tiles = crossingRectangles(g1); 
     QList<QgsRectangle>::ConstIterator tilesIt = tiles.begin();
     QList<QgsRectangle>::ConstIterator tilesEnd = tiles.end();
@@ -568,14 +632,14 @@ void checkDock::checkIntersections(double tolerance, QString layer1Str, QString 
     for (; tilesIt != tilesEnd; ++tilesIt)
       crossingIds |= index->intersects(*tilesIt).toSet();
       //crossingIds << index->intersects(*tilesIt);
-
+*/
     int crossSize = crossingIds.size();
     //std::cout << "crossingFeatures size: " << crossingFeatures.size() << "\n";
 
-    QSet<int>::Iterator cit = crossingIds.begin();
-    QSet<int>::ConstIterator crossingIdsEnd = crossingIds.end();
-    //QList<int>::Iterator cit = crossingIds.begin();
-    //QList<int>::ConstIterator crossingIdsEnd = crossingIds.end();
+    //QSet<int>::Iterator cit = crossingIds.begin();
+    //QSet<int>::ConstIterator crossingIdsEnd = crossingIds.end();
+    QList<int>::Iterator cit = crossingIds.begin();
+    QList<int>::ConstIterator crossingIdsEnd = crossingIds.end();
     for (; cit != crossingIdsEnd; ++cit)
     {
       //QgsFeature f;
