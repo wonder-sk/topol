@@ -489,13 +489,52 @@ void checkDock::checkSegmentLength(double tolerance, QString layer1Str, QString 
 {
 }*/
 
+QList<QgsRectangle> splitRectangle(QgsRectangle r, int split)
+{
+  QList<QgsRectangle> rs;
+
+  QgsPoint splitPoint = r.center();
+
+  if (--split > 0)
+  {
+    rs << splitRectangle(QgsRectangle(QgsPoint(r.xMinimum(), r.yMaximum()), splitPoint), split);
+    rs << splitRectangle(QgsRectangle(QgsPoint(r.xMinimum(), r.yMinimum()), splitPoint), split);
+    rs << splitRectangle(QgsRectangle(QgsPoint(r.xMaximum(), r.yMaximum()), splitPoint), split);
+    rs << splitRectangle(QgsRectangle(QgsPoint(r.xMaximum(), r.yMinimum()), splitPoint), split);
+  }
+  else
+  {
+    rs << QgsRectangle(QgsPoint(r.xMinimum(), r.yMaximum()), splitPoint);
+    rs << QgsRectangle(QgsPoint(r.xMinimum(), r.yMinimum()), splitPoint);
+    rs << QgsRectangle(QgsPoint(r.xMaximum(), r.yMaximum()), splitPoint);
+    rs << QgsRectangle(QgsPoint(r.xMaximum(), r.yMinimum()), splitPoint);
+  }
+
+  return rs;
+}
+
+QList<QgsRectangle> crossingRectangles(QgsGeometry* g)
+{
+  QList<QgsRectangle> crossRectangles;
+  QgsRectangle r = g->boundingBox();
+  QList<QgsRectangle> tiles = splitRectangle(r, 2);
+  QList<QgsRectangle>::ConstIterator it = tiles.begin();
+  QList<QgsRectangle>::ConstIterator tilesEnd = tiles.end();
+
+  for (; it != tilesEnd; ++it)
+    if (g->intersects(*it))
+      crossRectangles << *it;
+
+  return crossRectangles;
+}
+
 void checkDock::checkIntersections(double tolerance, QString layer1Str, QString layer2Str)
 {
   int i = 0;
   QgsSpatialIndex* index = mLayerIndexes[layer2Str];
   if (!index)
   {
-    std::cout << "No index for layer " << layer2Str << "!\n";
+    std::cout << "No index for layer " << layer2Str.toStdString() << "!\n";
     return;
   }
 
@@ -510,31 +549,43 @@ void checkDock::checkIntersections(double tolerance, QString layer1Str, QString 
   
   for (it = mFeatureList1.begin(); it != FeatureListEnd; ++it)
   {
-    if (!(++i % 50))
+    if (!(++i % 100))
       progress.setValue(i);
 
     if (progress.wasCanceled())
       break;
 
     QgsGeometry* g1 = it->feature.geometry();
-    QList<int> crossingIds = index->intersects(g1->boundingBox());
+    QgsRectangle bb = g1->boundingBox();
+
+    QSet<int> crossingIds;
+    //QList<int> crossingIds;
+    //crossingIds = index->intersects(bb);
+    QList<QgsRectangle> tiles = crossingRectangles(g1); 
+    QList<QgsRectangle>::ConstIterator tilesIt = tiles.begin();
+    QList<QgsRectangle>::ConstIterator tilesEnd = tiles.end();
+
+    for (; tilesIt != tilesEnd; ++tilesIt)
+      crossingIds |= index->intersects(*tilesIt).toSet();
+      //crossingIds << index->intersects(*tilesIt);
+
     int crossSize = crossingIds.size();
+    //std::cout << "crossingFeatures size: " << crossingFeatures.size() << "\n";
 
-    for (int i = 0; i < crossSize; ++i)
+    QSet<int>::Iterator cit = crossingIds.begin();
+    QSet<int>::ConstIterator crossingIdsEnd = crossingIds.end();
+    //QList<int>::Iterator cit = crossingIds.begin();
+    //QList<int>::ConstIterator crossingIdsEnd = crossingIds.end();
+    for (; cit != crossingIdsEnd; ++cit)
     {
-      int id = crossingIds[i];
-
-      if (it->feature.id() == id)
-	continue;
-
       //QgsFeature f;
       //layer2->featureAtId(id, f, true, false);
-      QgsFeature& f = mFeatureMap2[id].feature;
+      QgsFeature& f = mFeatureMap2[*cit].feature;
       QgsGeometry* g2 = f.geometry();
 
       if (g1->intersects(g2))
       {
-        QgsRectangle r = g1->boundingBox();
+        QgsRectangle r = bb;
 	QgsRectangle r2 = g2->boundingBox();
 	r.combineExtentWith(&r2);
 
@@ -551,7 +602,7 @@ void checkDock::checkIntersections(double tolerance, QString layer1Str, QString 
 	TopolErrorIntersection* err = new TopolErrorIntersection(r, c, fls);
 
 	mErrorList << err;
-	itemList << err->name() + QString(" %1").arg(it->feature.id());
+	itemList << err->name() + QString(" %1 x %2").arg(it->feature.id()).arg(f.id());
       }
     }
   }
@@ -561,17 +612,31 @@ void checkDock::checkIntersections(double tolerance, QString layer1Str, QString 
 
 QgsSpatialIndex* checkDock::createIndex(QgsVectorLayer* layer, QgsRectangle extent)
 {
-  //TODO: progressbar 
   QgsSpatialIndex* index = new QgsSpatialIndex();
   layer->select(QgsAttributeList(), extent);
 
+  QProgressDialog progress("Building spatial index", "Abort", 0, layer->featureCount(), this);
+  progress.setWindowModality(Qt::WindowModal);
+
+  int i = 0;
   QgsFeature f;
   while (layer->nextFeature(f))
+  {
+    if (!(++i % 100))
+      progress.setValue(i);
+
+    if (progress.wasCanceled())
+    {
+      delete index;
+      return 0;
+    }
+
     if (f.geometry())
     { 
       index->insertFeature(f);
       mFeatureMap2[f.id()] = FeatureLayer(layer, f);
     }
+  }
 
   return index;
 }
@@ -595,13 +660,13 @@ void checkDock::runTests(QgsRectangle extent)
       return;
     }
 
+    mFeatureList1.clear();
+    mFeatureMap2.clear();
+
     //if (!mLayerIndexes.contains(layer1Str))
       //mLayerIndexes[layer1Str] = createIndex(layer1, extent);
     if (!mLayerIndexes.contains(layer2Str))
       mLayerIndexes[layer2Str] = createIndex(layer2, extent);
-
-    mFeatureList1.clear();
-    mFeatureMap2.clear();
 
     QgsFeature f;
 

@@ -1,0 +1,23 @@
+Index: ../../core/qgsrectangle.h
+===================================================================
+--- ../../core/qgsrectangle.h	(revision 10918)
++++ ../../core/qgsrectangle.h	(working copy)
+@@ -76,6 +76,8 @@
+     double height() const;
+     //! Center point of the rectangle
+     QgsPoint center() const;
++    //! compute hash value (used for QSet storing)
++    inline uint qHash(const QgsRectangle &key);
+     //! Scale the rectangle around its center point
+     void scale( double, const QgsPoint *c = 0 );
+     //! Expand the rectangle to support zoom out scaling
+@@ -197,4 +199,9 @@
+   return os << r.toString().toLocal8Bit().data();
+ }
+ 
++inline uint QgsRectangle::qHash(const QgsRectangle &key)
++{
++      return qHash(key.yMinimum() * key.xMaximum());
++}
++
+ #endif // QGSRECT_H
