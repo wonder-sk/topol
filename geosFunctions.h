@@ -43,7 +43,7 @@ class GEOSException
     static const char *lastMsg;
 };
 
-bool touches(QgsGeometry* g1, QgsGeometry* g2)
+bool geosTouches(QgsGeometry* g1, QgsGeometry* g2)
 {
   try
   {
@@ -56,7 +56,7 @@ bool touches(QgsGeometry* g1, QgsGeometry* g2)
   }
 }
 
-bool overlaps(QgsGeometry* g1, QgsGeometry* g2)
+bool geosOverlaps(QgsGeometry* g1, QgsGeometry* g2)
 {
   try
   {
@@ -69,7 +69,7 @@ bool overlaps(QgsGeometry* g1, QgsGeometry* g2)
   }
 }
 
-bool contains(QgsGeometry* g1, QgsGeometry* g2)
+bool geosContains(QgsGeometry* g1, QgsGeometry* g2)
 {
   try
   {

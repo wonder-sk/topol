@@ -77,7 +77,7 @@ private:
 
   void checkIntersections(double tolerance, QString layer1str, QString layer2Str);
   void checkSelfIntersections(double tolerance, QString layer1str, QString layer2Str);
-  void checkDanglingEndpoints(double tolerance, QString layer1str, QString layer2Str);
+  void checkCloseFeature(double tolerance, QString layer1str, QString layer2Str);
   void checkPolygonContains(double tolerance, QString layer1str, QString layer2Str);
   void checkSegmentLength(double tolerance, QString layer1str, QString layer2Str);
   void checkUnconnectedLines(double tolerance, QString layer1str, QString layer2Str);

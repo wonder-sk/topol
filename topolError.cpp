@@ -137,14 +137,14 @@ TopolErrorIntersection::TopolErrorIntersection(QgsRectangle theBoundingBox, QgsG
   }
 }
 
-TopolErrorDangle::TopolErrorDangle(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : TopolError(theBoundingBox, theConflict, theFeaturePairs)
+TopolErrorClose::TopolErrorClose(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : TopolError(theBoundingBox, theConflict, theFeaturePairs)
 {
-  mName = "Dangling endpoint";
+  mName = "Features too close";
 
-  mFixMap["Select automatic fix"] = &TopolErrorDangle::fixDummy;
-  mFixMap["Move blue feature"] = &TopolErrorDangle::fixMoveFirst;
-  mFixMap["Move red feature"] = &TopolErrorDangle::fixMoveSecond;
-  mFixMap["Snap to segment"] = &TopolErrorDangle::fixSnap;
+  mFixMap["Select automatic fix"] = &TopolErrorClose::fixDummy;
+  mFixMap["Move blue feature"] = &TopolErrorClose::fixMoveFirst;
+  mFixMap["Move red feature"] = &TopolErrorClose::fixMoveSecond;
+  mFixMap["Snap to segment"] = &TopolErrorClose::fixSnap;
 }
 
 /*TopolErrorContains::TopolErrorContains(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : TopolError(theBoundingBox, theConflict, theFeaturePairs)
@@ -180,4 +180,11 @@ TopolErrorValid::TopolErrorValid(QgsRectangle theBoundingBox, QgsGeometry* theCo
   mName = "Invalid geometry";
   mFixMap["Select automatic fix"] = &TopolErrorValid::fixDummy;
   mFixMap["Delete feature"] = &TopolErrorValid::fixDeleteFirst;
+}
+
+TopolErrorUnconnected::TopolErrorUnconnected(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : TopolError(theBoundingBox, theConflict, theFeaturePairs)
+{
+  mName = "Invalid geometry";
+  mFixMap["Select automatic fix"] = &TopolErrorUnconnected::fixDummy;
+  mFixMap["Delete feature"] = &TopolErrorUnconnected::fixDeleteFirst;
 }

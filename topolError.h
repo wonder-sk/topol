@@ -77,10 +77,10 @@ public:
   TopolErrorIntersection(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs);
 };
 
-class TopolErrorDangle : public TopolError
+class TopolErrorClose : public TopolError
 {
 public:
-  TopolErrorDangle(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs);
+  TopolErrorClose(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs);
 };
 /*
 class TopolErrorContains : public TopolError
@@ -112,6 +112,12 @@ class TopolErrorValid : public TopolError
 {
 public:
   TopolErrorValid(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs);
+};
+
+class TopolErrorUnconnected : public TopolError
+{
+public:
+  TopolErrorUnconnected(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs);
 };
 
 #endif

@@ -49,11 +49,12 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QWidget
 
   //mTestMap["Test self intersections"] = &checkDock::checkSelfIntersections;
   mTestMap["Test intersections"] = &checkDock::checkIntersections;
-  mTestMap["Test dangling endpoints"] = &checkDock::checkDanglingEndpoints;
+  mTestMap["Test feature too close"] = &checkDock::checkCloseFeature;
   mTestMap["Test features inside polygon"] = &checkDock::checkPolygonContains;
   mTestMap["Test points not covered by segments"] = &checkDock::checkPointCoveredBySegment;
   mTestMap["Test segment lengths"] = &checkDock::checkSegmentLength;
   mTestMap["Test geometry validity"] = &checkDock::checkValid;
+  mTestMap["Test unconnected lines"] = &checkDock::checkUnconnectedLines;
 
 /*
   QList<QString> layerNames;
@@ -97,9 +98,7 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QWidget
 
 checkDock::~checkDock()
 {
-  delete mRBConflict;
-  delete mRBFeature1;
-  delete mRBFeature2;
+  delete mRBConflict, mRBFeature1, mRBFeature2;
   delete mConfigureDialog;
 
   // delete errors in list
@@ -173,7 +172,7 @@ void checkDock::fix()
     QMessageBox::information(this, "Topology fix error", "Fixing failed!");
 }
 
-QgsGeometry* checkEndpoints(QgsGeometry* g1, QgsGeometry* g2, double tolerance)
+/*QgsGeometry* checkEndpoints(QgsGeometry* g1, QgsGeometry* g2, double tolerance)
 {
 	//TODO:MultiLines
   if (!g1 || !g2)
@@ -199,22 +198,73 @@ QgsGeometry* checkEndpoints(QgsGeometry* g1, QgsGeometry* g2, double tolerance)
 
   delete g;
   return 0;
-}
+}*/
 
-void checkDock::checkDanglingEndpoints(double tolerance, QString layer1Str, QString layer2Str)
+void checkDock::checkCloseFeature(double tolerance, QString layer1Str, QString layer2Str)
 {
-  QList<FeatureLayer>::Iterator it, jit;
-  for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
+  int i = 0;
+  QgsSpatialIndex* index = mLayerIndexes[layer2Str];
+  if (!index)
   {
+    std::cout << "No index for layer " << layer2Str.toStdString() << "!\n";
+    return;
+  }
+
+  QProgressDialog progress("Checking for close features", "Abort", 0, mFeatureList1.size(), this);
+  progress.setWindowModality(Qt::WindowModal);
+
+  QgsVectorLayer* layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
+  QStringList itemList;
+
+  QList<FeatureLayer>::Iterator it;
+  QList<FeatureLayer>::ConstIterator FeatureListEnd = mFeatureList1.end();
+  for (it = mFeatureList1.begin(); it != FeatureListEnd; ++it)
+  {
+    if (!(++i % 100))
+      progress.setValue(i);
+
+    if (progress.wasCanceled())
+      break;
+
     QgsGeometry* g1 = it->feature.geometry();
+    QgsRectangle bb = g1->boundingBox();
 
-    for (jit = mFeatureList2.begin(); jit != mFeatureList2.end(); ++jit)
+    // increase bounding box by tolerance
+    QgsRectangle frame(bb.xMinimum() - tolerance, bb.yMinimum() - tolerance, bb.xMaximum() + tolerance, bb.yMaximum() + tolerance); 
+
+    QList<int> crossingIds;
+    crossingIds = index->intersects(frame);
+    int crossSize = crossingIds.size();
+    
+    QList<int>::Iterator cit = crossingIds.begin();
+    QList<int>::ConstIterator crossingIdsEnd = crossingIds.end();
+
+    for (; cit != crossingIdsEnd; ++cit)
     {
-      //if (it->feature.id() >= jit->feature.id())
-        //continue;
+      QgsFeature& f = mFeatureMap2[*cit].feature;
+      QgsGeometry* g2 = f.geometry();
 
-      QgsGeometry* g2 = jit->feature.geometry();
+      if (g1->distance(*g2) < tolerance)
+      {
+        QgsRectangle r = g2->boundingBox();
+	r.combineExtentWith(&bb);
 
+	QList<FeatureLayer> fls;
+	FeatureLayer fl;
+	fl.feature = f;
+	fl.layer = layer2;
+	fls << *it << fl;
+	TopolErrorClose* err = new TopolErrorClose(r, g2, fls);
+
+	mErrorList << err;
+        itemList << QString(" %1 x %2").arg(it->feature.id()).arg(f.id());
+      }
+    }
+  }
+
+  mErrorListView->addItems(itemList);
+}
+    /* ^
       if (g1->distance(*g2) < tolerance)
       {
 	QgsGeometry *c, *d;
@@ -225,73 +275,103 @@ void checkDock::checkDanglingEndpoints(double tolerance, QString layer1Str, QStr
 	  r.combineExtentWith(&r2);
 
 	  QList<FeatureLayer> fls;
-	  TopolErrorDangle* err;
+	  TopolErrorClose* err;
 
           if (c)
 	  {
 	    fls << *it << *jit;
-            err = new TopolErrorDangle(r, c, fls);
+            err = new TopolErrorClose(r, c, fls);
             mErrorListView->addItem(err->name() + QString(" %1 %2").arg(it->feature.id()).arg(jit->feature.id()));
 	    mErrorList << err;
 	  }
 	  else if (d)
 	  {
 	    fls << *jit << *it;
-            err = new TopolErrorDangle(r, d, fls);
+            err = new TopolErrorClose(r, d, fls);
 	    mErrorList << err;
 	  }
 	  // TODO: ids from different layers can be same
 	  // write id and layer name instead?
-	}
-      }
-    }
-  }
-}
+	}*/
 
-//TODO: finish
 void checkDock::checkUnconnectedLines(double tolerance, QString layer1Str, QString layer2Str)
 {
-  QList<FeatureLayer>::Iterator it, jit;
-  for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
+	//TODO: multilines
+  int i = 0;
+  QgsSpatialIndex* index = mLayerIndexes[layer2Str];
+  if (!index)
   {
-    QgsGeometry* g1 = it->feature.geometry();
-
-    for (jit = mFeatureList2.begin(); jit != mFeatureList2.end(); ++jit)
-    {
-      //if (it->feature.id() >= jit->feature.id())
-        //continue;
-
-      QgsGeometry* g2 = jit->feature.geometry();
-
-      if (g1->distance(*g2) < tolerance)
-      {
-	QgsGeometry *c, *d;
-	if ((c = checkEndpoints(g1, g2, tolerance)) || (d = checkEndpoints(g2, g1, tolerance)))
-	{
-          QgsRectangle r = g1->boundingBox();
-	  QgsRectangle r2 = g2->boundingBox();
-	  r.combineExtentWith(&r2);
-
-	  QList<FeatureLayer> fls;
-	  TopolErrorDangle* err;
-
-          if (c)
-	  {
-	    fls << *it << *jit;
-            err = new TopolErrorDangle(r, c, fls);
-            mErrorListView->addItem(err->name() + QString(" %1 %2").arg(it->feature.id()).arg(jit->feature.id()));
-	    mErrorList << err;
-	  }
-	  else if (d)
-	  {
-	    fls << *jit << *it;
-            err = new TopolErrorDangle(r, d, fls);
-	    mErrorList << err;
-	  }
-	}
-      }
-    }
+    std::cout << "No index for layer " << layer2Str.toStdString() << "!\n";
+    return;
   }
+
+  QProgressDialog progress("Checking for unconnected lines", "Abort", 0, mFeatureList1.size(), this);
+  progress.setWindowModality(Qt::WindowModal);
+
+  QgsVectorLayer* layer1 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer1Str];
+  QgsVectorLayer* layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
+  if (layer1->geometryType() != QGis::Line)
+    return;
+
+  QStringList itemList;
+
+  QList<FeatureLayer>::Iterator it;
+  QList<FeatureLayer>::ConstIterator FeatureListEnd = mFeatureList1.end();
+  for (it = mFeatureList1.begin(); it != FeatureListEnd; ++it)
+  {
+    if (!(++i % 100))
+      progress.setValue(i);
+
+    if (progress.wasCanceled())
+      break;
+
+    QgsGeometry* g1 = it->feature.geometry();
+    QgsRectangle bb = g1->boundingBox();
+
+    QList<int> crossingIds;
+    crossingIds = index->intersects(bb);
+    int crossSize = crossingIds.size();
+    
+    QList<int>::Iterator cit = crossingIds.begin();
+    QList<int>::ConstIterator crossingIdsEnd = crossingIds.end();
+
+    QgsGeometry* startPoint = QgsGeometry::fromPoint(g1->asPolyline().first());
+    QgsGeometry* endPoint = QgsGeometry::fromPoint(g1->asPolyline().last());
+    bool touchesStart = false;
+    bool touchesEnd = false;
+
+    for (; cit != crossingIdsEnd; ++cit)
+    {
+      QgsFeature& f = mFeatureMap2[*cit].feature;
+      QgsGeometry* g2 = f.geometry();
+
+      // find and test endpoints
+      if (geosTouches(startPoint, g2))
+      {
+	touchesStart = true;
+      }
+      if (geosTouches(endPoint, g2))
+      {
+	touchesEnd = true;
+      }
+      if (touchesStart && touchesEnd)
+        break;
+    }
+
+    if (! (touchesStart && touchesEnd) )
+    {
+      QList<FeatureLayer> fls;
+      fls << *it << *it;
+      TopolErrorUnconnected* err = new TopolErrorUnconnected(bb, g1, fls);
+
+      mErrorList << err;
+      itemList << QString(" %1").arg(it->feature.id());
+    }
+
+    delete startPoint, endPoint;
+  }
+
+  mErrorListView->addItems(itemList);
 }
 
 void checkDock::checkValid(double tolerance, QString layer1Str, QString layer2Str)
@@ -310,13 +390,6 @@ void checkDock::checkValid(double tolerance, QString layer1Str, QString layer2St
       break;
 
     QgsGeometry* g = it->feature.geometry();
-    //should not happen, already checked
-    /* if (!g)
-    {
-      g = new QgsGeometry;
-      std::cout <<"creating new geometry\n";
-    }*/
-
     if (!g->asGeos())
     {
       std::cout << "Geos geometry is NULL\n";
@@ -381,7 +454,7 @@ void checkDock::checkPolygonContains(double tolerance, QString layer1Str, QStrin
       QgsFeature& f = mFeatureMap2[*cit].feature;
       QgsGeometry* g2 = f.geometry();
 
-      if (contains(g1, g2))
+      if (geosContains(g1, g2))
       {
 	QList<FeatureLayer> fls;
 	FeatureLayer fl;
@@ -409,10 +482,13 @@ void checkDock::checkPointCoveredBySegment(double tolerance, QString layer1Str, 
     return;
   }
 
-  QProgressDialog progress("Checking for intersections", "Abort", 0, mFeatureList1.size(), this);
+  QProgressDialog progress("Checking for not covered points", "Abort", 0, mFeatureList1.size(), this);
   progress.setWindowModality(Qt::WindowModal);
 
+  QgsVectorLayer* layer1 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer1Str];
   QgsVectorLayer* layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
+  if (layer1->geometryType() != QGis::Point)
+    return;
   if (layer2->geometryType() == QGis::Point)
     return;
 
@@ -430,8 +506,6 @@ void checkDock::checkPointCoveredBySegment(double tolerance, QString layer1Str, 
 
     QgsGeometry* g1 = it->feature.geometry();
     QgsRectangle bb = g1->boundingBox();
-    if (g1->type() != QGis::Point)
-      break;
 
     QList<int> crossingIds;
     crossingIds = index->intersects(bb);
@@ -448,7 +522,7 @@ void checkDock::checkPointCoveredBySegment(double tolerance, QString layer1Str, 
       QgsGeometry* g2 = f.geometry();
 
       // test if point touches other geometry
-      if (touches(g1, g2))
+      if (geosTouches(g1, g2))
       {
 	touched = true;
 	break;
