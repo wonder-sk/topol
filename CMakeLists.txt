@@ -7,6 +7,7 @@ SET (topol_SRCS
   rulesDialog.cpp
   checkDock.cpp
   topolError.cpp
+  #topolTest.cpp
 )
 
 SET (topol_UIS

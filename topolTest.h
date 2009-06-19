@@ -1,5 +1,5 @@
 /***************************************************************************
-  checkDock.h 
+  topolTest.h 
   TOPOLogy checker
   -------------------
          date                 : May 2009
@@ -15,67 +15,36 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef CHECKDOCK_H
-#define CHECKDOCK_H
-
-#include <QDockWidget>
+#ifndef TOPOLTEST_H
+#define TOPOLTEST_H
 
 #include <qgsvectorlayer.h>
 #include <qgsgeometry.h>
 #include <spatialindex/qgsspatialindex.h>
 
-#include "ui_checkDock.h"
-#include "rulesDialog.h"
 #include "topolError.h"
 
-class QgsMapLayerRegistry;
-class QgsRubberBand;
-class QgisApp;
-class checkDock;
-
 typedef QList<TopolError*> ErrorList;
-typedef void (checkDock::*testFunction)(double, QString, QString);
-//typedef void (topolTest::*testFunction)(double, QString, QString);
+typedef void (topolTest::*testFunction)(double, QString, QString);
 
-class checkDock : public QDockWidget, public Ui::checkDock
+class test
 {
-Q_OBJECT
-
 public:
-  checkDock(const QString &tableName, QgsVectorLayer *theLayer, QWidget *parent = 0);
-  ~checkDock();
+  bool showSecondLayer;
+  bool showTolerance;
+  testFunction f;
 
-private slots:
-  void configure();
-  void fix();
-  void validateAll();
-  void validateExtent();
-  void errorListClicked(const QModelIndex& index);
+  test()
+  {
+    showSecondLayer = false;
+    showTolerance = false;
+    f = 0;
+  }
+};
 
-private:
-  QgsVectorLayer *mLayer;
-  rulesDialog* mConfigureDialog;
-  QgsRubberBand* mRBConflict;
-  QgsRubberBand* mRBFeature1;
-  QgsRubberBand* mRBFeature2;
-  QgisApp* mQgisApp;
-
-  QList<FeatureLayer> mFeatureList1;
-  QList<FeatureLayer> mFeatureList2;
-  QMap<int, FeatureLayer> mFeatureMap2;
-  QList<QString> mLayerNameList;
-
-  ErrorList mErrorList;
-  QgsGeometryMap mGeometryMap;
-
-  //pointer to topology tests table
-  QTableWidget* mTestTable;
-
-  QMap<QString, QgsSpatialIndex*> mLayerIndexes;
-  //QMap<int, QgsGeometry*> mLayerGeometries;
-  QMap<QString, testFunction> mTestMap;
-  QgsMapLayerRegistry* mLayerRegistry;
-
+class topolTest
+{
+public:
   void checkIntersections(double tolerance, QString layer1str, QString layer2Str);
   void checkSelfIntersections(double tolerance, QString layer1str, QString layer2Str);
   void checkCloseFeature(double tolerance, QString layer1str, QString layer2Str);
@@ -85,9 +54,12 @@ private:
   void checkPointCoveredBySegment(double tolerance, QString layer1str, QString layer2Str);
   void checkValid(double tolerance, QString layer1str, QString layer2Str);
 
+private:
+  QMap<QString, QgsSpatialIndex*> mLayerIndexes;
+  QMap<QString, test> mTestMap;
+  QgsMapLayerRegistry* mLayerRegistry;
+
   QgsSpatialIndex* createIndex(QgsVectorLayer* layer, QgsRectangle extent);
-  void runTests(QgsRectangle extent);
-  void validate(QgsRectangle extent);
 };
 
 #endif
