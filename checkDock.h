@@ -33,6 +33,12 @@ class QgsRubberBand;
 class QgisApp;
 class checkDock;
 
+/*class testConf
+{
+  bool needsTwoLayers;
+  bool needsTolerance;
+}*/
+
 typedef QList<TopolError*> ErrorList;
 typedef void (checkDock::*testFunction)(double, QString, QString);
 

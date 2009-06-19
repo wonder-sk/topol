@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>580</width>
-    <height>389</height>
+    <width>739</width>
+    <height>545</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -40,6 +40,11 @@
          <string>Layer</string>
         </property>
        </column>
+       <column>
+        <property name="text">
+         <string>Tolerance</string>
+        </property>
+       </column>
       </widget>
      </item>
      <item>
@@ -63,7 +68,7 @@
          </property>
          <item>
           <property name="text">
-           <string>Layer</string>
+           <string>No layer</string>
           </property>
          </item>
         </widget>
@@ -75,7 +80,7 @@
          </property>
          <item>
           <property name="text">
-           <string>Layer</string>
+           <string>No layer</string>
           </property>
          </item>
         </widget>
@@ -94,7 +99,7 @@
         </spacer>
        </item>
        <item>
-        <widget class="QLabel" name="label_2">
+        <widget class="QLabel" name="mToleranceLabel">
          <property name="text">
           <string>Tolerance</string>
          </property>

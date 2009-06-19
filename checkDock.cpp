@@ -244,6 +244,9 @@ void checkDock::checkCloseFeature(double tolerance, QString layer1Str, QString l
       QgsFeature& f = mFeatureMap2[*cit].feature;
       QgsGeometry* g2 = f.geometry();
 
+      //why???
+      if (!g2) {std::cout << "neeeee!"<<std::flush ;continue;}
+
       if (g1->distance(*g2) < tolerance)
       {
         QgsRectangle r = g2->boundingBox();
@@ -296,7 +299,7 @@ void checkDock::checkCloseFeature(double tolerance, QString layer1Str, QString l
 
 void checkDock::checkUnconnectedLines(double tolerance, QString layer1Str, QString layer2Str)
 {
-	//TODO: multilines
+	//TODO: multilines, seems to not work even for simple lines, grr
   int i = 0;
   QgsSpatialIndex* index = mLayerIndexes[layer2Str];
   if (!index)
@@ -751,7 +754,8 @@ void checkDock::checkIntersections(double tolerance, QString layer1Str, QString 
 QgsSpatialIndex* checkDock::createIndex(QgsVectorLayer* layer, QgsRectangle extent)
 {
   QgsSpatialIndex* index = new QgsSpatialIndex();
-  layer->select(QgsAttributeList(), extent);
+  //layer->select(QgsAttributeList(), extent);
+  layer->select(QgsAttributeList(), QgsRectangle());
 
   QProgressDialog progress("Building spatial index", "Abort", 0, layer->featureCount(), this);
   progress.setWindowModality(Qt::WindowModal);
@@ -784,6 +788,7 @@ void checkDock::runTests(QgsRectangle extent)
   for (int i = 0; i < mTestTable->rowCount(); ++i)
   {
     QString test = mTestTable->itemAt(i, 0)->text();
+	  std::cout << test.toStdString();
     QString layer1Str = mTestTable->item(i, 1)->text();
     QString layer2Str = mTestTable->item(i, 2)->text();
 
@@ -808,7 +813,6 @@ void checkDock::runTests(QgsRectangle extent)
 
     QgsFeature f;
 
-    //TODO: ?
     layer1->select(QgsAttributeList(), extent);
     while (layer1->nextFeature(f))
       if (f.geometry())

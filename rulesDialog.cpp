@@ -59,10 +59,11 @@ rulesDialog::~rulesDialog() {}
 
 void rulesDialog::showControls(const QString& testName)
 {
-/*std::cout << mTestConfMap[testName].showLayer2 << " "<<mTestConfMap[testName].showTolerance;
+std::cout << mTestConfMap[testName].showLayer2 << " "<<mTestConfMap[testName].showTolerance;
   mLayer2Box->setVisible(mTestConfMap[testName].showLayer2);
-  mToleranceBox->setVisible(mTestConfMap[testName].showTolerance);
-  */
+  bool showTolerance = mTestConfMap[testName].showTolerance;
+  mToleranceBox->setVisible(showTolerance);
+  mToleranceLabel->setVisible(showTolerance);
 }
 
 void rulesDialog::addLayer(QgsMapLayer* layer)
@@ -91,7 +92,7 @@ void rulesDialog::addTest()
     return;
 
   QString layer2 = mLayer2Box->currentText();
-  if (layer2 == "Layer")
+  if (layer2 == "Layer" && mTestConfMap[test].showLayer2)
     return;
 
  //is inserting to qtablewidget really this stupid or am i missing something?
@@ -105,7 +106,12 @@ void rulesDialog::addTest()
  mTestTable->setItem(row, 1, newItem);
  newItem = new QTableWidgetItem(layer2);
  mTestTable->setItem(row, 2, newItem);
- newItem = new QTableWidgetItem(QString("%1").arg(mToleranceBox->value()));
+ 
+ if (mTestConfMap[test].showTolerance)
+   newItem = new QTableWidgetItem(QString("%1").arg(mToleranceBox->value()));
+ else
+   newItem = new QTableWidgetItem(QString("None"));
+
  mTestTable->setItem(row, 3, newItem);
 
  mTestBox->setCurrentIndex(0);
