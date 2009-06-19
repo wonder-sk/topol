@@ -24,6 +24,9 @@
 
 #include "topolError.h"
 
+class topolTest;
+class QgsMapLayerRegistry;
+
 typedef QList<TopolError*> ErrorList;
 typedef void (topolTest::*testFunction)(double, QString, QString);
 
@@ -45,19 +48,22 @@ public:
 class topolTest
 {
 public:
-  void checkIntersections(double tolerance, QString layer1str, QString layer2Str);
-  void checkSelfIntersections(double tolerance, QString layer1str, QString layer2Str);
-  void checkCloseFeature(double tolerance, QString layer1str, QString layer2Str);
-  void checkPolygonContains(double tolerance, QString layer1str, QString layer2Str);
-  void checkSegmentLength(double tolerance, QString layer1str, QString layer2Str);
-  void checkUnconnectedLines(double tolerance, QString layer1str, QString layer2Str);
-  void checkPointCoveredBySegment(double tolerance, QString layer1str, QString layer2Str);
-  void checkValid(double tolerance, QString layer1str, QString layer2Str);
+  ErrorList checkIntersections(double tolerance, QString layer1str, QString layer2Str);
+  ErrorList checkSelfIntersections(double tolerance, QString layer1str, QString layer2Str);
+  ErrorList checkCloseFeature(double tolerance, QString layer1str, QString layer2Str);
+  ErrorList checkPolygonContains(double tolerance, QString layer1str, QString layer2Str);
+  ErrorList checkSegmentLength(double tolerance, QString layer1str, QString layer2Str);
+  ErrorList checkUnconnectedLines(double tolerance, QString layer1str, QString layer2Str);
+  ErrorList checkPointCoveredBySegment(double tolerance, QString layer1str, QString layer2Str);
+  ErrorList checkValid(double tolerance, QString layer1str, QString layer2Str);
 
 private:
   QMap<QString, QgsSpatialIndex*> mLayerIndexes;
   QMap<QString, test> mTestMap;
   QgsMapLayerRegistry* mLayerRegistry;
+
+  QList<FeatureLayer> mFeatureList1;
+  QMap<int, FeatureLayer> mFeatureMap2;
 
   QgsSpatialIndex* createIndex(QgsVectorLayer* layer, QgsRectangle extent);
 };

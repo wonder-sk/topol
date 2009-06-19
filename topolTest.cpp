@@ -17,6 +17,8 @@
 
 #include "topolTest.h"
 
+#include <QProgressDialog>
+
 #include <qgsvectordataprovider.h>
 #include <qgsvectorlayer.h>
 #include <qgsmaplayer.h>
@@ -118,22 +120,23 @@
   return 0;
 }*/
 
-void topolTest::checkCloseFeature(double tolerance, QString layer1Str, QString layer2Str)
+ErrorList topolTest::checkCloseFeature(double tolerance, QString layer1Str, QString layer2Str)
 {
-  int i = 0;
+  ErrorList errorList;
   QgsSpatialIndex* index = mLayerIndexes[layer2Str];
   if (!index)
   {
     std::cout << "No index for layer " << layer2Str.toStdString() << "!\n";
-    return;
+    return errorList;
   }
 
   QProgressDialog progress("Checking for close features", "Abort", 0, mFeatureList1.size(), this);
   progress.setWindowModality(Qt::WindowModal);
 
   QgsVectorLayer* layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
-  QStringList itemList;
+  //QStringList itemList;
 
+  int i = 0;
   QList<FeatureLayer>::Iterator it;
   QList<FeatureLayer>::ConstIterator FeatureListEnd = mFeatureList1.end();
   for (it = mFeatureList1.begin(); it != FeatureListEnd; ++it)
@@ -177,13 +180,12 @@ void topolTest::checkCloseFeature(double tolerance, QString layer1Str, QString l
 	fls << *it << fl;
 	TopolErrorClose* err = new TopolErrorClose(r, g2, fls);
 
-	mErrorList << err;
-        itemList << QString(" %1 x %2").arg(it->feature.id()).arg(f.id());
+	errorList << err;
       }
     }
   }
 
-  mErrorListView->addItems(itemList);
+  return mErrorList;
 }
     /* ^
       if (g1->distance(*g2) < tolerance)
@@ -215,7 +217,7 @@ void topolTest::checkCloseFeature(double tolerance, QString layer1Str, QString l
 	  // write id and layer name instead?
 	}*/
 
-void topolTest::checkUnconnectedLines(double tolerance, QString layer1Str, QString layer2Str)
+ErrorList topolTest::checkUnconnectedLines(double tolerance, QString layer1Str, QString layer2Str)
 {
 	//TODO: multilines, seems to not work even for simple lines, grr
   int i = 0;
@@ -234,7 +236,7 @@ void topolTest::checkUnconnectedLines(double tolerance, QString layer1Str, QStri
   if (layer1->geometryType() != QGis::Line)
     return;
 
-  QStringList itemList;
+  ErrorList errorList;
 
   QList<FeatureLayer>::Iterator it;
   QList<FeatureLayer>::ConstIterator FeatureListEnd = mFeatureList1.end();
@@ -285,24 +287,23 @@ void topolTest::checkUnconnectedLines(double tolerance, QString layer1Str, QStri
       fls << *it << *it;
       TopolErrorUnconnected* err = new TopolErrorUnconnected(bb, g1, fls);
 
-      mErrorList << err;
-      itemList << QString(" %1").arg(it->feature.id());
+      errorList << err;
     }
 
     delete startPoint, endPoint;
   }
 
-  mErrorListView->addItems(itemList);
+  return errorList;
 }
 
-void topolTest::checkValid(double tolerance, QString layer1Str, QString layer2Str)
+ErrorList topolTest::checkValid(double tolerance, QString layer1Str, QString layer2Str)
 {
   QProgressDialog progress("Checking geometry validity", "Abort", 0, mFeatureList1.size(), this);
   progress.setWindowModality(Qt::WindowModal);
   int i = 0;
 
   QList<FeatureLayer>::Iterator it;
-  QStringList itemList;
+  ErrorList errorList;
 
   for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
   {
@@ -324,15 +325,14 @@ void topolTest::checkValid(double tolerance, QString layer1Str, QString layer2St
       fls << *it << *it;
 
       TopolErrorValid* err = new TopolErrorValid(r, g, fls);
-      mErrorList << err;
-      itemList << err->name() + QString(" %1").arg(it->feature.id());
+      errorList << err;
     }
   }
 
-  mErrorListView->addItems(itemList);
+  return errorList;
 }
 
-void topolTest::checkPolygonContains(double tolerance, QString layer1Str, QString layer2Str)
+ErrorList topolTest::checkPolygonContains(double tolerance, QString layer1Str, QString layer2Str)
 {
   int i = 0;
   QgsSpatialIndex* index = mLayerIndexes[layer2Str];
@@ -346,7 +346,7 @@ void topolTest::checkPolygonContains(double tolerance, QString layer1Str, QStrin
   progress.setWindowModality(Qt::WindowModal);
 
   QgsVectorLayer* layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
-  QStringList itemList;
+  ErrorList errorList;
 
   QList<FeatureLayer>::Iterator it;
   QList<FeatureLayer>::ConstIterator FeatureListEnd = mFeatureList1.end();
@@ -384,16 +384,15 @@ void topolTest::checkPolygonContains(double tolerance, QString layer1Str, QStrin
 	fls << *it << fl;
 	TopolErrorInside* err = new TopolErrorInside(bb, g2, fls);
 
-	mErrorList << err;
-        itemList << QString(" %1 x %1").arg(it->feature.id()).arg(f.id());
+	errorList << err;
       }
     }
   }
 
-  mErrorListView->addItems(itemList);
+  return errorList;
 }
 
-void topolTest::checkPointCoveredBySegment(double tolerance, QString layer1Str, QString layer2Str)
+ErrorList topolTest::checkPointCoveredBySegment(double tolerance, QString layer1Str, QString layer2Str)
 {
   int i = 0;
   QgsSpatialIndex* index = mLayerIndexes[layer2Str];
@@ -413,7 +412,7 @@ void topolTest::checkPointCoveredBySegment(double tolerance, QString layer1Str, 
   if (layer2->geometryType() == QGis::Point)
     return;
 
-  QStringList itemList;
+  ErrorList errorList;
 
   QList<FeatureLayer>::Iterator it;
   QList<FeatureLayer>::ConstIterator FeatureListEnd = mFeatureList1.end();
@@ -456,15 +455,14 @@ void topolTest::checkPointCoveredBySegment(double tolerance, QString layer1Str, 
       fls << *it << *it;
       TopolErrorCovered* err = new TopolErrorCovered(bb, g1, fls);
 
-      mErrorList << err;
-      itemList << QString(" %1").arg(it->feature.id());
+      errorList << err;
     }
   }
 
-  mErrorListView->addItems(itemList);
+  return errorList;
 }
 
-void topolTest::checkSegmentLength(double tolerance, QString layer1Str, QString layer2Str)
+ErrorList topolTest::checkSegmentLength(double tolerance, QString layer1Str, QString layer2Str)
 {
   //TODO: multi versions, distance from settings, more errors for one feature
   int i = 0;
@@ -478,7 +476,7 @@ void topolTest::checkSegmentLength(double tolerance, QString layer1Str, QString 
   QProgressDialog progress("Checking segment length", "Abort", 0, mFeatureList1.size(), this);
   progress.setWindowModality(Qt::WindowModal);
 
-  QStringList itemList;
+  ErrorList errorList;
 
   QList<FeatureLayer>::Iterator it;
   QList<FeatureLayer>::ConstIterator FeatureListEnd = mFeatureList1.end();
@@ -504,8 +502,7 @@ void topolTest::checkSegmentLength(double tolerance, QString layer1Str, QString 
 	    segm.clear();
 	    segm << ls[i-1] << ls[i];
             err = new TopolErrorShort(g1->boundingBox(), QgsGeometry::fromPolyline(segm), fls);
-            mErrorList << err;
-            itemList << err->name() + QString(" %1").arg(it->feature.id());
+            errorList << err;
 	  }
 	}
       break;
@@ -531,10 +528,10 @@ void topolTest::checkSegmentLength(double tolerance, QString layer1Str, QString 
     }
   }
 
-  mErrorListView->addItems(itemList);
+  return errorList;
 }
 
-/*void topolTest::checkSelfIntersections(double tolerance, QString layer1Str, QString layer2Str)
+/*ErrorList topolTest::checkSelfIntersections(double tolerance, QString layer1Str, QString layer2Str)
 {
 }*/
 /*
@@ -586,7 +583,7 @@ QList<QgsRectangle> crossingRectangles(QgsGeometry* g)
     return progress.wasCanceled();
 }*/
 
-void topolTest::checkIntersections(double tolerance, QString layer1Str, QString layer2Str)
+ErrorList topolTest::checkIntersections(double tolerance, QString layer1Str, QString layer2Str)
 {
   int i = 0;
   QgsSpatialIndex* index = mLayerIndexes[layer2Str];
@@ -603,7 +600,7 @@ void topolTest::checkIntersections(double tolerance, QString layer1Str, QString 
   QList<FeatureLayer>::ConstIterator FeatureListEnd = mFeatureList1.end();
 
   QgsVectorLayer* layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
-  QStringList itemList;
+  ErrorList errorList;
   
   for (it = mFeatureList1.begin(); it != FeatureListEnd; ++it)
   {
@@ -660,13 +657,12 @@ void topolTest::checkIntersections(double tolerance, QString layer1Str, QString 
 	fls << *it << fl;
 	TopolErrorIntersection* err = new TopolErrorIntersection(r, c, fls);
 
-	mErrorList << err;
-	itemList << err->name() + QString(" %1 x %2").arg(it->feature.id()).arg(f.id());
+	errorList << err;
       }
     }
   }
 
-  mErrorListView->addItems(itemList);
+  return errorList;
 }
 
 QgsSpatialIndex* topolTest::createIndex(QgsVectorLayer* layer, QgsRectangle extent)
@@ -694,13 +690,14 @@ QgsSpatialIndex* topolTest::createIndex(QgsVectorLayer* layer, QgsRectangle exte
     if (f.geometry())
     { 
       index->insertFeature(f);
-      mFeatureMap2[f.id()] = FeatureLayer(layer, f);
+      //mFeatureMap2[f.id()] = FeatureLayer(layer, f);
     }
   }
 
   return index;
 }
 
+/*
 void topolTest::runTests(QgsRectangle extent)
 {
   for (int i = 0; i < mTestTable->rowCount(); ++i)
@@ -741,3 +738,4 @@ void topolTest::runTests(QgsRectangle extent)
     //checkIntersections(toleranceStr.toDouble(), layer1Str, layer2Str);
   }
 }
+*/
