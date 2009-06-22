@@ -35,13 +35,13 @@ class test
 {
 public:
   bool useSecondLayer;
-  bool showTolerance;
+  bool useTolerance;
   testFunction f;
 
   test()
   {
     useSecondLayer = true;
-    showTolerance = false;
+    useTolerance = false;
     f = 0;
   }
 };

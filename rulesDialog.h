@@ -23,7 +23,9 @@
 #include <qgsvectorlayer.h>
 
 #include "ui_rulesDialog.h"
+#include "topolTest.h"
 
+/*
 class testConf
 {
 public:
@@ -35,20 +37,21 @@ public:
     showLayer2 = false;
     showTolerance = false;
   }
-};
+};*/
 
 class rulesDialog : public QDialog, public Ui::rulesDialog
 {
 Q_OBJECT
 
 public:
-  rulesDialog(const QString &tableName, QList<QString> tests, QList<QString>layerList, QWidget *parent);
+  rulesDialog(const QString &tableName, QList<QString> layerList, QMap<QString, test>, QWidget *parent);
   ~rulesDialog();
   QTableWidget* testTable() { return mTestTable; }
   QComboBox* testBox() { return mTestBox; }
 
 private:
-  QMap<QString, testConf> mTestConfMap;
+  //QMap<QString, testConf> mTestConfMap;
+  QMap<QString, test> mTestConfMap;
 
 private slots:
   void showControls(const QString& testName);

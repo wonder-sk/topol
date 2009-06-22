@@ -35,6 +35,7 @@
 #include "geosFunctions.h"
 #include "../../app/qgisapp.h"
 
+//TODO: someone should delete "errors"
 topolTest::topolTest()
 {
   mTestCancelled = false;
@@ -45,7 +46,7 @@ topolTest::topolTest()
   mTestMap["Test geometry validity"].useSecondLayer = false;
 
   mTestMap["Test segment lengths"].f = &topolTest::checkSegmentLength;
-  mTestMap["Test segment lengths"].showTolerance = true;
+  mTestMap["Test segment lengths"].useTolerance = true;
   mTestMap["Test segment lengths"].useSecondLayer = false;
 
   // two layer tests
@@ -54,7 +55,7 @@ topolTest::topolTest()
   mTestMap["Test points not covered by segments"].f = &topolTest::checkPointCoveredBySegment;
   mTestMap["Test unconnected lines"].f = &topolTest::checkUnconnectedLines;
   mTestMap["Test feature too close"].f = &topolTest::checkCloseFeature;
-  mTestMap["Test feature too close"].showTolerance = true;
+  mTestMap["Test feature too close"].useTolerance = true;
 }
 
 topolTest::~topolTest()
@@ -62,37 +63,6 @@ topolTest::~topolTest()
   QMap<QString, QgsSpatialIndex*>::Iterator lit = mLayerIndexes.begin();
   for (; lit != mLayerIndexes.end(); ++lit)
     delete *lit;
-}
-
-QgsSpatialIndex* topolTest::createIndex(QgsVectorLayer* layer)
-{
-  QgsSpatialIndex* index = new QgsSpatialIndex();
-  layer->select(QgsAttributeList(), QgsRectangle());
-
-  //QProgressDialog progress("Building spatial index", "Abort", 0, layer->featureCount(), this);
-  //progress.setWindowModality(Qt::WindowModal);
-
-  //int i = 0;
-  QgsFeature f;
-  while (layer->nextFeature(f))
-  {
-    //if (!(++i % 100))
-      //progress.setValue(i);
-
-    //if (progress.wasCanceled())
-    //{
-      //delete index;
-      //return 0;
-    //}
-
-    if (f.geometry())
-    { 
-      index->insertFeature(f);
-      mFeatureMap2[f.id()] = FeatureLayer(layer, f);
-    }
-  }
-
-  return index;
 }
 
 /*QgsGeometry* checkEndpoints(QgsGeometry* g1, QgsGeometry* g2, double tolerance)
@@ -626,6 +596,12 @@ ErrorList topolTest::checkIntersections(double tolerance, QString layer1Str, QSt
       QgsFeature& f = mFeatureMap2[*cit].feature;
       QgsGeometry* g2 = f.geometry();
 
+      if (!g2)
+      {
+        std::cout << "neni g2\n";
+	continue;
+      }
+
       if (g1->intersects(g2))
       {
         QgsRectangle r = bb;
@@ -652,6 +628,38 @@ ErrorList topolTest::checkIntersections(double tolerance, QString layer1Str, QSt
   return errorList;
 }
 
+QgsSpatialIndex* topolTest::createIndex(QgsVectorLayer* layer)
+{
+  QgsSpatialIndex* index = new QgsSpatialIndex();
+  layer->select(QgsAttributeList(), QgsRectangle());
+
+  //TODO: progress dialog
+  //QProgressDialog progress("Building spatial index", "Abort", 0, layer->featureCount(), this);
+  //progress.setWindowModality(Qt::WindowModal);
+
+  //int i = 0;
+  QgsFeature f;
+  while (layer->nextFeature(f))
+  {
+    //if (!(++i % 100))
+      //progress.setValue(i);
+
+    //if (progress.wasCanceled())
+    //{
+      //delete index;
+      //return 0;
+    //}
+
+    if (f.geometry())
+    { 
+      index->insertFeature(f);
+      mFeatureMap2[f.id()] = FeatureLayer(layer, f);
+    }
+  }
+
+  return index;
+}
+
 ErrorList topolTest::runTest(QString testName, QgsVectorLayer* layer1, QgsVectorLayer* layer2, QgsRectangle extent, double tolerance)
 {
   //TODO: get rid of layer?Str 
@@ -672,6 +680,9 @@ ErrorList topolTest::runTest(QString testName, QgsVectorLayer* layer1, QgsVector
 
   QString layer1Str = layer1->name();
   QString layer2Str;
+  mFeatureList1.clear();
+  mFeatureMap2.clear();
+  QgsFeature f;
 
   if (layer2)
   {
@@ -679,10 +690,6 @@ ErrorList topolTest::runTest(QString testName, QgsVectorLayer* layer1, QgsVector
     if (!mLayerIndexes.contains(layer2Str))
       mLayerIndexes[layer2Str] = createIndex(layer2);
   }
-
-  mFeatureList1.clear();
-  mFeatureMap2.clear();
-  QgsFeature f;
 
   layer1->select(QgsAttributeList(), extent);
   while (layer1->nextFeature(f))

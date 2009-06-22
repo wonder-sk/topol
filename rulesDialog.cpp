@@ -17,8 +17,6 @@
 
 #include <QtGui>
 
-#include "rulesDialog.h"
-
 #include <qgsvectordataprovider.h>
 #include <qgsvectorlayer.h>
 #include <qgssearchstring.h>
@@ -31,24 +29,30 @@
 
 #include "../../app/qgisapp.h"
 
-rulesDialog::rulesDialog(const QString &tableName, QList<QString> tests, QList<QString>layerList, QWidget *parent)
+#include "rulesDialog.h"
+#include "topolTest.h"
+
+//rulesDialog::rulesDialog(const QString &tableName, QList<QString> tests, QList<QString> layerList, QMap<QString, test> testMap, QWidget *parent)
+rulesDialog::rulesDialog(const QString &tableName, QList<QString> layerList, QMap<QString, test> testMap, QWidget *parent)
 : QDialog(parent), Ui::rulesDialog()
 {
   setupUi(this);
 
+  mTestConfMap = testMap;
   mTestTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-  mTestBox->addItems(QStringList(tests));
+  mTestBox->addItems(mTestConfMap.keys());
   mLayer1Box->addItems(QStringList(layerList));
   mLayer2Box->addItems(QStringList(layerList));
 
   //TODO: redundant, use data from topolTest
-  mTestConfMap["Select test for addition"];
+  /*mTestConfMap["Select test for addition"];
   mTestConfMap["Test intersections"].showLayer2 = true;
   mTestConfMap["Test dangling endpoints"].showTolerance = true;
   mTestConfMap["Test features inside polygon"];
   mTestConfMap["Test points not covered by segments"];
   mTestConfMap["Test segment lengths"].showTolerance = true;
   mTestConfMap["Test geometry validity"];
+*/
 
   connect(mAddTestButton, SIGNAL(clicked()), this, SLOT(addTest()));
   connect(mAddTestButton, SIGNAL(clicked()), mTestTable, SLOT(resizeColumnsToContents()));
@@ -60,11 +64,12 @@ rulesDialog::~rulesDialog() {}
 
 void rulesDialog::showControls(const QString& testName)
 {
-std::cout << mTestConfMap[testName].showLayer2 << " "<<mTestConfMap[testName].showTolerance;
-  mLayer2Box->setVisible(mTestConfMap[testName].showLayer2);
-  bool showTolerance = mTestConfMap[testName].showTolerance;
-  mToleranceBox->setVisible(showTolerance);
-  mToleranceLabel->setVisible(showTolerance);
+  std::cout << mTestConfMap[testName].useSecondLayer << " "<< mTestConfMap[testName].useTolerance;
+  mLayer2Box->setVisible(mTestConfMap[testName].useSecondLayer);
+
+  bool useTolerance = mTestConfMap[testName].useTolerance;
+  mToleranceBox->setVisible(useTolerance);
+  mToleranceLabel->setVisible(useTolerance);
 }
 
 void rulesDialog::addLayer(QgsMapLayer* layer)
@@ -93,7 +98,7 @@ void rulesDialog::addTest()
     return;
 
   QString layer2 = mLayer2Box->currentText();
-  if (layer2 == "Layer" && mTestConfMap[test].showLayer2)
+  if (layer2 == "Layer" && mTestConfMap[test].useSecondLayer)
     return;
 
  //is inserting to qtablewidget really this stupid or am i missing something?
@@ -108,7 +113,7 @@ void rulesDialog::addTest()
  newItem = new QTableWidgetItem(layer2);
  mTestTable->setItem(row, 2, newItem);
  
- if (mTestConfMap[test].showTolerance)
+ if (mTestConfMap[test].useTolerance)
    newItem = new QTableWidgetItem(QString("%1").arg(mToleranceBox->value()));
  else
    newItem = new QTableWidgetItem(QString("None"));
