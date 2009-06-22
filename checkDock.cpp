@@ -50,13 +50,13 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QWidget
   mLayerRegistry = QgsMapLayerRegistry::instance();
 
   mTestList << "Test self intersections"
-	    <<"Test intersections"
-	    <<"Test feature too close"
-	    <<"Test features inside polygon"
-	    <<"Test points not covered by segments"
-	    <<"Test segment lengths"
-	    <<"Test geometry validity"
-	    <<"Test unconnected lines";
+	    << "Test intersections"
+	    << "Test feature too close"
+	    << "Test features inside polygon"
+	    << "Test points not covered by segments"
+	    << "Test segment lengths"
+	    << "Test geometry validity"
+	    << "Test unconnected lines";
   /*
   mTestList["Test self intersections"] = &checkDock::checkSelfIntersections;
   mTestList["Test intersections"] = &checkDock::checkIntersections;
@@ -783,35 +783,41 @@ void checkDock::runTests(QgsRectangle extent)
   for (int i = 0; i < mTestTable->rowCount(); ++i)
   {
 
-    QString test = mTestTable->itemAt(i, 0)->text();
+    QString testName = mTestTable->itemAt(i, 0)->text();
     QString layer1Str = mTestTable->item(i, 1)->text();
     QString layer2Str = mTestTable->item(i, 2)->text();
 
-    std::cout << test.toStdString();
+    std::cout << testName.toStdString();
 
     QString toleranceStr = mTestTable->itemAt(i, 3)->text();
 
     QgsVectorLayer* layer1 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer1Str];
     QgsVectorLayer* layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
-
-    if (!layer1 || !layer2)
+/*
+    if (!layer1)
     {
-      std::cout << "layer " << layer1Str.toStdString() << " or " << layer2Str.toStdString() << " not found in registry!" << std::flush;
+      std::cout << "CheckDock: layer " << layer1Str.toStdString() << " not found in registry!" << std::flush;
       return;
     }
 
-    QProgressDialog progress(test, "Abort", 0, mFeatureList1.size(), this);
+    if (!layer2 && mTest.testMap()[testName].showSecondLayer)
+    {
+      std::cout << "CheckDock: layer " << layer2Str.toStdString() << " not found in registry!" << std::flush;
+      return;
+    }*/
+
+    QProgressDialog progress(testName, "Abort", 0, mFeatureList1.size(), this);
     progress.setWindowModality(Qt::WindowModal);
 
     connect(&progress, SIGNAL(canceled()), &mTest, SLOT(setTestCancelled()));
-    connect(&progress, SIGNAL(setValue(int)), &mTest, SLOT(progress(int)));
+    connect(&mTest, SIGNAL(progress(int)), &progress, SLOT(setValue(int)));
 
-    ErrorList errors = mTest.runTest(test, layer1, layer2, extent, toleranceStr.toDouble());
+    mErrorList = mTest.runTest(testName, layer1, layer2, extent, toleranceStr.toDouble());
     disconnect(&progress, SIGNAL(canceled()), &mTest, SLOT(setTestCancelled()));
-    disconnect(&progress, SIGNAL(setValue(int)), &mTest, SLOT(progress(int)));
+    disconnect(&mTest, SIGNAL(progress(int)), &progress, SLOT(setValue(int)));
 
-    ErrorList::ConstIterator it = errors.begin();
-    ErrorList::ConstIterator errorsEnd = errors.end();
+    ErrorList::ConstIterator it = mErrorList.begin();
+    ErrorList::ConstIterator errorsEnd = mErrorList.end();
     for (; it != errorsEnd; ++it)
       mErrorListView->addItem((*it)->name() + QString(" %1").arg((*it)->featurePairs().first().feature.id()));
   }
@@ -819,8 +825,8 @@ void checkDock::runTests(QgsRectangle extent)
 /*
   for (int i = 0; i < mTestTable->rowCount(); ++i)
   {
-    QString test = mTestTable->itemAt(i, 0)->text();
-	  std::cout << test.toStdString();
+    QString testName = mTestTable->itemAt(i, 0)->text();
+	  std::cout << testName.toStdString();
     QString layer1Str = mTestTable->item(i, 1)->text();
     QString layer2Str = mTestTable->item(i, 2)->text();
 
@@ -850,8 +856,8 @@ void checkDock::runTests(QgsRectangle extent)
       if (f.geometry())
         mFeatureList1 << FeatureLayer(layer1, f);
 
-    //call test routine
-    //(this->*mTestMap[test])(toleranceStr.toDouble(), layer1Str, layer2Str);
+    //call testName routine
+    //(this->*mTestMap[testName])(toleranceStr.toDouble(), layer1Str, layer2Str);
     //checkIntersections(toleranceStr.toDouble(), layer1Str, layer2Str);
   }
 }

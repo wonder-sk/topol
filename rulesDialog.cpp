@@ -41,6 +41,7 @@ rulesDialog::rulesDialog(const QString &tableName, QList<QString> tests, QList<Q
   mLayer1Box->addItems(QStringList(layerList));
   mLayer2Box->addItems(QStringList(layerList));
 
+  //TODO: redundant, use data from topolTest
   mTestConfMap["Select test for addition"];
   mTestConfMap["Test intersections"].showLayer2 = true;
   mTestConfMap["Test dangling endpoints"].showTolerance = true;

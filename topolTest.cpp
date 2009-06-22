@@ -35,32 +35,33 @@
 #include "geosFunctions.h"
 #include "../../app/qgisapp.h"
 
-/*topolTest::topolTest(const QString &tableName, QgsVectorLayer* theLayer, QWidget* parent)
-: QDockWidget(parent), Ui::topolTest()
-{
-  mLayerRegistry = QgsMapLayerRegistry::instance();
-
-  mTestMap["Test self intersections"] = &topolTest::checkSelfIntersections;
-  mTestMap["Test intersections"] = &topolTest::checkIntersections;
-  mTestMap["Test feature too close"] = &topolTest::checkCloseFeature;
-  mTestMap["Test features inside polygon"] = &topolTest::checkPolygonContains;
-  mTestMap["Test points not covered by segments"] = &topolTest::checkPointCoveredBySegment;
-  mTestMap["Test segment lengths"] = &topolTest::checkSegmentLength;
-  mTestMap["Test geometry validity"] = &topolTest::checkValid;
-  mTestMap["Test unconnected lines"] = &topolTest::checkUnconnectedLines;
-
-  QList<QString> layerNames;
-  QList<QgsMapLayer*> layers = mLayerRegistry->mapLayers().values();
-  for (int i = 0; i < layers.size(); ++i)
-    layerNames << layers[i]->name();
-  
-  mQgisApp = QgisApp::instance();
-}
-*/
-
 topolTest::topolTest()
 {
   mTestCancelled = false;
+  mLayerRegistry = QgsMapLayerRegistry::instance();
+
+  // one layer tests
+  mTestMap["Test geometry validity"].f = &topolTest::checkValid;
+  mTestMap["Test geometry validity"].useSecondLayer = false;
+
+  mTestMap["Test segment lengths"].f = &topolTest::checkSegmentLength;
+  mTestMap["Test segment lengths"].showTolerance = true;
+  mTestMap["Test segment lengths"].useSecondLayer = false;
+
+  // two layer tests
+  mTestMap["Test intersections"].f = &topolTest::checkIntersections;
+  mTestMap["Test features inside polygon"].f = &topolTest::checkPolygonContains;
+  mTestMap["Test points not covered by segments"].f = &topolTest::checkPointCoveredBySegment;
+  mTestMap["Test unconnected lines"].f = &topolTest::checkUnconnectedLines;
+  mTestMap["Test feature too close"].f = &topolTest::checkCloseFeature;
+  mTestMap["Test feature too close"].showTolerance = true;
+}
+
+topolTest::~topolTest()
+{
+  QMap<QString, QgsSpatialIndex*>::Iterator lit = mLayerIndexes.begin();
+  for (; lit != mLayerIndexes.end(); ++lit)
+    delete *lit;
 }
 
 QgsSpatialIndex* topolTest::createIndex(QgsVectorLayer* layer)
@@ -653,23 +654,34 @@ ErrorList topolTest::checkIntersections(double tolerance, QString layer1Str, QSt
 
 ErrorList topolTest::runTest(QString testName, QgsVectorLayer* layer1, QgsVectorLayer* layer2, QgsRectangle extent, double tolerance)
 {
+  //TODO: get rid of layer?Str 
   std::cout << testName.toStdString();
   ErrorList errors;
-  QString layer1Str = layer1->name();
-  QString layer2Str = layer2->name();
 
-  if (!layer1 || !layer2)
+  if (!layer1)
   {
-    std::cout << "layer " << layer1->name().toStdString() << " or " << layer2->name().toStdString() << " not found in registry!" << std::flush;
+    std::cout << "First layer not found in registry!\n" << std::flush;
     return errors;
+  }
+
+  if (!layer2 && mTestMap[testName].useSecondLayer)
+  {
+    std::cout << "Second layer not found in registry!\n" << std::flush;
+    return errors;
+  }
+
+  QString layer1Str = layer1->name();
+  QString layer2Str;
+
+  if (layer2)
+  {
+    layer2Str = layer2->name();
+    if (!mLayerIndexes.contains(layer2Str))
+      mLayerIndexes[layer2Str] = createIndex(layer2);
   }
 
   mFeatureList1.clear();
   mFeatureMap2.clear();
-
-  if (!mLayerIndexes.contains(layer2Str))
-    mLayerIndexes[layer2Str] = createIndex(layer2);
-
   QgsFeature f;
 
   layer1->select(QgsAttributeList(), extent);

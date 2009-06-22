@@ -34,13 +34,13 @@ typedef ErrorList (topolTest::*testFunction)(double, QString, QString);
 class test
 {
 public:
-  bool showSecondLayer;
+  bool useSecondLayer;
   bool showTolerance;
   testFunction f;
 
   test()
   {
-    showSecondLayer = false;
+    useSecondLayer = true;
     showTolerance = false;
     f = 0;
   }
@@ -52,6 +52,9 @@ Q_OBJECT
 
 public:
   topolTest();
+  ~topolTest();
+
+  QMap<QString, test> testMap() { return mTestMap; }
   ErrorList runTest(QString testName, QgsVectorLayer* layer1, QgsVectorLayer* layer2, QgsRectangle extent, double tolerance);
 
   ErrorList checkIntersections(double tolerance, QString layer1str, QString layer2Str);
