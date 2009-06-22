@@ -27,6 +27,7 @@
 #include "ui_checkDock.h"
 #include "rulesDialog.h"
 #include "topolError.h"
+#include "topolTest.h"
 
 class QgsMapLayerRegistry;
 class QgsRubberBand;
@@ -73,10 +74,12 @@ private:
 
   QMap<QString, QgsSpatialIndex*> mLayerIndexes;
   //QMap<int, QgsGeometry*> mLayerGeometries;
-  QMap<QString, testFunction> mTestMap;
+  //QMap<QString, testFunction> mTestMap;
+  QList<QString> mTestList;
+  topolTest mTest;
   QgsMapLayerRegistry* mLayerRegistry;
 
-  void checkIntersections(double tolerance, QString layer1str, QString layer2Str);
+  /*void checkIntersections(double tolerance, QString layer1str, QString layer2Str);
   void checkSelfIntersections(double tolerance, QString layer1str, QString layer2Str);
   void checkCloseFeature(double tolerance, QString layer1str, QString layer2Str);
   void checkPolygonContains(double tolerance, QString layer1str, QString layer2Str);
@@ -86,6 +89,7 @@ private:
   void checkValid(double tolerance, QString layer1str, QString layer2Str);
 
   QgsSpatialIndex* createIndex(QgsVectorLayer* layer, QgsRectangle extent);
+  */
   void runTests(QgsRectangle extent);
   void validate(QgsRectangle extent);
 };

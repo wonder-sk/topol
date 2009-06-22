@@ -29,11 +29,10 @@
 class topolTest;
 class QgsMapLayerRegistry;
 
-typedef void (topolTest::*testFunction)(double, QString, QString);
+typedef ErrorList (topolTest::*testFunction)(double, QString, QString);
 
 class test
 {
-
 public:
   bool showSecondLayer;
   bool showTolerance;
@@ -52,7 +51,8 @@ class topolTest: public QObject
 Q_OBJECT
 
 public:
-  topolTest(QList<FeatureLayer> theFeatureList1, QMap<int, FeatureLayer> theFeatureMap2);
+  topolTest();
+  ErrorList runTest(QString testName, QgsVectorLayer* layer1, QgsVectorLayer* layer2, QgsRectangle extent, double tolerance);
 
   ErrorList checkIntersections(double tolerance, QString layer1str, QString layer2Str);
   ErrorList checkSelfIntersections(double tolerance, QString layer1str, QString layer2Str);
@@ -75,7 +75,7 @@ private:
   QMap<int, FeatureLayer> mFeatureMap2;
   bool mTestCancelled;
 
-  QgsSpatialIndex* createIndex(QgsVectorLayer* layer, QgsRectangle extent);
+  QgsSpatialIndex* createIndex(QgsVectorLayer* layer);
   bool testCancelled();
 
 signals:

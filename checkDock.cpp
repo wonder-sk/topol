@@ -34,10 +34,11 @@
 #include <qgslogger.h>
 #include <spatialindex/qgsspatialindex.h>
 
+#include "../../app/qgisapp.h"
+
 #include "topolTest.h"
 #include "rulesDialog.h"
-#include "geosFunctions.h"
-#include "../../app/qgisapp.h"
+//#include "geosFunctions.h"
 
 //TODO: get rid of those global variables (, mFeatureList, ...
 checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QWidget* parent)
@@ -48,15 +49,24 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QWidget
   mLayer = theLayer;
   mLayerRegistry = QgsMapLayerRegistry::instance();
 
-  //mTestMap["Test self intersections"] = &checkDock::checkSelfIntersections;
-  mTestMap["Test intersections"] = &checkDock::checkIntersections;
-  mTestMap["Test feature too close"] = &checkDock::checkCloseFeature;
-  mTestMap["Test features inside polygon"] = &checkDock::checkPolygonContains;
-  mTestMap["Test points not covered by segments"] = &checkDock::checkPointCoveredBySegment;
-  mTestMap["Test segment lengths"] = &checkDock::checkSegmentLength;
-  mTestMap["Test geometry validity"] = &checkDock::checkValid;
-  mTestMap["Test unconnected lines"] = &checkDock::checkUnconnectedLines;
-
+  mTestList << "Test self intersections"
+	    <<"Test intersections"
+	    <<"Test feature too close"
+	    <<"Test features inside polygon"
+	    <<"Test points not covered by segments"
+	    <<"Test segment lengths"
+	    <<"Test geometry validity"
+	    <<"Test unconnected lines";
+  /*
+  mTestList["Test self intersections"] = &checkDock::checkSelfIntersections;
+  mTestList["Test intersections"] = &checkDock::checkIntersections;
+  mTestList["Test feature too close"] = &checkDock::checkCloseFeature;
+  mTestList["Test features inside polygon"] = &checkDock::checkPolygonContains;
+  mTestList["Test points not covered by segments"] = &checkDock::checkPointCoveredBySegment;
+  mTestList["Test segment lengths"] = &checkDock::checkSegmentLength;
+  mTestList["Test geometry validity"] = &checkDock::checkValid;
+  mTestList["Test unconnected lines"] = &checkDock::checkUnconnectedLines;
+*/
 /*
   QList<QString> layerNames;
   QList<QgsMapLayer*> layers = mLayerRegistry->mapLayers().values();
@@ -65,7 +75,8 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QWidget
 
   mConfigureDialog = new rulesDialog("Rules", mTestMap.keys(), layerNames, parent);
   */
-  mConfigureDialog = new rulesDialog("Rules", mTestMap.keys(), mLayerRegistry->mapLayers().keys(), parent);
+  mConfigureDialog = new rulesDialog("Rules", mTestList, mLayerRegistry->mapLayers().keys(), parent);
+  //mConfigureDialog = new rulesDialog("Rules", mTestMap.keys(), mLayerRegistry->mapLayers().keys(), parent);
   mTestTable = mConfigureDialog->testTable();
   
   mQgisApp = QgisApp::instance();
@@ -201,6 +212,7 @@ void checkDock::fix()
   return 0;
 }*/
 
+/*
 void checkDock::checkCloseFeature(double tolerance, QString layer1Str, QString layer2Str)
 {
   int i = 0;
@@ -267,7 +279,7 @@ void checkDock::checkCloseFeature(double tolerance, QString layer1Str, QString l
   }
 
   mErrorListView->addItems(itemList);
-}
+}*/
     /* ^
       if (g1->distance(*g2) < tolerance)
       {
@@ -297,7 +309,7 @@ void checkDock::checkCloseFeature(double tolerance, QString layer1Str, QString l
 	  // TODO: ids from different layers can be same
 	  // write id and layer name instead?
 	}*/
-
+/*
 void checkDock::checkUnconnectedLines(double tolerance, QString layer1Str, QString layer2Str)
 {
 	//TODO: multilines, seems to not work even for simple lines, grr
@@ -575,7 +587,7 @@ void checkDock::checkSegmentLength(double tolerance, QString layer1Str, QString 
       case QGis::Polygon:
         pol = g1->asPolygon();
 
-	/*//TODO: jump out of outer cycle
+	//TODO: jump out of outer cycle
 	for (int i = 0; i < pol.size(); ++i)
 	  for (int j = 1; j < pol[i].size(); ++j)
 	    if (pol[i][j-1].sqrDist(pol[i][j]) < tolerance)
@@ -587,7 +599,7 @@ void checkDock::checkSegmentLength(double tolerance, QString layer1Str, QString 
               err = new TopolErrorShort(g1->boundingBox(), QgsGeometry::fromPolyline(segm), fls);
               mErrorList << err;
               mErrorListView->addItem(err->name() + QString(" %1").arg(it->feature.id()));
-	    }*/
+	    }
       break;
       default:
         continue;
@@ -595,7 +607,7 @@ void checkDock::checkSegmentLength(double tolerance, QString layer1Str, QString 
   }
 
   mErrorListView->addItems(itemList);
-}
+}*/
 
 /*void checkDock::checkSelfIntersections(double tolerance, QString layer1Str, QString layer2Str)
 {
@@ -649,6 +661,7 @@ QList<QgsRectangle> crossingRectangles(QgsGeometry* g)
     return progress.wasCanceled();
 }*/
 
+/*
 void checkDock::checkIntersections(double tolerance, QString layer1Str, QString layer2Str)
 {
   int i = 0;
@@ -681,7 +694,7 @@ void checkDock::checkIntersections(double tolerance, QString layer1Str, QString 
 
     QList<int> crossingIds;
     crossingIds = index->intersects(bb);
-    /*
+    / *
     QSet<int> crossingIds;
     QList<QgsRectangle> tiles = crossingRectangles(g1); 
     QList<QgsRectangle>::ConstIterator tilesIt = tiles.begin();
@@ -690,7 +703,7 @@ void checkDock::checkIntersections(double tolerance, QString layer1Str, QString 
     for (; tilesIt != tilesEnd; ++tilesIt)
       crossingIds |= index->intersects(*tilesIt).toSet();
       //crossingIds << index->intersects(*tilesIt);
-*/
+* /
     int crossSize = crossingIds.size();
     //std::cout << "crossingFeatures size: " << crossingFeatures.size() << "\n";
 
@@ -763,9 +776,47 @@ QgsSpatialIndex* checkDock::createIndex(QgsVectorLayer* layer, QgsRectangle exte
 
   return index;
 }
+*/
 
 void checkDock::runTests(QgsRectangle extent)
 {
+  for (int i = 0; i < mTestTable->rowCount(); ++i)
+  {
+
+    QString test = mTestTable->itemAt(i, 0)->text();
+    QString layer1Str = mTestTable->item(i, 1)->text();
+    QString layer2Str = mTestTable->item(i, 2)->text();
+
+    std::cout << test.toStdString();
+
+    QString toleranceStr = mTestTable->itemAt(i, 3)->text();
+
+    QgsVectorLayer* layer1 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer1Str];
+    QgsVectorLayer* layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
+
+    if (!layer1 || !layer2)
+    {
+      std::cout << "layer " << layer1Str.toStdString() << " or " << layer2Str.toStdString() << " not found in registry!" << std::flush;
+      return;
+    }
+
+    QProgressDialog progress(test, "Abort", 0, mFeatureList1.size(), this);
+    progress.setWindowModality(Qt::WindowModal);
+
+    connect(&progress, SIGNAL(canceled()), &mTest, SLOT(setTestCancelled()));
+    connect(&progress, SIGNAL(setValue(int)), &mTest, SLOT(progress(int)));
+
+    ErrorList errors = mTest.runTest(test, layer1, layer2, extent, toleranceStr.toDouble());
+    disconnect(&progress, SIGNAL(canceled()), &mTest, SLOT(setTestCancelled()));
+    disconnect(&progress, SIGNAL(setValue(int)), &mTest, SLOT(progress(int)));
+
+    ErrorList::ConstIterator it = errors.begin();
+    ErrorList::ConstIterator errorsEnd = errors.end();
+    for (; it != errorsEnd; ++it)
+      mErrorListView->addItem((*it)->name() + QString(" %1").arg((*it)->featurePairs().first().feature.id()));
+  }
+}
+/*
   for (int i = 0; i < mTestTable->rowCount(); ++i)
   {
     QString test = mTestTable->itemAt(i, 0)->text();
@@ -800,11 +851,11 @@ void checkDock::runTests(QgsRectangle extent)
         mFeatureList1 << FeatureLayer(layer1, f);
 
     //call test routine
-    (this->*mTestMap[test])(toleranceStr.toDouble(), layer1Str, layer2Str);
+    //(this->*mTestMap[test])(toleranceStr.toDouble(), layer1Str, layer2Str);
     //checkIntersections(toleranceStr.toDouble(), layer1Str, layer2Str);
   }
 }
-
+*/
 void checkDock::validate(QgsRectangle extent)
 {
   mErrorListView->clear();

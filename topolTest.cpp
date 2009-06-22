@@ -58,11 +58,40 @@
 }
 */
 
-topolTest::topolTest(QList<FeatureLayer> theFeatureList1, QMap<int, FeatureLayer> theFeatureMap2)
+topolTest::topolTest()
 {
-  mFeatureList1 = theFeatureList1;
-  mFeatureMap2 = theFeatureMap2;
   mTestCancelled = false;
+}
+
+QgsSpatialIndex* topolTest::createIndex(QgsVectorLayer* layer)
+{
+  QgsSpatialIndex* index = new QgsSpatialIndex();
+  layer->select(QgsAttributeList(), QgsRectangle());
+
+  //QProgressDialog progress("Building spatial index", "Abort", 0, layer->featureCount(), this);
+  //progress.setWindowModality(Qt::WindowModal);
+
+  //int i = 0;
+  QgsFeature f;
+  while (layer->nextFeature(f))
+  {
+    //if (!(++i % 100))
+      //progress.setValue(i);
+
+    //if (progress.wasCanceled())
+    //{
+      //delete index;
+      //return 0;
+    //}
+
+    if (f.geometry())
+    { 
+      index->insertFeature(f);
+      mFeatureMap2[f.id()] = FeatureLayer(layer, f);
+    }
+  }
+
+  return index;
 }
 
 /*QgsGeometry* checkEndpoints(QgsGeometry* g1, QgsGeometry* g2, double tolerance)
@@ -622,73 +651,32 @@ ErrorList topolTest::checkIntersections(double tolerance, QString layer1Str, QSt
   return errorList;
 }
 
-QgsSpatialIndex* topolTest::createIndex(QgsVectorLayer* layer, QgsRectangle extent)
+ErrorList topolTest::runTest(QString testName, QgsVectorLayer* layer1, QgsVectorLayer* layer2, QgsRectangle extent, double tolerance)
 {
-  QgsSpatialIndex* index = new QgsSpatialIndex();
-  layer->select(QgsAttributeList(), QgsRectangle());
+  std::cout << testName.toStdString();
+  ErrorList errors;
+  QString layer1Str = layer1->name();
+  QString layer2Str = layer2->name();
 
-  int i = 0;
+  if (!layer1 || !layer2)
+  {
+    std::cout << "layer " << layer1->name().toStdString() << " or " << layer2->name().toStdString() << " not found in registry!" << std::flush;
+    return errors;
+  }
+
+  mFeatureList1.clear();
+  mFeatureMap2.clear();
+
+  if (!mLayerIndexes.contains(layer2Str))
+    mLayerIndexes[layer2Str] = createIndex(layer2);
+
   QgsFeature f;
-  while (layer->nextFeature(f))
-  {
-    if (!(++i % 100))
-      emit progress(i);
 
-    if (testCancelled())
-    {
-      delete index;
-      return 0;
-    }
-
+  layer1->select(QgsAttributeList(), extent);
+  while (layer1->nextFeature(f))
     if (f.geometry())
-    { 
-      index->insertFeature(f);
-      //mFeatureMap2[f.id()] = FeatureLayer(layer, f);
-    }
-  }
+      mFeatureList1 << FeatureLayer(layer1, f);
 
-  return index;
+  //call test routine
+  return (this->*(mTestMap[testName].f))(tolerance, layer1Str, layer2Str);
 }
-
-/*
-void topolTest::runTests(QgsRectangle extent)
-{
-  for (int i = 0; i < mTestTable->rowCount(); ++i)
-  {
-    QString test = mTestTable->itemAt(i, 0)->text();
-	  std::cout << test.toStdString();
-    QString layer1Str = mTestTable->item(i, 1)->text();
-    QString layer2Str = mTestTable->item(i, 2)->text();
-
-    QString toleranceStr = mTestTable->itemAt(i, 3)->text();
-
-    QgsVectorLayer* layer1 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer1Str];
-    QgsVectorLayer* layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
-
-    if (!layer1 || !layer2)
-    {
-      std::cout << "layer " << layer1Str.toStdString() << " or " << layer2Str.toStdString() << " not found in registry!" << std::flush;
-      return;
-    }
-
-    mFeatureList1.clear();
-    mFeatureMap2.clear();
-
-    //if (!mLayerIndexes.contains(layer1Str))
-      //mLayerIndexes[layer1Str] = createIndex(layer1, extent);
-    if (!mLayerIndexes.contains(layer2Str))
-      mLayerIndexes[layer2Str] = createIndex(layer2, extent);
-
-    QgsFeature f;
-
-    layer1->select(QgsAttributeList(), extent);
-    while (layer1->nextFeature(f))
-      if (f.geometry())
-        mFeatureList1 << FeatureLayer(layer1, f);
-
-    //call test routine
-    (this->*mTestMap[test])(toleranceStr.toDouble(), layer1Str, layer2Str);
-    //checkIntersections(toleranceStr.toDouble(), layer1Str, layer2Str);
-  }
-}
-*/
