@@ -33,8 +33,8 @@ class QgsRubberBand;
 class QgisApp;
 class checkDock;
 
-typedef QList<TopolError*> ErrorList;
-typedef void (checkDock::*testFunction)(double, QString, QString);
+//typedef QList<TopolError*> ErrorList;
+//typedef void (checkDock::*testFunction)(double, QString, QString);
 //typedef void (topolTest::*testFunction)(double, QString, QString);
 
 class checkDock : public QDockWidget, public Ui::checkDock

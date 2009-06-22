@@ -120,4 +120,6 @@ public:
   TopolErrorUnconnected(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs);
 };
 
+typedef QList<TopolError*> ErrorList;
+
 #endif

@@ -18,6 +18,8 @@
 #ifndef TOPOLTEST_H
 #define TOPOLTEST_H
 
+#include <QObject>
+
 #include <qgsvectorlayer.h>
 #include <qgsgeometry.h>
 #include <spatialindex/qgsspatialindex.h>
@@ -27,11 +29,11 @@
 class topolTest;
 class QgsMapLayerRegistry;
 
-typedef QList<TopolError*> ErrorList;
 typedef void (topolTest::*testFunction)(double, QString, QString);
 
 class test
 {
+
 public:
   bool showSecondLayer;
   bool showTolerance;
@@ -45,9 +47,13 @@ public:
   }
 };
 
-class topolTest
+class topolTest: public QObject
 {
+Q_OBJECT
+
 public:
+  topolTest(QList<FeatureLayer> theFeatureList1, QMap<int, FeatureLayer> theFeatureMap2);
+
   ErrorList checkIntersections(double tolerance, QString layer1str, QString layer2Str);
   ErrorList checkSelfIntersections(double tolerance, QString layer1str, QString layer2Str);
   ErrorList checkCloseFeature(double tolerance, QString layer1str, QString layer2Str);
@@ -57,6 +63,9 @@ public:
   ErrorList checkPointCoveredBySegment(double tolerance, QString layer1str, QString layer2Str);
   ErrorList checkValid(double tolerance, QString layer1str, QString layer2Str);
 
+public slots:
+  void setTestCancelled();
+
 private:
   QMap<QString, QgsSpatialIndex*> mLayerIndexes;
   QMap<QString, test> mTestMap;
@@ -64,8 +73,13 @@ private:
 
   QList<FeatureLayer> mFeatureList1;
   QMap<int, FeatureLayer> mFeatureMap2;
+  bool mTestCancelled;
 
   QgsSpatialIndex* createIndex(QgsVectorLayer* layer, QgsRectangle extent);
+  bool testCancelled();
+
+signals:
+  void progress(int value);
 };
 
 #endif

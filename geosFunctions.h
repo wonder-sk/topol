@@ -1,3 +1,6 @@
+#ifndef GEOSFUNCTIONS_H
+#define GEOSFUNCTIONS_H
+
 #include <geos_c.h>
 #include <qgsgeometry.h>
 
@@ -81,3 +84,5 @@ bool geosContains(QgsGeometry* g1, QgsGeometry* g2)
     return false;
   }
 }
+
+#endif

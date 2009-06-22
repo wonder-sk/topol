@@ -17,8 +17,6 @@
 
 #include "topolTest.h"
 
-#include <QProgressDialog>
-
 #include <qgsvectordataprovider.h>
 #include <qgsvectorlayer.h>
 #include <qgsmaplayer.h>
@@ -37,7 +35,6 @@
 #include "geosFunctions.h"
 #include "../../app/qgisapp.h"
 
-//TODO: get rid of those global variables (, mFeatureList, ...
 /*topolTest::topolTest(const QString &tableName, QgsVectorLayer* theLayer, QWidget* parent)
 : QDockWidget(parent), Ui::topolTest()
 {
@@ -56,41 +53,17 @@
   QList<QgsMapLayer*> layers = mLayerRegistry->mapLayers().values();
   for (int i = 0; i < layers.size(); ++i)
     layerNames << layers[i]->name();
-
-  mConfigureDialog = new rulesDialog("Rules", mTestMap.keys(), layerNames, parent);
-
-  mConfigureDialog = new rulesDialog("Rules", mTestMap.keys(), mLayerRegistry->mapLayers().keys(), parent);
-  mTestTable = mConfigureDialog->testTable();
   
   mQgisApp = QgisApp::instance();
-
-  mValidateExtentButton->setIcon(QIcon(":/topol_c/topol.png"));
-  mValidateAllButton->setIcon(QIcon(":/topol_c/topol.png"));
-  mConfigureButton->setIcon(QIcon(":/topol_c/topol.png"));
-
-  mRBFeature1 = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
-  mRBFeature2 = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
-  mRBConflict = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
-
-  mRBFeature1->setColor("blue");
-  mRBFeature2->setColor("red");
-  mRBConflict->setColor("gold");
-
-  mRBFeature1->setWidth(5);
-  mRBFeature2->setWidth(5);
-  mRBConflict->setWidth(5);
-
-  connect(mConfigureButton, SIGNAL(clicked()), this, SLOT(configure()));
-
-  connect(mValidateAllButton, SIGNAL(clicked()), this, SLOT(validateAll()));
-  connect(mValidateExtentButton, SIGNAL(clicked()), this, SLOT(validateExtent()));
-  connect(mFixButton, SIGNAL(clicked()), this, SLOT(fix()));
-  connect(mErrorListView, SIGNAL(clicked(const QModelIndex &)), this, SLOT(errorListClicked(const QModelIndex &)));
-
-  connect(mLayerRegistry, SIGNAL(layerWillBeRemoved(QString)), mConfigureDialog, SLOT(removeLayer(QString)));
-  connect(mLayerRegistry, SIGNAL(layerWasAdded(QgsMapLayer*)), mConfigureDialog, SLOT(addLayer(QgsMapLayer*)));
 }
 */
+
+topolTest::topolTest(QList<FeatureLayer> theFeatureList1, QMap<int, FeatureLayer> theFeatureMap2)
+{
+  mFeatureList1 = theFeatureList1;
+  mFeatureMap2 = theFeatureMap2;
+  mTestCancelled = false;
+}
 
 /*QgsGeometry* checkEndpoints(QgsGeometry* g1, QgsGeometry* g2, double tolerance)
 {
@@ -120,6 +93,22 @@
   return 0;
 }*/
 
+void topolTest::setTestCancelled()
+{
+  mTestCancelled = true;
+}
+
+bool topolTest::testCancelled()
+{
+  if (mTestCancelled)
+  {
+    mTestCancelled = false;
+    return true;
+  }
+
+  return false;
+}
+
 ErrorList topolTest::checkCloseFeature(double tolerance, QString layer1Str, QString layer2Str)
 {
   ErrorList errorList;
@@ -130,11 +119,7 @@ ErrorList topolTest::checkCloseFeature(double tolerance, QString layer1Str, QStr
     return errorList;
   }
 
-  QProgressDialog progress("Checking for close features", "Abort", 0, mFeatureList1.size(), this);
-  progress.setWindowModality(Qt::WindowModal);
-
   QgsVectorLayer* layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
-  //QStringList itemList;
 
   int i = 0;
   QList<FeatureLayer>::Iterator it;
@@ -142,9 +127,9 @@ ErrorList topolTest::checkCloseFeature(double tolerance, QString layer1Str, QStr
   for (it = mFeatureList1.begin(); it != FeatureListEnd; ++it)
   {
     if (!(++i % 100))
-      progress.setValue(i);
+      emit progress(i);
 
-    if (progress.wasCanceled())
+    if (testCancelled())
       break;
 
     QgsGeometry* g1 = it->feature.geometry();
@@ -185,7 +170,7 @@ ErrorList topolTest::checkCloseFeature(double tolerance, QString layer1Str, QStr
     }
   }
 
-  return mErrorList;
+  return errorList;
 }
     /* ^
       if (g1->distance(*g2) < tolerance)
@@ -220,32 +205,29 @@ ErrorList topolTest::checkCloseFeature(double tolerance, QString layer1Str, QStr
 ErrorList topolTest::checkUnconnectedLines(double tolerance, QString layer1Str, QString layer2Str)
 {
 	//TODO: multilines, seems to not work even for simple lines, grr
+  ErrorList errorList;
   int i = 0;
+
   QgsSpatialIndex* index = mLayerIndexes[layer2Str];
   if (!index)
   {
     std::cout << "No index for layer " << layer2Str.toStdString() << "!\n";
-    return;
+    return errorList;
   }
-
-  QProgressDialog progress("Checking for unconnected lines", "Abort", 0, mFeatureList1.size(), this);
-  progress.setWindowModality(Qt::WindowModal);
 
   QgsVectorLayer* layer1 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer1Str];
   QgsVectorLayer* layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
   if (layer1->geometryType() != QGis::Line)
-    return;
-
-  ErrorList errorList;
+    return errorList;
 
   QList<FeatureLayer>::Iterator it;
   QList<FeatureLayer>::ConstIterator FeatureListEnd = mFeatureList1.end();
   for (it = mFeatureList1.begin(); it != FeatureListEnd; ++it)
   {
     if (!(++i % 100))
-      progress.setValue(i);
+      emit progress(i);
 
-    if (progress.wasCanceled())
+    if (testCancelled())
       break;
 
     QgsGeometry* g1 = it->feature.geometry();
@@ -298,8 +280,6 @@ ErrorList topolTest::checkUnconnectedLines(double tolerance, QString layer1Str, 
 
 ErrorList topolTest::checkValid(double tolerance, QString layer1Str, QString layer2Str)
 {
-  QProgressDialog progress("Checking geometry validity", "Abort", 0, mFeatureList1.size(), this);
-  progress.setWindowModality(Qt::WindowModal);
   int i = 0;
 
   QList<FeatureLayer>::Iterator it;
@@ -307,18 +287,13 @@ ErrorList topolTest::checkValid(double tolerance, QString layer1Str, QString lay
 
   for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
   {
-    progress.setValue(++i);
-    if (progress.wasCanceled())
+    if (!(++i % 100))
+      emit progress(++i);
+    if (testCancelled())
       break;
 
     QgsGeometry* g = it->feature.geometry();
-    if (!g->asGeos())
-    {
-      std::cout << "Geos geometry is NULL\n";
-      continue;
-    }
-
-    if (!GEOSisValid(g->asGeos()))
+    if (!g->asGeos() || !GEOSisValid(g->asGeos()))
     {
       QgsRectangle r = g->boundingBox();
       QList<FeatureLayer> fls;
@@ -334,28 +309,26 @@ ErrorList topolTest::checkValid(double tolerance, QString layer1Str, QString lay
 
 ErrorList topolTest::checkPolygonContains(double tolerance, QString layer1Str, QString layer2Str)
 {
+  ErrorList errorList;
   int i = 0;
+
   QgsSpatialIndex* index = mLayerIndexes[layer2Str];
   if (!index)
   {
     std::cout << "No index for layer " << layer2Str.toStdString() << "!\n";
-    return;
+    return errorList;
   }
 
-  QProgressDialog progress("Checking polygons for inside features", "Abort", 0, mFeatureList1.size(), this);
-  progress.setWindowModality(Qt::WindowModal);
-
   QgsVectorLayer* layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
-  ErrorList errorList;
 
   QList<FeatureLayer>::Iterator it;
   QList<FeatureLayer>::ConstIterator FeatureListEnd = mFeatureList1.end();
   for (it = mFeatureList1.begin(); it != FeatureListEnd; ++it)
   {
     if (!(++i % 100))
-      progress.setValue(i);
+      emit progress(i);
 
-    if (progress.wasCanceled())
+    if (testCancelled())
       break;
 
     QgsGeometry* g1 = it->feature.geometry();
@@ -394,34 +367,31 @@ ErrorList topolTest::checkPolygonContains(double tolerance, QString layer1Str, Q
 
 ErrorList topolTest::checkPointCoveredBySegment(double tolerance, QString layer1Str, QString layer2Str)
 {
+  ErrorList errorList;
   int i = 0;
+
   QgsSpatialIndex* index = mLayerIndexes[layer2Str];
   if (!index)
   {
     std::cout << "No index for layer " << layer2Str.toStdString() << "!\n";
-    return;
+    return errorList;
   }
-
-  QProgressDialog progress("Checking for not covered points", "Abort", 0, mFeatureList1.size(), this);
-  progress.setWindowModality(Qt::WindowModal);
 
   QgsVectorLayer* layer1 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer1Str];
   QgsVectorLayer* layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
   if (layer1->geometryType() != QGis::Point)
-    return;
+    return errorList;
   if (layer2->geometryType() == QGis::Point)
-    return;
-
-  ErrorList errorList;
+    return errorList;
 
   QList<FeatureLayer>::Iterator it;
   QList<FeatureLayer>::ConstIterator FeatureListEnd = mFeatureList1.end();
   for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
   {
     if (!(++i % 100))
-      progress.setValue(i);
+      emit progress(i);
 
-    if (progress.wasCanceled())
+    if (testCancelled())
       break;
 
     QgsGeometry* g1 = it->feature.geometry();
@@ -465,18 +435,15 @@ ErrorList topolTest::checkPointCoveredBySegment(double tolerance, QString layer1
 ErrorList topolTest::checkSegmentLength(double tolerance, QString layer1Str, QString layer2Str)
 {
   //TODO: multi versions, distance from settings, more errors for one feature
+  ErrorList errorList;
   int i = 0;
+
   QgsSpatialIndex* index = mLayerIndexes[layer2Str];
   if (!index)
   {
     std::cout << "No index for layer " << layer2Str.toStdString() << "!\n";
-    return;
+    return errorList;
   }
-
-  QProgressDialog progress("Checking segment length", "Abort", 0, mFeatureList1.size(), this);
-  progress.setWindowModality(Qt::WindowModal);
-
-  ErrorList errorList;
 
   QList<FeatureLayer>::Iterator it;
   QList<FeatureLayer>::ConstIterator FeatureListEnd = mFeatureList1.end();
@@ -575,39 +542,29 @@ QList<QgsRectangle> crossingRectangles(QgsGeometry* g)
 }
 */
 
-/*inline bool setProgress(QProgressDialog& progress, int &i)
-{
-    if (!(++i % 100))
-      progress.setValue(i);
-
-    return progress.wasCanceled();
-}*/
-
 ErrorList topolTest::checkIntersections(double tolerance, QString layer1Str, QString layer2Str)
 {
+  ErrorList errorList;
   int i = 0;
+
   QgsSpatialIndex* index = mLayerIndexes[layer2Str];
   if (!index)
   {
     std::cout << "No index for layer " << layer2Str.toStdString() << "!\n";
-    return;
+    return errorList;
   }
-
-  QProgressDialog progress("Checking for intersections", "Abort", 0, mFeatureList1.size(), this);
-  progress.setWindowModality(Qt::WindowModal);
 
   QList<FeatureLayer>::Iterator it;
   QList<FeatureLayer>::ConstIterator FeatureListEnd = mFeatureList1.end();
 
   QgsVectorLayer* layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
-  ErrorList errorList;
   
   for (it = mFeatureList1.begin(); it != FeatureListEnd; ++it)
   {
     if (!(++i % 100))
-      progress.setValue(i);
+      emit progress(i);
 
-    if (progress.wasCanceled())
+    if (testCancelled())
       break;
 
     QgsGeometry* g1 = it->feature.geometry();
@@ -668,20 +625,16 @@ ErrorList topolTest::checkIntersections(double tolerance, QString layer1Str, QSt
 QgsSpatialIndex* topolTest::createIndex(QgsVectorLayer* layer, QgsRectangle extent)
 {
   QgsSpatialIndex* index = new QgsSpatialIndex();
-  //layer->select(QgsAttributeList(), extent);
   layer->select(QgsAttributeList(), QgsRectangle());
-
-  QProgressDialog progress("Building spatial index", "Abort", 0, layer->featureCount(), this);
-  progress.setWindowModality(Qt::WindowModal);
 
   int i = 0;
   QgsFeature f;
   while (layer->nextFeature(f))
   {
     if (!(++i % 100))
-      progress.setValue(i);
+      emit progress(i);
 
-    if (progress.wasCanceled())
+    if (testCancelled())
     {
       delete index;
       return 0;

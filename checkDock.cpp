@@ -34,6 +34,7 @@
 #include <qgslogger.h>
 #include <spatialindex/qgsspatialindex.h>
 
+#include "topolTest.h"
 #include "rulesDialog.h"
 #include "geosFunctions.h"
 #include "../../app/qgisapp.h"
@@ -381,37 +382,17 @@ void checkDock::checkValid(double tolerance, QString layer1Str, QString layer2St
 {
   QProgressDialog progress("Checking geometry validity", "Abort", 0, mFeatureList1.size(), this);
   progress.setWindowModality(Qt::WindowModal);
-  int i = 0;
 
-  QList<FeatureLayer>::Iterator it;
-  QStringList itemList;
+  topolTest t;
+  connect(&progress, SIGNAL(canceled()), &t, SLOT(setTestCancelled()));
+  connect(&progress, SIGNAL(setValue(int)), &t, SLOT(progress(int)));
 
-  for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
-  {
-    progress.setValue(++i);
-    if (progress.wasCanceled())
-      break;
+  ErrorList errors = t.checkValid(tolerance, layer1Str, layer2Str);
 
-    QgsGeometry* g = it->feature.geometry();
-    if (!g->asGeos())
-    {
-      std::cout << "Geos geometry is NULL\n";
-      continue;
-    }
-
-    if (!GEOSisValid(g->asGeos()))
-    {
-      QgsRectangle r = g->boundingBox();
-      QList<FeatureLayer> fls;
-      fls << *it << *it;
-
-      TopolErrorValid* err = new TopolErrorValid(r, g, fls);
-      mErrorList << err;
-      itemList << err->name() + QString(" %1").arg(it->feature.id());
-    }
-  }
-
-  mErrorListView->addItems(itemList);
+  ErrorList::ConstIterator it = errors.begin();
+  ErrorList::ConstIterator errorsEnd = errors.end();
+  for (; it != errorsEnd; ++it)
+    mErrorListView->addItem((*it)->name() + QString(" %1").arg((*it)->featurePairs().first().feature.id()));
 }
 
 void checkDock::checkPolygonContains(double tolerance, QString layer1Str, QString layer2Str)
