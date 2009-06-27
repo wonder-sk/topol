@@ -112,8 +112,6 @@ void checkDock::configure()
 
 void checkDock::errorListClicked(const QModelIndex& index)
 {
-  //assert(mErrorList.count() != mErrorListView->count());
-	std::cout << "sizes: " <<mErrorList.count() << " =?= "<< mErrorListView->count()<<std::flush;
   int row = index.row();
   QgsRectangle r = mErrorList[row]->boundingBox();
   r.scale(1.5);
@@ -177,16 +175,14 @@ void checkDock::runTests(QgsRectangle extent)
 {
   for (int i = 0; i < mTestTable->rowCount(); ++i)
   {
-
-    QString testName = mTestTable->itemAt(i, 0)->text();
+    QString testName = mTestTable->item(i, 0)->text();
     QString layer1Str = mTestTable->item(i, 1)->text();
     QString layer2Str = mTestTable->item(i, 2)->text();
+    QString toleranceStr = mTestTable->item(i, 3)->text();
 
     std::cout << testName.toStdString();
-
-    QString toleranceStr = mTestTable->itemAt(i, 3)->text();
-
     std::cout << "layerstrs: "<<layer1Str.toStdString() << " - " << layer2Str.toStdString() <<"\n";
+
     QgsVectorLayer* layer1 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer1Str];
     QgsVectorLayer* layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
 
@@ -207,6 +203,7 @@ void checkDock::runTests(QgsRectangle extent)
 
     connect(&progress, SIGNAL(canceled()), &mTest, SLOT(setTestCancelled()));
     connect(&mTest, SIGNAL(progress(int)), &progress, SLOT(setValue(int)));
+    // run the test
     ErrorList errors = mTest.runTest(testName, layer1, layer2, extent, toleranceStr.toDouble());
     disconnect(&progress, SIGNAL(canceled()), &mTest, SLOT(setTestCancelled()));
     disconnect(&mTest, SIGNAL(progress(int)), &progress, SLOT(setValue(int)));

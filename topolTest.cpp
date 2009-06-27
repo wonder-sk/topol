@@ -49,11 +49,13 @@ topolTest::topolTest()
   mTestMap["Test segment lengths"].useTolerance = true;
   mTestMap["Test segment lengths"].useSecondLayer = false;
 
+  mTestMap["Test unconnected lines"].f = &topolTest::checkUnconnectedLines;
+  mTestMap["Test unconnected lines"].useSecondLayer = false;
+
   // two layer tests
   mTestMap["Test intersections"].f = &topolTest::checkIntersections;
   mTestMap["Test features inside polygon"].f = &topolTest::checkPolygonContains;
   mTestMap["Test points not covered by segments"].f = &topolTest::checkPointCoveredBySegment;
-  mTestMap["Test unconnected lines"].f = &topolTest::checkUnconnectedLines;
   mTestMap["Test feature too close"].f = &topolTest::checkCloseFeature;
   mTestMap["Test feature too close"].useTolerance = true;
 }
@@ -149,7 +151,6 @@ ErrorList topolTest::checkCloseFeature(double tolerance, QgsVectorLayer* layer1,
       QgsFeature& f = mFeatureMap2[*cit].feature;
       QgsGeometry* g2 = f.geometry();
 
-      //why???
       if (!g2) {std::cout << "neeeee!"<<std::flush ;continue;}
 
       if (g1->distance(*g2) < tolerance)
@@ -203,20 +204,26 @@ ErrorList topolTest::checkCloseFeature(double tolerance, QgsVectorLayer* layer1,
 
 ErrorList topolTest::checkUnconnectedLines(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {
-	//TODO: multilines, seems to not work even for simple lines, grr
+	//TODO: multilines, crashes in geos touches for some geometries
+  int i = 0;
   ErrorList errorList;
-  QString secondLayerId = layer2->getLayerID();
-  QgsSpatialIndex* index = mLayerIndexes[secondLayerId];
+  QString layerId = layer1->getLayerID();
+  QgsSpatialIndex* index = mLayerIndexes[layerId];
   if (!index)
   {
-    std::cout << "No index for layer " << secondLayerId.toStdString() << "!\n";
-    return errorList;
-  }
-  
-  int i = 0;
-  //QgsVectorLayer* layer1 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer1Str];
-  //QgsVectorLayer* layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
+    // attempt to create new index - it was not built in runtest()
+    mLayerIndexes[layerId] = createIndex(layer1);
+    index = mLayerIndexes[layerId];
 
+    if (!index)
+    {
+      std::cout << "No index for layer " << layerId.toStdString() << "!\n";
+      return errorList;
+    }
+  }
+  else // map was not filled in runtest()
+    fillFeatureMap(layer1);
+  
   if (layer1->geometryType() != QGis::Line)
     return errorList;
 
@@ -240,30 +247,36 @@ ErrorList topolTest::checkUnconnectedLines(double tolerance, QgsVectorLayer* lay
     QList<int>::Iterator cit = crossingIds.begin();
     QList<int>::ConstIterator crossingIdsEnd = crossingIds.end();
 
+  std::cout << g1->asPolyline().first()<<" - " << g1->asPolyline().last() << "\n";
+
     QgsGeometry* startPoint = QgsGeometry::fromPoint(g1->asPolyline().first());
     QgsGeometry* endPoint = QgsGeometry::fromPoint(g1->asPolyline().last());
-    bool touchesStart = false;
-    bool touchesEnd = false;
+    if (!startPoint || !endPoint)
+      continue;
 
+    bool touches = false;
     for (; cit != crossingIdsEnd; ++cit)
     {
-      QgsFeature& f = mFeatureMap2[*cit].feature;
-      QgsGeometry* g2 = f.geometry();
+      // skip itself
+      if (mFeatureMap2[*cit].feature.id() == it->feature.id())
+	continue;
 
-      // find and test endpoints
-      if (geosTouches(startPoint, g2))
+      QgsGeometry* g2 = mFeatureMap2[*cit].feature.geometry();
+      if (!g2)
       {
-	touchesStart = true;
+	std::cout << "no g2 in unconnected\n" << std::flush;
+        continue;
       }
-      if (geosTouches(endPoint, g2))
+
+      // test both endpoints
+      if (geosTouches(startPoint, g2) || geosTouches(endPoint, g2))
       {
-	touchesEnd = true;
+	touches = true;
+	break;
       }
-      if (touchesStart && touchesEnd)
-        break;
     }
 
-    if (! (touchesStart && touchesEnd) )
+    if (!touches)
     {
       QList<FeatureLayer> fls;
       fls << *it << *it;
@@ -281,9 +294,8 @@ ErrorList topolTest::checkUnconnectedLines(double tolerance, QgsVectorLayer* lay
 ErrorList topolTest::checkValid(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {
   int i = 0;
-
-  QList<FeatureLayer>::Iterator it;
   ErrorList errorList;
+  QList<FeatureLayer>::Iterator it;
 
   for (it = mFeatureList1.begin(); it != mFeatureList1.end(); ++it)
   {
@@ -309,17 +321,18 @@ ErrorList topolTest::checkValid(double tolerance, QgsVectorLayer* layer1, QgsVec
 
 ErrorList topolTest::checkPolygonContains(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {
+	//TODO: for unknown reasons crashes in geos contains
+  int i = 0;
   ErrorList errorList;
   QString secondLayerId = layer2->getLayerID();
   QgsSpatialIndex* index = mLayerIndexes[secondLayerId];
+
   if (!index)
   {
     std::cout << "No index for layer " << secondLayerId.toStdString() << "!\n";
     return errorList;
   }
   
-  int i = 0;
-
   QList<FeatureLayer>::Iterator it;
   QList<FeatureLayer>::ConstIterator FeatureListEnd = mFeatureList1.end();
   for (it = mFeatureList1.begin(); it != FeatureListEnd; ++it)
@@ -347,6 +360,10 @@ ErrorList topolTest::checkPolygonContains(double tolerance, QgsVectorLayer* laye
       QgsFeature& f = mFeatureMap2[*cit].feature;
       QgsGeometry* g2 = f.geometry();
 
+      // this shouldn't happen
+      if (!g1 || !g2)
+	continue;
+
       if (geosContains(g1, g2))
       {
 	QList<FeatureLayer> fls;
@@ -366,16 +383,16 @@ ErrorList topolTest::checkPolygonContains(double tolerance, QgsVectorLayer* laye
 
 ErrorList topolTest::checkPointCoveredBySegment(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {
+  int i = 0;
   ErrorList errorList;
   QString secondLayerId = layer2->getLayerID();
   QgsSpatialIndex* index = mLayerIndexes[secondLayerId];
+
   if (!index)
   {
     std::cout << "No index for layer " << secondLayerId.toStdString() << "!\n";
     return errorList;
   }
-
-  int i = 0;
 
   if (layer1->geometryType() != QGis::Point)
     return errorList;
@@ -432,12 +449,12 @@ ErrorList topolTest::checkPointCoveredBySegment(double tolerance, QgsVectorLayer
 
 ErrorList topolTest::checkSegmentLength(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {
-  //TODO: multi versions, more errors for one feature
-  ErrorList errorList;
+  //TODO: multi versions, move the type-switch from the cycle
   int i = 0;
-
+  ErrorList errorList;
   QList<FeatureLayer>::Iterator it;
   QList<FeatureLayer>::ConstIterator FeatureListEnd = mFeatureList1.end();
+
   for (it = mFeatureList1.begin(); it != FeatureListEnd; ++it)
   {
     QgsGeometry* g1 = it->feature.geometry();
@@ -572,7 +589,6 @@ ErrorList topolTest::checkIntersections(double tolerance, QgsVectorLayer* layer1
       //crossingIds << index->intersects(*tilesIt);
 */
     int crossSize = crossingIds.size();
-    //std::cout << "crossingFeatures size: " << crossingFeatures.size() << "\n";
 
     //QSet<int>::Iterator cit = crossingIds.begin();
     //QSet<int>::ConstIterator crossingIdsEnd = crossingIds.end();
@@ -587,7 +603,7 @@ ErrorList topolTest::checkIntersections(double tolerance, QgsVectorLayer* layer1
 
       if (!g2)
       {
-        std::cout << "neni g2\n";
+        std::cout << "no second geometry\n";
 	continue;
       }
 
@@ -636,22 +652,18 @@ QgsSpatialIndex* topolTest::createIndex(QgsVectorLayer* layer)
   QgsSpatialIndex* index = new QgsSpatialIndex();
   layer->select(QgsAttributeList(), QgsRectangle());
 
-  //TODO: progress dialog
-  //QProgressDialog progress("Building spatial index", "Abort", 0, layer->featureCount(), this);
-  //progress.setWindowModality(Qt::WindowModal);
-
-  //int i = 0;
+  int i = 0;
   QgsFeature f;
   while (layer->nextFeature(f))
   {
-    //if (!(++i % 100))
-      //progress.setValue(i);
+    if (!(++i % 100))
+      emit progress(i);
 
-    //if (progress.wasCanceled())
-    //{
-      //delete index;
-      //return 0;
-    //}
+    if (testCancelled())
+    {
+      delete index;
+      return 0;
+    }
 
     if (f.geometry())
     { 
@@ -680,7 +692,6 @@ ErrorList topolTest::runTest(QString testName, QgsVectorLayer* layer1, QgsVector
     return errors;
   }
 
-  //QString layer1Str = layer1->name();
   QString secondLayerId;
   mFeatureList1.clear();
   mFeatureMap2.clear();
@@ -700,6 +711,7 @@ ErrorList topolTest::runTest(QString testName, QgsVectorLayer* layer1, QgsVector
     if (f.geometry())
       mFeatureList1 << FeatureLayer(layer1, f);
 
+	  std::cout << "runt tol: "<<tolerance<<"\n";
   //call test routine
   return (this->*(mTestMap[testName].f))(tolerance, layer1, layer2);
 }
