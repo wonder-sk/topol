@@ -127,11 +127,22 @@ void checkDock::errorListClicked(const QModelIndex& index)
   QgsFeature f;
   QgsGeometry* g;
   FeatureLayer fl = mErrorList[row]->featurePairs().first();
+  if (!fl.layer)
+  {
+    std::cout << "invalid layer 1\n";
+    return;
+  }
+
   fl.layer->featureAtId(fl.feature.id(), f, true, false);
   g = f.geometry();
   mRBFeature1->setToGeometry(g, mLayer);
-
   fl = mErrorList[row]->featurePairs()[1];
+  if (!fl.layer)
+  {
+    std::cout << "invalid layer 2\n";
+    return;
+  }
+
   fl.layer->featureAtId(fl.feature.id(), f, true, false);
   g = f.geometry();
   mRBFeature2->setToGeometry(g, mLayer);
@@ -175,15 +186,16 @@ void checkDock::runTests(QgsRectangle extent)
 
     QString toleranceStr = mTestTable->itemAt(i, 3)->text();
 
+    std::cout << "layerstrs: "<<layer1Str.toStdString() << " - " << layer2Str.toStdString() <<"\n";
     QgsVectorLayer* layer1 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer1Str];
     QgsVectorLayer* layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
-/*
+
     if (!layer1)
     {
       std::cout << "CheckDock: layer " << layer1Str.toStdString() << " not found in registry!" << std::flush;
       return;
     }
-
+/*
     if (!layer2 && mTest.testMap()[testName].showSecondLayer)
     {
       std::cout << "CheckDock: layer " << layer2Str.toStdString() << " not found in registry!" << std::flush;

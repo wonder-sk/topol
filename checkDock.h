@@ -34,10 +34,6 @@ class QgsRubberBand;
 class QgisApp;
 class checkDock;
 
-//typedef QList<TopolError*> ErrorList;
-//typedef void (checkDock::*testFunction)(double, QString, QString);
-//typedef void (topolTest::*testFunction)(double, QString, QString);
-
 class checkDock : public QDockWidget, public Ui::checkDock
 {
 Q_OBJECT
@@ -73,8 +69,6 @@ private:
   QTableWidget* mTestTable;
 
   QMap<QString, QgsSpatialIndex*> mLayerIndexes;
-  //QMap<int, QgsGeometry*> mLayerGeometries;
-  //QMap<QString, testFunction> mTestMap;
   QList<QString> mTestList;
   topolTest mTest;
   QgsMapLayerRegistry* mLayerRegistry;
@@ -87,8 +81,6 @@ private:
   void checkUnconnectedLines(double tolerance, QString layer1str, QString layer2Str);
   void checkPointCoveredBySegment(double tolerance, QString layer1str, QString layer2Str);
   void checkValid(double tolerance, QString layer1str, QString layer2Str);
-
-  QgsSpatialIndex* createIndex(QgsVectorLayer* layer, QgsRectangle extent);
   */
   void runTests(QgsRectangle extent);
   void validate(QgsRectangle extent);

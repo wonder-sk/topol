@@ -29,7 +29,7 @@
 class topolTest;
 class QgsMapLayerRegistry;
 
-typedef ErrorList (topolTest::*testFunction)(double, QString, QString);
+typedef ErrorList (topolTest::*testFunction)(double, QgsVectorLayer*, QgsVectorLayer*);
 
 class test
 {
@@ -57,14 +57,14 @@ public:
   QMap<QString, test> testMap() { return mTestMap; }
   ErrorList runTest(QString testName, QgsVectorLayer* layer1, QgsVectorLayer* layer2, QgsRectangle extent, double tolerance);
 
-  ErrorList checkIntersections(double tolerance, QString layer1str, QString layer2Str);
-  ErrorList checkSelfIntersections(double tolerance, QString layer1str, QString layer2Str);
-  ErrorList checkCloseFeature(double tolerance, QString layer1str, QString layer2Str);
-  ErrorList checkPolygonContains(double tolerance, QString layer1str, QString layer2Str);
-  ErrorList checkSegmentLength(double tolerance, QString layer1str, QString layer2Str);
-  ErrorList checkUnconnectedLines(double tolerance, QString layer1str, QString layer2Str);
-  ErrorList checkPointCoveredBySegment(double tolerance, QString layer1str, QString layer2Str);
-  ErrorList checkValid(double tolerance, QString layer1str, QString layer2Str);
+  ErrorList checkIntersections(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2);
+  ErrorList checkSelfIntersections(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2);
+  ErrorList checkCloseFeature(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2);
+  ErrorList checkPolygonContains(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2);
+  ErrorList checkSegmentLength(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2);
+  ErrorList checkUnconnectedLines(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2);
+  ErrorList checkPointCoveredBySegment(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2);
+  ErrorList checkValid(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2);
 
 public slots:
   void setTestCancelled();
@@ -79,6 +79,7 @@ private:
   bool mTestCancelled;
 
   QgsSpatialIndex* createIndex(QgsVectorLayer* layer);
+  void fillFeatureMap(QgsVectorLayer* layer);
   bool testCancelled();
 
 signals:
