@@ -151,7 +151,7 @@ ErrorList topolTest::checkCloseFeature(double tolerance, QgsVectorLayer* layer1,
       QgsFeature& f = mFeatureMap2[*cit].feature;
       QgsGeometry* g2 = f.geometry();
 
-      if (!g2) {std::cout << "neeeee!"<<std::flush ;continue;}
+      if (!g2) {std::cout << "no g2 - close!"<<std::flush ;continue;}
 
       if (g1->distance(*g2) < tolerance)
       {
@@ -246,8 +246,6 @@ ErrorList topolTest::checkUnconnectedLines(double tolerance, QgsVectorLayer* lay
     
     QList<int>::Iterator cit = crossingIds.begin();
     QList<int>::ConstIterator crossingIdsEnd = crossingIds.end();
-
-  std::cout << g1->asPolyline().first()<<" - " << g1->asPolyline().last() << "\n";
 
     QgsGeometry* startPoint = QgsGeometry::fromPoint(g1->asPolyline().first());
     QgsGeometry* endPoint = QgsGeometry::fromPoint(g1->asPolyline().last());
@@ -450,6 +448,7 @@ ErrorList topolTest::checkPointCoveredBySegment(double tolerance, QgsVectorLayer
 ErrorList topolTest::checkSegmentLength(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {
   //TODO: multi versions, move the type-switch from the cycle
+  //TODO: delete geometries allocated by fromPolyline
   int i = 0;
   ErrorList errorList;
   QList<FeatureLayer>::Iterator it;
@@ -484,7 +483,6 @@ ErrorList topolTest::checkSegmentLength(double tolerance, QgsVectorLayer* layer1
       case QGis::Polygon:
         pol = g1->asPolygon();
 
-	/*//TODO: jump out of outer cycle
 	for (int i = 0; i < pol.size(); ++i)
 	  for (int j = 1; j < pol[i].size(); ++j)
 	    if (pol[i][j-1].sqrDist(pol[i][j]) < tolerance)
@@ -494,9 +492,8 @@ ErrorList topolTest::checkSegmentLength(double tolerance, QgsVectorLayer* layer1
 	      segm.clear();
 	      segm << pol[i][j-1] << pol[i][j];
               err = new TopolErrorShort(g1->boundingBox(), QgsGeometry::fromPolyline(segm), fls);
-              mErrorList << err;
-              mErrorListView->addItem(err->name() + QString(" %1").arg(it->feature.id()));
-	    }*/
+              errorList << err;
+	    }
       break;
       default:
         continue;
@@ -578,26 +575,12 @@ ErrorList topolTest::checkIntersections(double tolerance, QgsVectorLayer* layer1
 
     QList<int> crossingIds;
     crossingIds = index->intersects(bb);
-    /*
-    QSet<int> crossingIds;
-    QList<QgsRectangle> tiles = crossingRectangles(g1); 
-    QList<QgsRectangle>::ConstIterator tilesIt = tiles.begin();
-    QList<QgsRectangle>::ConstIterator tilesEnd = tiles.end();
-
-    for (; tilesIt != tilesEnd; ++tilesIt)
-      crossingIds |= index->intersects(*tilesIt).toSet();
-      //crossingIds << index->intersects(*tilesIt);
-*/
     int crossSize = crossingIds.size();
 
-    //QSet<int>::Iterator cit = crossingIds.begin();
-    //QSet<int>::ConstIterator crossingIdsEnd = crossingIds.end();
     QList<int>::Iterator cit = crossingIds.begin();
     QList<int>::ConstIterator crossingIdsEnd = crossingIds.end();
     for (; cit != crossingIdsEnd; ++cit)
     {
-      //QgsFeature f;
-      //layer2->featureAtId(id, f, true, false);
       QgsFeature& f = mFeatureMap2[*cit].feature;
       QgsGeometry* g2 = f.geometry();
 
@@ -711,7 +694,6 @@ ErrorList topolTest::runTest(QString testName, QgsVectorLayer* layer1, QgsVector
     if (f.geometry())
       mFeatureList1 << FeatureLayer(layer1, f);
 
-	  std::cout << "runt tol: "<<tolerance<<"\n";
   //call test routine
   return (this->*(mTestMap[testName].f))(tolerance, layer1, layer2);
 }
