@@ -50,8 +50,8 @@ public:
   QComboBox* testBox() { return mTestBox; }
 
 private:
-  //QMap<QString, testConf> mTestConfMap;
   QMap<QString, test> mTestConfMap;
+  QList<QString> mLayerIds;
 
 private slots:
   void showControls(const QString& testName);

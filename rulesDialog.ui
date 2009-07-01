@@ -45,6 +45,16 @@
          <string>Tolerance</string>
         </property>
        </column>
+       <column>
+        <property name="text">
+         <string>Layer1ID</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>Layer2ID</string>
+        </property>
+       </column>
       </widget>
      </item>
      <item>

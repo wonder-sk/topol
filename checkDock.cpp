@@ -38,7 +38,6 @@
 
 #include "topolTest.h"
 #include "rulesDialog.h"
-//#include "geosFunctions.h"
 
 //TODO: get rid of those global variables (, mFeatureList, ...
 checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QWidget* parent)
@@ -48,14 +47,13 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QWidget
 
   mLayer = theLayer;
   mLayerRegistry = QgsMapLayerRegistry::instance();
-
 /*
   QList<QString> layerNames;
   QList<QgsMapLayer*> layers = mLayerRegistry->mapLayers().values();
   for (int i = 0; i < layers.size(); ++i)
     layerNames << layers[i]->name();
 
-  mConfigureDialog = new rulesDialog("Rules", mTestMap.keys(), layerNames, parent);
+  mConfigureDialog = new rulesDialog("Rules", layerNames, mTest.testMap(), parent);
   */
   mConfigureDialog = new rulesDialog("Rules", mLayerRegistry->mapLayers().keys(), mTest.testMap(), parent);
   mTestTable = mConfigureDialog->testTable();
@@ -175,10 +173,12 @@ void checkDock::runTests(QgsRectangle extent)
 {
   for (int i = 0; i < mTestTable->rowCount(); ++i)
   {
+	  std::cout << "cols: "<<mTestTable->columnCount()<<std::flush;
+
     QString testName = mTestTable->item(i, 0)->text();
-    QString layer1Str = mTestTable->item(i, 1)->text();
-    QString layer2Str = mTestTable->item(i, 2)->text();
     QString toleranceStr = mTestTable->item(i, 3)->text();
+    QString layer1Str = mTestTable->item(i, 4)->text();
+    QString layer2Str = mTestTable->item(i, 5)->text();
 
     std::cout << testName.toStdString();
     std::cout << "layerstrs: "<<layer1Str.toStdString() << " - " << layer2Str.toStdString() <<"\n";

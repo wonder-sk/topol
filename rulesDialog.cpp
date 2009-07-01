@@ -25,6 +25,7 @@
 #include <qgsmaplayerregistry.h>
 
 #include <qgsproviderregistry.h>
+#include <qgsmaplayerregistry.h>
 #include <qgslogger.h>
 
 #include "../../app/qgisapp.h"
@@ -32,27 +33,30 @@
 #include "rulesDialog.h"
 #include "topolTest.h"
 
-//rulesDialog::rulesDialog(const QString &tableName, QList<QString> tests, QList<QString> layerList, QMap<QString, test> testMap, QWidget *parent)
+//TODO check when layer add/deleted
 rulesDialog::rulesDialog(const QString &tableName, QList<QString> layerList, QMap<QString, test> testMap, QWidget *parent)
 : QDialog(parent), Ui::rulesDialog()
 {
   setupUi(this);
 
+  mTestTable->hideColumn(4);
+  mTestTable->hideColumn(5);
+
   mTestConfMap = testMap;
   mTestTable->setSelectionBehavior(QAbstractItemView::SelectRows);
   mTestBox->addItems(mTestConfMap.keys());
-  mLayer1Box->addItems(QStringList(layerList));
-  mLayer2Box->addItems(QStringList(layerList));
 
-  //TODO: redundant, use data from topolTest
-  /*mTestConfMap["Select test for addition"];
-  mTestConfMap["Test intersections"].showLayer2 = true;
-  mTestConfMap["Test dangling endpoints"].showTolerance = true;
-  mTestConfMap["Test features inside polygon"];
-  mTestConfMap["Test points not covered by segments"];
-  mTestConfMap["Test segment lengths"].showTolerance = true;
-  mTestConfMap["Test geometry validity"];
-*/
+  QgsMapLayerRegistry* layerRegistry = QgsMapLayerRegistry::instance();
+
+  for (int i = 0; i < layerList.size(); ++i)
+  {
+    // add layer ID to the layerId list
+    mLayerIds << layerList[i];
+
+    // add layer name to the layer combo boxes
+    mLayer1Box->addItem(((QgsVectorLayer*)layerRegistry->mapLayers()[layerList[i]])->name());
+    mLayer2Box->addItem(((QgsVectorLayer*)layerRegistry->mapLayers()[layerList[i]])->name());
+  }
 
   connect(mAddTestButton, SIGNAL(clicked()), this, SLOT(addTest()));
   connect(mAddTestButton, SIGNAL(clicked()), mTestTable, SLOT(resizeColumnsToContents()));
@@ -74,17 +78,23 @@ void rulesDialog::showControls(const QString& testName)
 
 void rulesDialog::addLayer(QgsMapLayer* layer)
 {
-  mLayer1Box->addItem(layer->getLayerID());
-  mLayer2Box->addItem(layer->getLayerID());
+  mLayerIds << layer->getLayerID();
+
+  // add layer name to the layer combo boxes
+  mLayer1Box->addItem(layer->name());
+  mLayer1Box->addItem(layer->name());
 }
 
 void rulesDialog::removeLayer(QString layerId)
 {
-  mLayer1Box->removeItem(mLayer1Box->findText(layerId));
-  mLayer2Box->removeItem(mLayer2Box->findText(layerId));
-}
+  int index = mLayerIds.indexOf(layerId);
+  mLayerIds.removeAt(index);
+  mLayer1Box->removeItem(index);
+  mLayer2Box->removeItem(index);
 
-void addTest() {}
+  //mLayer1Box->removeItem(mLayer1Box->findText(layerId));
+  //mLayer2Box->removeItem(mLayer2Box->findText(layerId));
+}
 
 void rulesDialog::addTest()
 {
@@ -119,6 +129,16 @@ void rulesDialog::addTest()
    newItem = new QTableWidgetItem(QString("None"));
 
  mTestTable->setItem(row, 3, newItem);
+
+ std::cout << "index: "<<mLayer1Box->currentIndex();
+ std::cout << "index2: "<<mLayer2Box->currentIndex();
+ std::cout << "size: "<<mLayerIds.size()<<std::flush;
+ // add layer ids to hidden columns
+ // -1 for "No layer"
+ newItem = new QTableWidgetItem(mLayerIds[mLayer1Box->currentIndex() - 1]);
+ mTestTable->setItem(row, 4, newItem);
+ newItem = new QTableWidgetItem(mLayerIds[mLayer2Box->currentIndex() - 1]);
+ mTestTable->setItem(row, 5, newItem);
 
  mTestBox->setCurrentIndex(0);
  mLayer1Box->setCurrentIndex(0);
