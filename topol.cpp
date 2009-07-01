@@ -110,7 +110,7 @@ void Topol::help()
 void Topol::run()
 {
   QgsMapLayer *myLayer = mQGisIface->activeLayer();
-  checkDock* chDock = new checkDock("Rules", (QgsVectorLayer *)(myLayer));
+  checkDock* chDock = new checkDock("Topology", (QgsVectorLayer *)(myLayer), mQGisIface);
   mQGisIface->addDockWidget(Qt::RightDockWidgetArea, chDock);
   chDock->show();
 }

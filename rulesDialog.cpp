@@ -27,6 +27,8 @@
 #include <qgsproviderregistry.h>
 #include <qgsmaplayerregistry.h>
 #include <qgslogger.h>
+#include <qgisinterface.h>
+#include <qgsproject.h>
 
 #include "../../app/qgisapp.h"
 
@@ -34,11 +36,12 @@
 #include "topolTest.h"
 
 //TODO check when layer add/deleted
-rulesDialog::rulesDialog(const QString &tableName, QList<QString> layerList, QMap<QString, test> testMap, QWidget *parent)
+rulesDialog::rulesDialog(const QString &tableName, QList<QString> layerList, QMap<QString, test> testMap, QgisInterface* theQgisIface, QWidget *parent)
 : QDialog(parent), Ui::rulesDialog()
 {
   setupUi(this);
 
+  mQgisIface = theQgisIface;
   mTestTable->hideColumn(4);
   mTestTable->hideColumn(5);
 
@@ -60,11 +63,28 @@ rulesDialog::rulesDialog(const QString &tableName, QList<QString> layerList, QMa
 
   connect(mAddTestButton, SIGNAL(clicked()), this, SLOT(addTest()));
   connect(mAddTestButton, SIGNAL(clicked()), mTestTable, SLOT(resizeColumnsToContents()));
+  // attempt to add new test when Ok clicked
+  connect(buttonBox, SIGNAL(accepted()), this, SLOT(addTest()));
   connect(mDeleteTestButton, SIGNAL(clicked()), this, SLOT(deleteTest()));
   connect(mTestBox, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(showControls(const QString&)));
+
+  //this resets this plugin up if a project is loaded
+  connect( mQgisIface->mainWindow(), SIGNAL( projectRead() ), this, SLOT( projectRead() ) );
+  projectRead();
 }
 
 rulesDialog::~rulesDialog() {}
+
+void rulesDialog::projectRead()
+{
+	//TODO
+  QString testName, layer1Id, layer2Id, tolerance;
+
+  testName = QgsProject::instance()->readEntry( "Topol", "/testName", "" );
+  tolerance = QgsProject::instance()->readEntry( "Topol", "/tolerance", "" );
+  layer1Id = QgsProject::instance()->readEntry( "Topol", "/layer1", "" );
+  layer2Id = QgsProject::instance()->readEntry( "Topol", "/layer2", "" );
+}
 
 void rulesDialog::showControls(const QString& testName)
 {
@@ -91,9 +111,6 @@ void rulesDialog::removeLayer(QString layerId)
   mLayerIds.removeAt(index);
   mLayer1Box->removeItem(index);
   mLayer2Box->removeItem(index);
-
-  //mLayer1Box->removeItem(mLayer1Box->findText(layerId));
-  //mLayer2Box->removeItem(mLayer2Box->findText(layerId));
 }
 
 void rulesDialog::addTest()
@@ -111,38 +128,49 @@ void rulesDialog::addTest()
   if (layer2 == "Layer" && mTestConfMap[test].useSecondLayer)
     return;
 
- //is inserting to qtablewidget really this stupid or am i missing something?
- int row = mTestTable->rowCount();
- mTestTable->insertRow(row);
-
- QTableWidgetItem* newItem;
- newItem = new QTableWidgetItem(test);
- mTestTable->setItem(row, 0, newItem);
- newItem = new QTableWidgetItem(layer1);
- mTestTable->setItem(row, 1, newItem);
- newItem = new QTableWidgetItem(layer2);
- mTestTable->setItem(row, 2, newItem);
+  //is inserting to qtablewidget really this stupid or am i missing something?
+  int row = mTestTable->rowCount();
+  mTestTable->insertRow(row);
  
- if (mTestConfMap[test].useTolerance)
-   newItem = new QTableWidgetItem(QString("%1").arg(mToleranceBox->value()));
- else
-   newItem = new QTableWidgetItem(QString("None"));
+  QTableWidgetItem* newItem;
+  newItem = new QTableWidgetItem(test);
+  mTestTable->setItem(row, 0, newItem);
+  newItem = new QTableWidgetItem(layer1);
+  mTestTable->setItem(row, 1, newItem);
+  newItem = new QTableWidgetItem(layer2);
+  mTestTable->setItem(row, 2, newItem);
+ 
+  if (mTestConfMap[test].useTolerance)
+    newItem = new QTableWidgetItem(QString("%1").arg(mToleranceBox->value()));
+  else
+    newItem = new QTableWidgetItem(QString("None"));
 
- mTestTable->setItem(row, 3, newItem);
+  mTestTable->setItem(row, 3, newItem);
+ 
+  // add layer ids to hidden columns
+  // -1 for "No layer"s string
+  QString layer1ID = mLayerIds[mLayer1Box->currentIndex() - 1];
+  QString layer2ID = mLayerIds[mLayer2Box->currentIndex() - 1];
+  newItem = new QTableWidgetItem(layer1ID);
+  mTestTable->setItem(row, 4, newItem);
+  newItem = new QTableWidgetItem(layer2ID);
+  mTestTable->setItem(row, 5, newItem);
 
- std::cout << "index: "<<mLayer1Box->currentIndex();
- std::cout << "index2: "<<mLayer2Box->currentIndex();
- std::cout << "size: "<<mLayerIds.size()<<std::flush;
- // add layer ids to hidden columns
- // -1 for "No layer"
- newItem = new QTableWidgetItem(mLayerIds[mLayer1Box->currentIndex() - 1]);
- mTestTable->setItem(row, 4, newItem);
- newItem = new QTableWidgetItem(mLayerIds[mLayer2Box->currentIndex() - 1]);
- mTestTable->setItem(row, 5, newItem);
+  mTestBox->setCurrentIndex(0);
+  mLayer1Box->setCurrentIndex(0);
+  mLayer2Box->setCurrentIndex(0);
 
- mTestBox->setCurrentIndex(0);
- mLayer1Box->setCurrentIndex(0);
- mLayer2Box->setCurrentIndex(0);
+  // reset controls to default 
+  mTestBox->setCurrentIndex(0);
+  mLayer1Box->setCurrentIndex(0);
+  mLayer2Box->setCurrentIndex(0);
+  mToleranceBox->setValue(0);
+
+  // save state to the project file.....
+  QgsProject::instance()->writeEntry( "Topol", "/testname", test );
+  QgsProject::instance()->writeEntry( "Topol", "/tolerance", mToleranceBox->value());
+  QgsProject::instance()->writeEntry( "Topol", "/layer1", layer1ID );
+  QgsProject::instance()->writeEntry( "Topol", "/layer2", layer2ID );
 }
 
 void rulesDialog::deleteTest()

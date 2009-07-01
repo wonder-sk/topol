@@ -25,26 +25,14 @@
 #include "ui_rulesDialog.h"
 #include "topolTest.h"
 
-/*
-class testConf
-{
-public:
-  bool showLayer2;
-  bool showTolerance;
-
-  testConf()
-  {
-    showLayer2 = false;
-    showTolerance = false;
-  }
-};*/
+class QgisInterface;
 
 class rulesDialog : public QDialog, public Ui::rulesDialog
 {
 Q_OBJECT
 
 public:
-  rulesDialog(const QString &tableName, QList<QString> layerList, QMap<QString, test>, QWidget *parent);
+  rulesDialog(const QString &tableName, QList<QString> layerList, QMap<QString, test>, QgisInterface* theQgisIface, QWidget *parent);
   ~rulesDialog();
   QTableWidget* testTable() { return mTestTable; }
   QComboBox* testBox() { return mTestBox; }
@@ -52,11 +40,13 @@ public:
 private:
   QMap<QString, test> mTestConfMap;
   QList<QString> mLayerIds;
+  QgisInterface* mQgisIface;
 
 private slots:
   void showControls(const QString& testName);
   void addTest();
   void deleteTest();
+  void projectRead();
   void addLayer(QgsMapLayer* layer);
   void removeLayer(QString layerId);
 };

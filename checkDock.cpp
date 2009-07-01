@@ -39,8 +39,10 @@
 #include "topolTest.h"
 #include "rulesDialog.h"
 
+class QgisInterface;
+
 //TODO: get rid of those global variables (, mFeatureList, ...
-checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QWidget* parent)
+checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QgisInterface* qIface, QWidget* parent)
 : QDockWidget(parent), Ui::checkDock()
 {
   setupUi(this);
@@ -55,7 +57,7 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QWidget
 
   mConfigureDialog = new rulesDialog("Rules", layerNames, mTest.testMap(), parent);
   */
-  mConfigureDialog = new rulesDialog("Rules", mLayerRegistry->mapLayers().keys(), mTest.testMap(), parent);
+  mConfigureDialog = new rulesDialog("Rules", mLayerRegistry->mapLayers().keys(), mTest.testMap(), qIface, parent);
   mTestTable = mConfigureDialog->testTable();
   
   mQgisApp = QgisApp::instance();

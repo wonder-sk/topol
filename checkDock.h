@@ -32,6 +32,7 @@
 class QgsMapLayerRegistry;
 class QgsRubberBand;
 class QgisApp;
+class QgisInterface;
 class checkDock;
 
 class checkDock : public QDockWidget, public Ui::checkDock
@@ -39,7 +40,7 @@ class checkDock : public QDockWidget, public Ui::checkDock
 Q_OBJECT
 
 public:
-  checkDock(const QString &tableName, QgsVectorLayer *theLayer, QWidget *parent = 0);
+  checkDock(const QString &tableName, QgsVectorLayer *theLayer, QgisInterface* qIface, QWidget *parent = 0);
   ~checkDock();
 
 private slots:
