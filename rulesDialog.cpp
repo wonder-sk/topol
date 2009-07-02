@@ -25,7 +25,6 @@
 #include <qgsmaplayerregistry.h>
 
 #include <qgsproviderregistry.h>
-#include <qgsmaplayerregistry.h>
 #include <qgslogger.h>
 #include <qgisinterface.h>
 #include <qgsproject.h>
@@ -77,13 +76,57 @@ rulesDialog::~rulesDialog() {}
 
 void rulesDialog::projectRead()
 {
-	//TODO
-  QString testName, layer1Id, layer2Id, tolerance;
+	//TODO - for cycle, split to more functions
+  QString testName;
+  QString layer1Id;
+  QString layer2Id;
+  QString tolerance;
 
-  testName = QgsProject::instance()->readEntry( "Topol", "/testName", "" );
+  testName = QgsProject::instance()->readEntry( "Topol", "/testname", "" );
   tolerance = QgsProject::instance()->readEntry( "Topol", "/tolerance", "" );
   layer1Id = QgsProject::instance()->readEntry( "Topol", "/layer1", "" );
   layer2Id = QgsProject::instance()->readEntry( "Topol", "/layer2", "" );
+  //std::cout << tolerance.toStdString() << " "<<layer1Id.toStdString()<<" " << layer2Id.toStdString()<<" "<<testName.toStdString()<< " ! " <<std::flush;
+
+  mTestTable->clear();
+  QgsMapLayerRegistry* layerRegistry = QgsMapLayerRegistry::instance();
+  QgsVectorLayer* l1 = (QgsVectorLayer*)layerRegistry->mapLayers()[layer1Id];
+  QString layer1Name;
+  if (!l1)
+    return;
+
+  layer1Name = l1->name();
+
+  QgsVectorLayer* l2 = (QgsVectorLayer*)layerRegistry->mapLayers()[layer2Id];
+  QString layer2Name;
+  if (!l2)
+    return;
+
+  layer2Name = l2->name();
+
+  int row = 0;
+  mTestTable->insertRow(row);
+ 
+  QTableWidgetItem* newItem;
+  newItem = new QTableWidgetItem(testName);
+  mTestTable->setItem(row, 0, newItem);
+  newItem = new QTableWidgetItem(layer1Name);
+  mTestTable->setItem(row, 1, newItem);
+  newItem = new QTableWidgetItem(layer2Name);
+  mTestTable->setItem(row, 2, newItem);
+ 
+  if (mTestConfMap[testName].useTolerance)
+    newItem = new QTableWidgetItem(tolerance);
+  else
+    newItem = new QTableWidgetItem(QString("None"));
+
+  mTestTable->setItem(row, 3, newItem);
+ 
+  // add layer ids to hidden columns
+  newItem = new QTableWidgetItem(layer1Id);
+  mTestTable->setItem(row, 4, newItem);
+  newItem = new QTableWidgetItem(layer2Id);
+  mTestTable->setItem(row, 5, newItem);
 }
 
 void rulesDialog::showControls(const QString& testName)
@@ -102,7 +145,7 @@ void rulesDialog::addLayer(QgsMapLayer* layer)
 
   // add layer name to the layer combo boxes
   mLayer1Box->addItem(layer->name());
-  mLayer1Box->addItem(layer->name());
+  mLayer2Box->addItem(layer->name());
 }
 
 void rulesDialog::removeLayer(QString layerId)
@@ -155,10 +198,6 @@ void rulesDialog::addTest()
   mTestTable->setItem(row, 4, newItem);
   newItem = new QTableWidgetItem(layer2ID);
   mTestTable->setItem(row, 5, newItem);
-
-  mTestBox->setCurrentIndex(0);
-  mLayer1Box->setCurrentIndex(0);
-  mLayer2Box->setCurrentIndex(0);
 
   // reset controls to default 
   mTestBox->setCurrentIndex(0);

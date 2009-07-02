@@ -91,6 +91,10 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QgisInt
 
 checkDock::~checkDock()
 {
+  mRBConflict->reset();
+  mRBFeature1->reset();
+  mRBFeature2->reset();
+
   delete mRBConflict, mRBFeature1, mRBFeature2;
   delete mConfigureDialog;
 
