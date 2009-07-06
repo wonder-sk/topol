@@ -63,6 +63,7 @@ rulesDialog::rulesDialog(const QString &tableName, QList<QString> layerList, QMa
   connect(mAddTestButton, SIGNAL(clicked()), this, SLOT(addTest()));
   connect(mAddTestButton, SIGNAL(clicked()), mTestTable, SLOT(resizeColumnsToContents()));
   // attempt to add new test when Ok clicked
+  // TODO:bug when adding test
   connect(buttonBox, SIGNAL(accepted()), this, SLOT(addTest()));
   connect(mDeleteTestButton, SIGNAL(clicked()), this, SLOT(deleteTest()));
   connect(mTestBox, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(showControls(const QString&)));
@@ -74,22 +75,21 @@ rulesDialog::rulesDialog(const QString &tableName, QList<QString> layerList, QMa
 
 rulesDialog::~rulesDialog() {}
 
-void rulesDialog::projectRead()
+void rulesDialog::readTest(int index, QgsMapLayerRegistry* layerRegistry)
 {
-	//TODO - for cycle, split to more functions
   QString testName;
   QString layer1Id;
   QString layer2Id;
   QString tolerance;
+  QgsProject* project = QgsProject::instance();
+  QString postfix = QString("%1").arg(index);
 
-  testName = QgsProject::instance()->readEntry( "Topol", "/testname", "" );
-  tolerance = QgsProject::instance()->readEntry( "Topol", "/tolerance", "" );
-  layer1Id = QgsProject::instance()->readEntry( "Topol", "/layer1", "" );
-  layer2Id = QgsProject::instance()->readEntry( "Topol", "/layer2", "" );
-  //std::cout << tolerance.toStdString() << " "<<layer1Id.toStdString()<<" " << layer2Id.toStdString()<<" "<<testName.toStdString()<< " ! " <<std::flush;
+  testName = project->readEntry( "Topol", "/testname_" + postfix, "" );
+  tolerance = project->readEntry( "Topol", "/tolerance_" + postfix, "" );
+  layer1Id = project->readEntry( "Topol", "/layer1_" + postfix, "" );
+  layer2Id = project->readEntry( "Topol", "/layer2_" + postfix, "" );
+  std::cout << "rd "<<tolerance.toStdString() << " "<<layer1Id.toStdString()<<" " << layer2Id.toStdString()<<" "<<testName.toStdString()<< " ! " <<"\n"<<std::flush;
 
-  mTestTable->clear();
-  QgsMapLayerRegistry* layerRegistry = QgsMapLayerRegistry::instance();
   QgsVectorLayer* l1 = (QgsVectorLayer*)layerRegistry->mapLayers()[layer1Id];
   QString layer1Name;
   if (!l1)
@@ -104,7 +104,7 @@ void rulesDialog::projectRead()
 
   layer2Name = l2->name();
 
-  int row = 0;
+  int row = index;
   mTestTable->insertRow(row);
  
   QTableWidgetItem* newItem;
@@ -127,6 +127,16 @@ void rulesDialog::projectRead()
   mTestTable->setItem(row, 4, newItem);
   newItem = new QTableWidgetItem(layer2Id);
   mTestTable->setItem(row, 5, newItem);
+}
+
+void rulesDialog::projectRead()
+{
+  QgsMapLayerRegistry* layerRegistry = QgsMapLayerRegistry::instance();
+  int testCount = QgsProject::instance()->readNumEntry( "Topol", "/testCount" );
+  mTestTable->clear();
+
+  for (int i = 0; i < testCount; ++i)
+    readTest(i, layerRegistry);
 }
 
 void rulesDialog::showControls(const QString& testName)
@@ -192,8 +202,10 @@ void rulesDialog::addTest()
  
   // add layer ids to hidden columns
   // -1 for "No layer"s string
+  // TODO: bug index out of range
   QString layer1ID = mLayerIds[mLayer1Box->currentIndex() - 1];
   QString layer2ID = mLayerIds[mLayer2Box->currentIndex() - 1];
+
   newItem = new QTableWidgetItem(layer1ID);
   mTestTable->setItem(row, 4, newItem);
   newItem = new QTableWidgetItem(layer2ID);
@@ -206,10 +218,16 @@ void rulesDialog::addTest()
   mToleranceBox->setValue(0);
 
   // save state to the project file.....
-  QgsProject::instance()->writeEntry( "Topol", "/testname", test );
-  QgsProject::instance()->writeEntry( "Topol", "/tolerance", mToleranceBox->value());
-  QgsProject::instance()->writeEntry( "Topol", "/layer1", layer1ID );
-  QgsProject::instance()->writeEntry( "Topol", "/layer2", layer2ID );
+  QString postfix = QString("%1").arg(row);
+  QgsProject* project = QgsProject::instance();
+
+  project->writeEntry( "Topol", "/testCount", row + 1 );
+  project->writeEntry( "Topol", "/testname_" + postfix, test );
+  project->writeEntry( "Topol", "/tolerance_" + postfix, mToleranceBox->value());
+  project->writeEntry( "Topol", "/layer1_" + postfix, layer1ID );
+  project->writeEntry( "Topol", "/layer2_" + postfix, layer2ID );
+  std::cout << (postfix + "/layer2").toStdString();
+  std::cout << "wr "<<mToleranceBox->value() << " "<<layer1ID.toStdString()<<" " << layer2ID.toStdString()<<" "<<test.toStdString()<< " ! " <<"\n"<<std::flush;
 }
 
 void rulesDialog::deleteTest()

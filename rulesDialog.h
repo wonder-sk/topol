@@ -41,6 +41,7 @@ private:
   QMap<QString, test> mTestConfMap;
   QList<QString> mLayerIds;
   QgisInterface* mQgisIface;
+  void readTest(int index, QgsMapLayerRegistry* layerRegistry);
 
 private slots:
   void showControls(const QString& testName);

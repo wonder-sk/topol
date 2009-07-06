@@ -138,6 +138,8 @@ void checkDock::errorListClicked(const QModelIndex& index)
   fl.layer->featureAtId(fl.feature.id(), f, true, false);
   g = f.geometry();
   mRBFeature1->setToGeometry(g, mLayer);
+  std::cout << "first\n"<<std::flush;
+
   fl = mErrorList[row]->featurePairs()[1];
   if (!fl.layer)
   {
@@ -148,8 +150,10 @@ void checkDock::errorListClicked(const QModelIndex& index)
   fl.layer->featureAtId(fl.feature.id(), f, true, false);
   g = f.geometry();
   mRBFeature2->setToGeometry(g, mLayer);
+  std::cout << "second\n"<<std::flush;
 
   mRBConflict->setToGeometry(mErrorList[row]->conflict(), mLayer);
+  std::cout << "3rd\n"<<std::flush;
 }
 
 void checkDock::fix()
