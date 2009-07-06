@@ -63,7 +63,6 @@ rulesDialog::rulesDialog(const QString &tableName, QList<QString> layerList, QMa
   connect(mAddTestButton, SIGNAL(clicked()), this, SLOT(addTest()));
   connect(mAddTestButton, SIGNAL(clicked()), mTestTable, SLOT(resizeColumnsToContents()));
   // attempt to add new test when Ok clicked
-  // TODO:bug when adding test
   connect(buttonBox, SIGNAL(accepted()), this, SLOT(addTest()));
   connect(mDeleteTestButton, SIGNAL(clicked()), this, SLOT(deleteTest()));
   connect(mTestBox, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(showControls(const QString&)));
@@ -73,7 +72,10 @@ rulesDialog::rulesDialog(const QString &tableName, QList<QString> layerList, QMa
   projectRead();
 }
 
-rulesDialog::~rulesDialog() {}
+rulesDialog::~rulesDialog()
+{
+	//TODO: delete Errors
+}
 
 void rulesDialog::readTest(int index, QgsMapLayerRegistry* layerRegistry)
 {
@@ -88,7 +90,6 @@ void rulesDialog::readTest(int index, QgsMapLayerRegistry* layerRegistry)
   tolerance = project->readEntry( "Topol", "/tolerance_" + postfix, "" );
   layer1Id = project->readEntry( "Topol", "/layer1_" + postfix, "" );
   layer2Id = project->readEntry( "Topol", "/layer2_" + postfix, "" );
-  std::cout << "rd "<<tolerance.toStdString() << " "<<layer1Id.toStdString()<<" " << layer2Id.toStdString()<<" "<<testName.toStdString()<< " ! " <<"\n"<<std::flush;
 
   QgsVectorLayer* l1 = (QgsVectorLayer*)layerRegistry->mapLayers()[layer1Id];
   QString layer1Name;
@@ -99,10 +100,15 @@ void rulesDialog::readTest(int index, QgsMapLayerRegistry* layerRegistry)
 
   QgsVectorLayer* l2 = (QgsVectorLayer*)layerRegistry->mapLayers()[layer2Id];
   QString layer2Name;
-  if (!l2)
-    return;
-
-  layer2Name = l2->name();
+  if (mTestConfMap[testName].useSecondLayer)
+  {
+    if (!l2)
+      return;
+    else
+      layer2Name = l2->name();
+  }
+  else
+    layer2Name = "No layer";
 
   int row = index;
   mTestTable->insertRow(row);
@@ -141,7 +147,6 @@ void rulesDialog::projectRead()
 
 void rulesDialog::showControls(const QString& testName)
 {
-  std::cout << mTestConfMap[testName].useSecondLayer << " "<< mTestConfMap[testName].useTolerance;
   mLayer2Box->setVisible(mTestConfMap[testName].useSecondLayer);
 
   bool useTolerance = mTestConfMap[testName].useTolerance;
@@ -162,8 +167,12 @@ void rulesDialog::removeLayer(QString layerId)
 {
   int index = mLayerIds.indexOf(layerId);
   mLayerIds.removeAt(index);
-  mLayer1Box->removeItem(index);
-  mLayer2Box->removeItem(index);
+  // + 1 for "No layer" string
+  mLayer1Box->removeItem(index + 1);
+  mLayer2Box->removeItem(index + 1);
+
+  // TODO: tell Dock that we have no layers under
+  //if (mLayer1Box->size() == 1)
 }
 
 void rulesDialog::addTest()
@@ -174,11 +183,11 @@ void rulesDialog::addTest()
     return;
 
   QString layer1 = mLayer1Box->currentText();
-  if (layer1 == "Layer")
+  if (layer1 == "No layer")
     return;
 
   QString layer2 = mLayer2Box->currentText();
-  if (layer2 == "Layer" && mTestConfMap[test].useSecondLayer)
+  if (layer2 == "No layer" && mTestConfMap[test].useSecondLayer)
     return;
 
   //is inserting to qtablewidget really this stupid or am i missing something?
@@ -200,11 +209,15 @@ void rulesDialog::addTest()
 
   mTestTable->setItem(row, 3, newItem);
  
+  QString layer1ID, layer2ID;
   // add layer ids to hidden columns
-  // -1 for "No layer"s string
-  // TODO: bug index out of range
-  QString layer1ID = mLayerIds[mLayer1Box->currentIndex() - 1];
-  QString layer2ID = mLayerIds[mLayer2Box->currentIndex() - 1];
+  // -1 for "No layer" string
+  if (mTestConfMap[test].useSecondLayer)
+    layer2ID = mLayerIds[mLayer2Box->currentIndex() - 1];
+  else
+    layer2ID = "No layer";
+
+  layer1ID = mLayerIds[mLayer1Box->currentIndex() - 1];
 
   newItem = new QTableWidgetItem(layer1ID);
   mTestTable->setItem(row, 4, newItem);
@@ -226,8 +239,6 @@ void rulesDialog::addTest()
   project->writeEntry( "Topol", "/tolerance_" + postfix, mToleranceBox->value());
   project->writeEntry( "Topol", "/layer1_" + postfix, layer1ID );
   project->writeEntry( "Topol", "/layer2_" + postfix, layer2ID );
-  std::cout << (postfix + "/layer2").toStdString();
-  std::cout << "wr "<<mToleranceBox->value() << " "<<layer1ID.toStdString()<<" " << layer2ID.toStdString()<<" "<<test.toStdString()<< " ! " <<"\n"<<std::flush;
 }
 
 void rulesDialog::deleteTest()

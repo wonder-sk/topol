@@ -291,7 +291,7 @@ ErrorList topolTest::checkUnconnectedLines(double tolerance, QgsVectorLayer* lay
 
 ErrorList topolTest::checkValid(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {
-	//TODO: crashes when clicked on error
+	//TODO: crashes when clicked on error | maybe only when more tests ran
   int i = 0;
   ErrorList errorList;
   QList<FeatureLayer>::Iterator it;

@@ -49,23 +49,14 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QgisInt
 
   mLayer = theLayer;
   mLayerRegistry = QgsMapLayerRegistry::instance();
-/*
-  QList<QString> layerNames;
-  QList<QgsMapLayer*> layers = mLayerRegistry->mapLayers().values();
-  for (int i = 0; i < layers.size(); ++i)
-    layerNames << layers[i]->name();
-
-  mConfigureDialog = new rulesDialog("Rules", layerNames, mTest.testMap(), parent);
-  */
   mConfigureDialog = new rulesDialog("Rules", mLayerRegistry->mapLayers().keys(), mTest.testMap(), qIface, parent);
   mTestTable = mConfigureDialog->testTable();
   
-  mQgisApp = QgisApp::instance();
-
   mValidateExtentButton->setIcon(QIcon(":/topol_c/topol.png"));
   mValidateAllButton->setIcon(QIcon(":/topol_c/topol.png"));
   mConfigureButton->setIcon(QIcon(":/topol_c/topol.png"));
 
+  mQgisApp = QgisApp::instance();
   mRBFeature1 = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
   mRBFeature2 = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
   mRBConflict = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
@@ -79,9 +70,9 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QgisInt
   mRBConflict->setWidth(5);
 
   connect(mConfigureButton, SIGNAL(clicked()), this, SLOT(configure()));
-
   connect(mValidateAllButton, SIGNAL(clicked()), this, SLOT(validateAll()));
   connect(mValidateExtentButton, SIGNAL(clicked()), this, SLOT(validateExtent()));
+
   connect(mFixButton, SIGNAL(clicked()), this, SLOT(fix()));
   connect(mErrorListView, SIGNAL(clicked(const QModelIndex &)), this, SLOT(errorListClicked(const QModelIndex &)));
 
@@ -138,7 +129,6 @@ void checkDock::errorListClicked(const QModelIndex& index)
   fl.layer->featureAtId(fl.feature.id(), f, true, false);
   g = f.geometry();
   mRBFeature1->setToGeometry(g, mLayer);
-  std::cout << "first\n"<<std::flush;
 
   fl = mErrorList[row]->featurePairs()[1];
   if (!fl.layer)
@@ -150,10 +140,8 @@ void checkDock::errorListClicked(const QModelIndex& index)
   fl.layer->featureAtId(fl.feature.id(), f, true, false);
   g = f.geometry();
   mRBFeature2->setToGeometry(g, mLayer);
-  std::cout << "second\n"<<std::flush;
 
   mRBConflict->setToGeometry(mErrorList[row]->conflict(), mLayer);
-  std::cout << "3rd\n"<<std::flush;
 }
 
 void checkDock::fix()
@@ -183,8 +171,6 @@ void checkDock::runTests(QgsRectangle extent)
 {
   for (int i = 0; i < mTestTable->rowCount(); ++i)
   {
-	  std::cout << "cols: "<<mTestTable->columnCount()<<std::flush;
-
     QString testName = mTestTable->item(i, 0)->text();
     QString toleranceStr = mTestTable->item(i, 3)->text();
     QString layer1Str = mTestTable->item(i, 4)->text();
