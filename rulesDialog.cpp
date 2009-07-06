@@ -34,7 +34,6 @@
 #include "rulesDialog.h"
 #include "topolTest.h"
 
-//TODO check when layer add/deleted
 rulesDialog::rulesDialog(const QString &tableName, QList<QString> layerList, QMap<QString, test> testMap, QgisInterface* theQgisIface, QWidget *parent)
 : QDialog(parent), Ui::rulesDialog()
 {

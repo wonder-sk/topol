@@ -49,6 +49,8 @@ private slots:
   void validateAll();
   void validateExtent();
   void errorListClicked(const QModelIndex& index);
+  void deleteErrors();
+  void parseErrorList(QString layerId);
 
 private:
   QgsVectorLayer *mLayer;
