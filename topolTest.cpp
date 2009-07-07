@@ -35,7 +35,7 @@
 #include "geosFunctions.h"
 #include "../../app/qgisapp.h"
 
-//TODO: someone should delete "errors"
+//TODO: tests on same layer should avoid testing same feature against itself
 topolTest::topolTest()
 {
   mTestCancelled = false;
@@ -66,34 +66,6 @@ topolTest::~topolTest()
   for (; lit != mLayerIndexes.end(); ++lit)
     delete *lit;
 }
-
-/*QgsGeometry* checkEndpoints(QgsGeometry* g1, QgsGeometry* g2, double tolerance)
-{
-	//TODO:MultiLines
-  if (!g1 || !g2)
-    return 0;
-
-  if (g1->type() != QGis::Line || g2->type() != QGis::Line)
-    return 0;
-
-  QgsPoint endPoint = g1->asPolyline().last();
-  QgsGeometry *g = QgsGeometry::fromPoint(endPoint);
-  if (g2->distance(*g) < tolerance)
-  {
-    int before;
-    QgsPoint minDistPoint;  
-    g2->closestSegmentWithContext(endPoint, minDistPoint, before);
-    delete g;
-    
-    QgsPolyline ls;
-    ls << endPoint << minDistPoint;
-    g = QgsGeometry::fromPolyline(ls);
-    return g;
-  }
-
-  delete g;
-  return 0;
-}*/
 
 void topolTest::setTestCancelled()
 {
@@ -172,39 +144,10 @@ ErrorList topolTest::checkCloseFeature(double tolerance, QgsVectorLayer* layer1,
 
   return errorList;
 }
-    /* ^
-      if (g1->distance(*g2) < tolerance)
-      {
-	QgsGeometry *c, *d;
-	if ((c = checkEndpoints(g1, g2, tolerance)) || (d = checkEndpoints(g2, g1, tolerance)))
-	{
-          QgsRectangle r = g1->boundingBox();
-	  QgsRectangle r2 = g2->boundingBox();
-	  r.combineExtentWith(&r2);
-
-	  QList<FeatureLayer> fls;
-	  TopolErrorClose* err;
-
-          if (c)
-	  {
-	    fls << *it << *jit;
-            err = new TopolErrorClose(r, c, fls);
-            mErrorListView->addItem(err->name() + QString(" %1 %2").arg(it->feature.id()).arg(jit->feature.id()));
-	    mErrorList << err;
-	  }
-	  else if (d)
-	  {
-	    fls << *jit << *it;
-            err = new TopolErrorClose(r, d, fls);
-	    mErrorList << err;
-	  }
-	  // TODO: ids from different layers can be same
-	  // write id and layer name instead?
-	}*/
 
 ErrorList topolTest::checkUnconnectedLines(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {
-	//TODO: multilines, crashes in geos touches for some geometries
+  //TODO: multilines, crashes in geos touches for some geometries
   int i = 0;
   ErrorList errorList;
   QString layerId = layer1->getLayerID();
@@ -291,7 +234,7 @@ ErrorList topolTest::checkUnconnectedLines(double tolerance, QgsVectorLayer* lay
 
 ErrorList topolTest::checkValid(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {
-	//TODO: crashes when clicked on error | maybe only when more tests ran
+  //TODO: crashes when clicked on error | maybe only when more tests ran
   int i = 0;
   ErrorList errorList;
   QList<FeatureLayer>::Iterator it;
@@ -320,7 +263,7 @@ ErrorList topolTest::checkValid(double tolerance, QgsVectorLayer* layer1, QgsVec
 
 ErrorList topolTest::checkPolygonContains(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {
-	//TODO: for unknown reasons crashes in geos contains
+  //TODO: for unknown reasons crashes in geos contains
   int i = 0;
   ErrorList errorList;
   QString secondLayerId = layer2->getLayerID();
@@ -449,7 +392,6 @@ ErrorList topolTest::checkPointCoveredBySegment(double tolerance, QgsVectorLayer
 ErrorList topolTest::checkSegmentLength(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {
   //TODO: multi versions, move the type-switch from the cycle
-  //TODO: delete geometries allocated by fromPolyline
   int i = 0;
   ErrorList errorList;
   QList<FeatureLayer>::Iterator it;

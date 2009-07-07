@@ -17,8 +17,7 @@
 
 #include "topolError.h"
 
-//TODO: fix crashing when no layer under
-// fix crashing when feature is deleted
+//TODO: fix crashing when feature is deleted
 bool TopolError::fix(QString fixName)
 {
   std::cout << "fix: \""<<fixName.toStdString()<<"\"\n";
@@ -147,13 +146,6 @@ TopolErrorClose::TopolErrorClose(QgsRectangle theBoundingBox, QgsGeometry* theCo
   mFixMap["Snap to segment"] = &TopolErrorClose::fixSnap;
 }
 
-/*TopolErrorContains::TopolErrorContains(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : TopolError(theBoundingBox, theConflict, theFeaturePairs)
-{
-  mName = "Feature inside polygon";
-  mFixMap["Select automatic fix"] = &TopolErrorContains::fixDummy;
-  mFixMap["Delete point"] = &TopolErrorContains::fixDeleteSecond;
-}*/
-
 TopolErrorCovered::TopolErrorCovered(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : TopolError(theBoundingBox, theConflict, theFeaturePairs)
 {
   mName = "Point not covered by segment";
@@ -173,6 +165,12 @@ TopolErrorShort::TopolErrorShort(QgsRectangle theBoundingBox, QgsGeometry* theCo
   mName = "Segment too short";
   mFixMap["Select automatic fix"] = &TopolErrorShort::fixDummy;
   mFixMap["Delete feature"] = &TopolErrorShort::fixDeleteFirst;
+}
+
+TopolErrorShort::~TopolErrorShort()
+{
+  // this geometry was allocated by QgsGeometry::fromPolyline and needs to be deleted
+  delete mConflict;
 }
 
 TopolErrorValid::TopolErrorValid(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : TopolError(theBoundingBox, theConflict, theFeaturePairs)

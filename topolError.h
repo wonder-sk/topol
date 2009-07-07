@@ -100,6 +100,7 @@ class TopolErrorShort : public TopolError
 {
 public:
   TopolErrorShort(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs);
+  ~TopolErrorShort();
 };
 
 class TopolErrorInside : public TopolError

@@ -53,6 +53,14 @@ rulesDialog::rulesDialog(const QString &tableName, QList<QString> layerList, QMa
   {
     // add layer ID to the layerId list
     mLayerIds << layerList[i];
+    std::cout << layerList[i].toStdString();
+
+    QgsVectorLayer* v1 = (QgsVectorLayer*)layerRegistry->mapLayers()[layerList[i]];
+    if (!v1)
+    {
+      std::cout << "bad layer!\n";
+      continue;
+    }
 
     // add layer name to the layer combo boxes
     mLayer1Box->addItem(((QgsVectorLayer*)layerRegistry->mapLayers()[layerList[i]])->name());
@@ -73,7 +81,6 @@ rulesDialog::rulesDialog(const QString &tableName, QList<QString> layerList, QMa
 
 rulesDialog::~rulesDialog()
 {
-	//TODO: delete Errors
 }
 
 void rulesDialog::readTest(int index, QgsMapLayerRegistry* layerRegistry)

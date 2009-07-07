@@ -41,7 +41,7 @@
 
 class QgisInterface;
 
-//TODO: get rid of those global variables (, mFeatureList, ...
+//TODO: get rid of those global variables (eg. mFeatureList)
 checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QgisInterface* qIface, QWidget* parent)
 : QDockWidget(parent), Ui::checkDock()
 {
@@ -223,12 +223,6 @@ void checkDock::runTests(QgsRectangle extent)
       std::cout << "CheckDock: layer " << layer1Str.toStdString() << " not found in registry!" << std::flush;
       return;
     }
-/*
-    if (!layer2 && mTest.testMap()[testName].showSecondLayer)
-    {
-      std::cout << "CheckDock: layer " << layer2Str.toStdString() << " not found in registry!" << std::flush;
-      return;
-    }*/
 
     QProgressDialog progress(testName, "Abort", 0, layer1->featureCount(), this);
     progress.setWindowModality(Qt::WindowModal);
