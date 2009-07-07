@@ -57,6 +57,7 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QgisInt
   mConfigureButton->setIcon(QIcon(":/topol_c/topol.png"));
 
   mQgisApp = QgisApp::instance();
+  //TODO: rubberbands stay after plugin unloaded
   mRBFeature1 = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
   mRBFeature2 = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
   mRBConflict = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
@@ -228,18 +229,13 @@ void checkDock::runTests(QgsRectangle extent)
     if ((QgsVectorLayer*)mLayerRegistry->mapLayers().contains(layer2Str))
       layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
 
-    /*if (!layer1)
-    {
-      std::cout << "CheckDock: layer " << layer1Str.toStdString() << " not found in registry!" << std::flush;
-      return;
-    }*/
-
     QProgressDialog progress(testName, "Abort", 0, layer1->featureCount(), this);
     progress.setWindowModality(Qt::WindowModal);
 
     connect(&progress, SIGNAL(canceled()), &mTest, SLOT(setTestCancelled()));
     connect(&mTest, SIGNAL(progress(int)), &progress, SLOT(setValue(int)));
     // run the test
+
     ErrorList errors = mTest.runTest(testName, layer1, layer2, extent, toleranceStr.toDouble());
     disconnect(&progress, SIGNAL(canceled()), &mTest, SLOT(setTestCancelled()));
     disconnect(&mTest, SIGNAL(progress(int)), &progress, SLOT(setValue(int)));

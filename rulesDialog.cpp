@@ -88,6 +88,7 @@ void rulesDialog::readTest(int index, QgsMapLayerRegistry* layerRegistry)
 
   testName = project->readEntry( "Topol", "/testname_" + postfix, "" );
   tolerance = project->readEntry( "Topol", "/tolerance_" + postfix, "" );
+  std::cout << "tol read: " <<tolerance.toStdString();
   layer1Id = project->readEntry( "Topol", "/layer1_" + postfix, "" );
   layer2Id = project->readEntry( "Topol", "/layer2_" + postfix, "" );
 
@@ -132,7 +133,7 @@ void rulesDialog::readTest(int index, QgsMapLayerRegistry* layerRegistry)
   if (mTestConfMap[testName].useTolerance)
     newItem = new QTableWidgetItem(tolerance);
   else
-    newItem = new QTableWidgetItem(QString("None"));
+    newItem = new QTableWidgetItem(QString("No tolerance"));
 
   mTestTable->setItem(row, 3, newItem);
  
@@ -217,7 +218,7 @@ void rulesDialog::addTest()
   if (mTestConfMap[test].useTolerance)
     newItem = new QTableWidgetItem(QString("%1").arg(mToleranceBox->value()));
   else
-    newItem = new QTableWidgetItem(QString("None"));
+    newItem = new QTableWidgetItem(QString("No tolerance"));
 
   mTestTable->setItem(row, 3, newItem);
  
@@ -236,21 +237,22 @@ void rulesDialog::addTest()
   newItem = new QTableWidgetItem(layer2ID);
   mTestTable->setItem(row, 5, newItem);
 
-  // reset controls to default 
-  mTestBox->setCurrentIndex(0);
-  mLayer1Box->setCurrentIndex(0);
-  mLayer2Box->setCurrentIndex(0);
-  mToleranceBox->setValue(0);
-
   // save state to the project file.....
   QString postfix = QString("%1").arg(row);
   QgsProject* project = QgsProject::instance();
 
   project->writeEntry( "Topol", "/testCount", row + 1 );
   project->writeEntry( "Topol", "/testname_" + postfix, test );
-  project->writeEntry( "Topol", "/tolerance_" + postfix, mToleranceBox->value());
+  std::cout << "boxvalue: " << mToleranceBox->value();
+  project->writeEntry( "Topol", "/tolerance_" + postfix, QString("%1").arg(mToleranceBox->value()));
   project->writeEntry( "Topol", "/layer1_" + postfix, layer1ID );
   project->writeEntry( "Topol", "/layer2_" + postfix, layer2ID );
+
+  // reset controls to default 
+  mTestBox->setCurrentIndex(0);
+  mLayer1Box->setCurrentIndex(0);
+  mLayer2Box->setCurrentIndex(0);
+  mToleranceBox->setValue(0);
 }
 
 void rulesDialog::deleteTest()

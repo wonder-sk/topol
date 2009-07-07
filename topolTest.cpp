@@ -74,6 +74,7 @@ bool topolTest::testCancelled()
 
 ErrorList topolTest::checkCloseFeature(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {
+	//TODO: maybe still crashes in distance()
   ErrorList errorList;
   QString secondLayerId = layer2->getLayerID();
   QgsSpatialIndex* index = mLayerIndexes[secondLayerId];
@@ -84,6 +85,7 @@ ErrorList topolTest::checkCloseFeature(double tolerance, QgsVectorLayer* layer1,
   }
 
   bool badG1 = false, badG2 = false;
+  bool skipItself = layer1 == layer2;
 
   int i = 0;
   QList<FeatureLayer>::Iterator it;
@@ -100,6 +102,7 @@ ErrorList topolTest::checkCloseFeature(double tolerance, QgsVectorLayer* layer1,
     QgsRectangle bb = g1->boundingBox();
 
     // increase bounding box by tolerance
+    // TODO: use this, when using map units
     //QgsRectangle frame(bb.xMinimum() - tolerance, bb.yMinimum() - tolerance, bb.xMaximum() + tolerance, bb.yMaximum() + tolerance); 
     QgsRectangle frame(bb);
 
@@ -114,6 +117,10 @@ ErrorList topolTest::checkCloseFeature(double tolerance, QgsVectorLayer* layer1,
     {
       QgsFeature& f = mFeatureMap2[*cit].feature;
       QgsGeometry* g2 = f.geometry();
+
+      // skip itself, when invoked with the same layer
+      if (skipItself && f.id() == it->feature.id())
+        continue;
 
       if (!g2 || !g2->asGeos())
       {
