@@ -115,10 +115,10 @@ public:
   TopolErrorValid(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs);
 };
 
-class TopolErrorUnconnected : public TopolError
+class TopolErrorDangle : public TopolError
 {
 public:
-  TopolErrorUnconnected(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs);
+  TopolErrorDangle(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs);
 };
 
 typedef QList<TopolError*> ErrorList;

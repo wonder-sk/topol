@@ -26,7 +26,6 @@
 #include "geosFunctions.h"
 #include "../../app/qgisapp.h"
 
-//TODO: tests on same layer should avoid testing same feature against itself
 topolTest::topolTest()
 {
   mTestCancelled = false;
@@ -39,7 +38,7 @@ topolTest::topolTest()
   mTestMap["Test segment lengths"].useTolerance = true;
   mTestMap["Test segment lengths"].useSecondLayer = false;
 
-  mTestMap["Test unconnected lines"].f = &topolTest::checkUnconnectedLines;
+  mTestMap["Test unconnected lines"].f = &topolTest::checkDanglingLines;
   mTestMap["Test unconnected lines"].useSecondLayer = false;
 
   // two layer tests
@@ -75,7 +74,6 @@ bool topolTest::testCancelled()
 
 ErrorList topolTest::checkCloseFeature(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {
-	//TODO: crashes in geos
   ErrorList errorList;
   QString secondLayerId = layer2->getLayerID();
   QgsSpatialIndex* index = mLayerIndexes[secondLayerId];
@@ -84,6 +82,8 @@ ErrorList topolTest::checkCloseFeature(double tolerance, QgsVectorLayer* layer1,
     std::cout << "No index for layer " << secondLayerId.toStdString() << "!\n";
     return errorList;
   }
+
+  bool badG1 = false, badG2 = false;
 
   int i = 0;
   QList<FeatureLayer>::Iterator it;
@@ -100,7 +100,8 @@ ErrorList topolTest::checkCloseFeature(double tolerance, QgsVectorLayer* layer1,
     QgsRectangle bb = g1->boundingBox();
 
     // increase bounding box by tolerance
-    QgsRectangle frame(bb.xMinimum() - tolerance, bb.yMinimum() - tolerance, bb.xMaximum() + tolerance, bb.yMaximum() + tolerance); 
+    //QgsRectangle frame(bb.xMinimum() - tolerance, bb.yMinimum() - tolerance, bb.xMaximum() + tolerance, bb.yMaximum() + tolerance); 
+    QgsRectangle frame(bb);
 
     QList<int> crossingIds;
     crossingIds = index->intersects(frame);
@@ -114,7 +115,17 @@ ErrorList topolTest::checkCloseFeature(double tolerance, QgsVectorLayer* layer1,
       QgsFeature& f = mFeatureMap2[*cit].feature;
       QgsGeometry* g2 = f.geometry();
 
-      if (!g2) {std::cout << "no g2 - close!"<<std::flush ;continue;}
+      if (!g2 || !g2->asGeos())
+      {
+	badG2 = true;
+        continue;
+      }
+
+      if (!g1 || !g1->asGeos())
+      {
+	badG1 = true;
+        continue;
+      }
 
       if (g1->distance(*g2) < tolerance)
       {
@@ -133,12 +144,18 @@ ErrorList topolTest::checkCloseFeature(double tolerance, QgsVectorLayer* layer1,
     }
   }
 
+  if (badG2)
+    std::cout << "g2 or g2->asGeos() == NULL in close\n" << std::flush;
+
+  if (badG1)
+    std::cout << "g1 or g1->asGeos() == NULL in close\n" << std::flush;
+
   return errorList;
 }
 
-ErrorList topolTest::checkUnconnectedLines(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
+ErrorList topolTest::checkDanglingLines(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {
-  //TODO: multilines, crashes in geos touches for some geometries
+  //TODO: multilines
   int i = 0;
   ErrorList errorList;
   QString layerId = layer1->getLayerID();
@@ -196,10 +213,16 @@ ErrorList topolTest::checkUnconnectedLines(double tolerance, QgsVectorLayer* lay
       QgsGeometry* g2 = mFeatureMap2[*cit].feature.geometry();
       if (!g2)
       {
-	std::cout << "no g2 in unconnected\n" << std::flush;
+	std::cout << "g2 == NULL in unconnected\n" << std::flush;
         continue;
       }
 
+      if (!g2->asGeos())
+      {
+	std::cout << "g2->asGeos() == NULL in unconnected\n" << std::flush;
+        continue;
+      }
+	
       // test both endpoints
       if (geosTouches(startPoint, g2) || geosTouches(endPoint, g2))
       {
@@ -212,7 +235,7 @@ ErrorList topolTest::checkUnconnectedLines(double tolerance, QgsVectorLayer* lay
     {
       QList<FeatureLayer> fls;
       fls << *it << *it;
-      TopolErrorUnconnected* err = new TopolErrorUnconnected(bb, g1, fls);
+      TopolErrorDangle* err = new TopolErrorDangle(bb, g1, fls);
 
       errorList << err;
     }
@@ -254,17 +277,21 @@ ErrorList topolTest::checkValid(double tolerance, QgsVectorLayer* layer1, QgsVec
 
 ErrorList topolTest::checkPolygonContains(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {
-  //TODO: for unknown reasons crashes in geos contains
   int i = 0;
   ErrorList errorList;
   QString secondLayerId = layer2->getLayerID();
   QgsSpatialIndex* index = mLayerIndexes[secondLayerId];
+
+  bool skipItself = layer1 == layer2;
 
   if (!index)
   {
     std::cout << "No index for layer " << secondLayerId.toStdString() << "!\n";
     return errorList;
   }
+
+  if (layer1->geometryType() != QGis::Polygon)
+    return errorList;
   
   QList<FeatureLayer>::Iterator it;
   QList<FeatureLayer>::ConstIterator FeatureListEnd = mFeatureList1.end();
@@ -278,8 +305,6 @@ ErrorList topolTest::checkPolygonContains(double tolerance, QgsVectorLayer* laye
 
     QgsGeometry* g1 = it->feature.geometry();
     QgsRectangle bb = g1->boundingBox();
-    if (g1->type() != QGis::Polygon)
-      break;
 
     QList<int> crossingIds;
     crossingIds = index->intersects(bb);
@@ -293,9 +318,21 @@ ErrorList topolTest::checkPolygonContains(double tolerance, QgsVectorLayer* laye
       QgsFeature& f = mFeatureMap2[*cit].feature;
       QgsGeometry* g2 = f.geometry();
 
-      // this shouldn't happen
-      if (!g1 || !g2)
-	continue;
+      // skip itself, when invoked with the same layer
+      if (skipItself && f.id() == it->feature.id())
+        continue;
+
+      if (!g2)
+      {
+	std::cout << "g2 == NULL in contains\n" << std::flush;
+        continue;
+      }
+
+      if (!g2->asGeos())
+      {
+	std::cout << "g2->asGeos() == NULL in contains\n" << std::flush;
+        continue;
+      }
 
       if (geosContains(g1, g2))
       {
@@ -359,6 +396,12 @@ ErrorList topolTest::checkPointCoveredBySegment(double tolerance, QgsVectorLayer
       QgsFeature& f = mFeatureMap2[*cit].feature;
       QgsGeometry* g2 = f.geometry();
 
+      if (!g2 || !g2->asGeos())
+      {
+	std::cout << "g2 or g2->asGeos() == NULL in covered\n" << std::flush;
+        continue;
+      }
+
       // test if point touches other geometry
       if (geosTouches(g1, g2))
       {
@@ -371,6 +414,7 @@ ErrorList topolTest::checkPointCoveredBySegment(double tolerance, QgsVectorLayer
     {
       QList<FeatureLayer> fls;
       fls << *it << *it;
+      //bb.scale(10);
       TopolErrorCovered* err = new TopolErrorCovered(bb, g1, fls);
 
       errorList << err;
@@ -382,7 +426,8 @@ ErrorList topolTest::checkPointCoveredBySegment(double tolerance, QgsVectorLayer
 
 ErrorList topolTest::checkSegmentLength(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {
-  //TODO: multi versions, move the type-switch from the cycle
+  //TODO: multi versions, use map units
+  //TODO: move the type-switch from the cycle - it will be faster
   int i = 0;
   ErrorList errorList;
   QList<FeatureLayer>::Iterator it;
@@ -440,46 +485,6 @@ ErrorList topolTest::checkSegmentLength(double tolerance, QgsVectorLayer* layer1
 /*ErrorList topolTest::checkSelfIntersections(double tolerance, QString layer1Str, QString layer2Str)
 {
 }*/
-/*
-QList<QgsRectangle> splitRectangle(QgsRectangle r, int split)
-{
-  QList<QgsRectangle> rs;
-
-  QgsPoint splitPoint = r.center();
-
-  if (--split > 0)
-  {
-    rs << splitRectangle(QgsRectangle(QgsPoint(r.xMinimum(), r.yMaximum()), splitPoint), split);
-    rs << splitRectangle(QgsRectangle(QgsPoint(r.xMinimum(), r.yMinimum()), splitPoint), split);
-    rs << splitRectangle(QgsRectangle(QgsPoint(r.xMaximum(), r.yMaximum()), splitPoint), split);
-    rs << splitRectangle(QgsRectangle(QgsPoint(r.xMaximum(), r.yMinimum()), splitPoint), split);
-  }
-  else
-  {
-    rs << QgsRectangle(QgsPoint(r.xMinimum(), r.yMaximum()), splitPoint);
-    rs << QgsRectangle(QgsPoint(r.xMinimum(), r.yMinimum()), splitPoint);
-    rs << QgsRectangle(QgsPoint(r.xMaximum(), r.yMaximum()), splitPoint);
-    rs << QgsRectangle(QgsPoint(r.xMaximum(), r.yMinimum()), splitPoint);
-  }
-
-  return rs;
-}
-
-QList<QgsRectangle> crossingRectangles(QgsGeometry* g)
-{
-  QList<QgsRectangle> crossRectangles;
-  QgsRectangle r = g->boundingBox();
-  QList<QgsRectangle> tiles = splitRectangle(r, 1);
-  QList<QgsRectangle>::ConstIterator it = tiles.begin();
-  QList<QgsRectangle>::ConstIterator tilesEnd = tiles.end();
-
-  for (; it != tilesEnd; ++it)
-    if (g->intersects(*it))
-      crossRectangles << *it;
-
-  return crossRectangles;
-}
-*/
 
 ErrorList topolTest::checkIntersections(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {
@@ -487,6 +492,8 @@ ErrorList topolTest::checkIntersections(double tolerance, QgsVectorLayer* layer1
   ErrorList errorList;
   QString secondLayerId = layer2->getLayerID();
   QgsSpatialIndex* index = mLayerIndexes[secondLayerId];
+
+  bool skipItself = layer1 == layer2;
 
   if (!index)
   {
@@ -517,6 +524,10 @@ ErrorList topolTest::checkIntersections(double tolerance, QgsVectorLayer* layer1
     {
       QgsFeature& f = mFeatureMap2[*cit].feature;
       QgsGeometry* g2 = f.geometry();
+
+      // skip itself, when invoked with the same layer
+      if (skipItself && f.id() == it->feature.id())
+	continue;
 
       if (!g2)
       {

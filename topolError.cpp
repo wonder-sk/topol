@@ -180,9 +180,9 @@ TopolErrorValid::TopolErrorValid(QgsRectangle theBoundingBox, QgsGeometry* theCo
   mFixMap["Delete feature"] = &TopolErrorValid::fixDeleteFirst;
 }
 
-TopolErrorUnconnected::TopolErrorUnconnected(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : TopolError(theBoundingBox, theConflict, theFeaturePairs)
+TopolErrorDangle::TopolErrorDangle(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : TopolError(theBoundingBox, theConflict, theFeaturePairs)
 {
-  mName = "Invalid geometry";
-  mFixMap["Select automatic fix"] = &TopolErrorUnconnected::fixDummy;
-  mFixMap["Delete feature"] = &TopolErrorUnconnected::fixDeleteFirst;
+  mName = "Dangling line";
+  mFixMap["Select automatic fix"] = &TopolErrorDangle::fixDummy;
+  mFixMap["Delete feature"] = &TopolErrorDangle::fixDeleteFirst;
 }

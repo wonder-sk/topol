@@ -61,7 +61,7 @@ public:
   ErrorList checkCloseFeature(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2);
   ErrorList checkPolygonContains(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2);
   ErrorList checkSegmentLength(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2);
-  ErrorList checkUnconnectedLines(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2);
+  ErrorList checkDanglingLines(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2);
   ErrorList checkPointCoveredBySegment(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2);
   ErrorList checkValid(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2);
 
