@@ -26,6 +26,7 @@
 #include "topolTest.h"
 
 class QgisInterface;
+class QgsMapLayerRegistry;
 
 class rulesDialog : public QDialog, public Ui::rulesDialog
 {

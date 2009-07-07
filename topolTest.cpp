@@ -17,19 +17,10 @@
 
 #include "topolTest.h"
 
-#include <qgsvectordataprovider.h>
 #include <qgsvectorlayer.h>
 #include <qgsmaplayer.h>
-#include <qgssearchstring.h>
-#include <qgssearchtreenode.h>
-#include <qgsmaplayer.h>
-#include <qgsmaplayerregistry.h>
 #include <qgsgeometry.h>
 #include <qgsfeature.h>
-#include <qgsmapcanvas.h>
-#include <qgsrubberband.h>
-#include <qgsproviderregistry.h>
-#include <qgslogger.h>
 #include <spatialindex/qgsspatialindex.h>
 
 #include "geosFunctions.h"
@@ -39,7 +30,6 @@
 topolTest::topolTest()
 {
   mTestCancelled = false;
-  mLayerRegistry = QgsMapLayerRegistry::instance();
 
   // one layer tests
   mTestMap["Test geometry validity"].f = &topolTest::checkValid;
@@ -85,6 +75,7 @@ bool topolTest::testCancelled()
 
 ErrorList topolTest::checkCloseFeature(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {
+	//TODO: crashes in geos
   ErrorList errorList;
   QString secondLayerId = layer2->getLayerID();
   QgsSpatialIndex* index = mLayerIndexes[secondLayerId];

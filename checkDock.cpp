@@ -215,14 +215,24 @@ void checkDock::runTests(QgsRectangle extent)
     std::cout << testName.toStdString();
     std::cout << "layerstrs: "<<layer1Str.toStdString() << " - " << layer2Str.toStdString() <<"\n";
 
-    QgsVectorLayer* layer1 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer1Str];
-    QgsVectorLayer* layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
-
-    if (!layer1)
+    // test if layer1  is in the registry
+    if (!((QgsVectorLayer*)mLayerRegistry->mapLayers().contains(layer1Str)))
     {
       std::cout << "CheckDock: layer " << layer1Str.toStdString() << " not found in registry!" << std::flush;
       return;
     }
+
+    QgsVectorLayer* layer1 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer1Str];
+    QgsVectorLayer* layer2 = 0;
+
+    if ((QgsVectorLayer*)mLayerRegistry->mapLayers().contains(layer2Str))
+      layer2 = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layer2Str];
+
+    /*if (!layer1)
+    {
+      std::cout << "CheckDock: layer " << layer1Str.toStdString() << " not found in registry!" << std::flush;
+      return;
+    }*/
 
     QProgressDialog progress(testName, "Abort", 0, layer1->featureCount(), this);
     progress.setWindowModality(Qt::WindowModal);

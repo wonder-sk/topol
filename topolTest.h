@@ -27,7 +27,6 @@
 #include "topolError.h"
 
 class topolTest;
-class QgsMapLayerRegistry;
 
 typedef ErrorList (topolTest::*testFunction)(double, QgsVectorLayer*, QgsVectorLayer*);
 
@@ -72,7 +71,6 @@ public slots:
 private:
   QMap<QString, QgsSpatialIndex*> mLayerIndexes;
   QMap<QString, test> mTestMap;
-  QgsMapLayerRegistry* mLayerRegistry;
 
   QList<FeatureLayer> mFeatureList1;
   QMap<int, FeatureLayer> mFeatureMap2;

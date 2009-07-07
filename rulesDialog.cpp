@@ -53,14 +53,14 @@ rulesDialog::rulesDialog(const QString &tableName, QList<QString> layerList, QMa
   {
     // add layer ID to the layerId list
     mLayerIds << layerList[i];
-    std::cout << layerList[i].toStdString();
+    std::cout << "layerlist[i]: "<< layerList[i].toStdString() << "XXX\n";
 
     QgsVectorLayer* v1 = (QgsVectorLayer*)layerRegistry->mapLayers()[layerList[i]];
-    if (!v1)
+    /*if (!v1)
     {
       std::cout << "bad layer!\n";
       continue;
-    }
+    }*/
 
     // add layer name to the layer combo boxes
     mLayer1Box->addItem(((QgsVectorLayer*)layerRegistry->mapLayers()[layerList[i]])->name());
@@ -97,14 +97,22 @@ void rulesDialog::readTest(int index, QgsMapLayerRegistry* layerRegistry)
   layer1Id = project->readEntry( "Topol", "/layer1_" + postfix, "" );
   layer2Id = project->readEntry( "Topol", "/layer2_" + postfix, "" );
 
-  QgsVectorLayer* l1 = (QgsVectorLayer*)layerRegistry->mapLayers()[layer1Id];
+  QgsVectorLayer* l1;
+  if (!(QgsVectorLayer*)layerRegistry->mapLayers().contains(layer1Id))
+    return;
+
+  l1 = (QgsVectorLayer*)layerRegistry->mapLayers()[layer1Id];
   QString layer1Name;
   if (!l1)
     return;
 
   layer1Name = l1->name();
 
-  QgsVectorLayer* l2 = (QgsVectorLayer*)layerRegistry->mapLayers()[layer2Id];
+  QgsVectorLayer* l2;
+  if (!(QgsVectorLayer*)layerRegistry->mapLayers().contains(layer2Id))
+    return;
+
+  l2 = (QgsVectorLayer*)layerRegistry->mapLayers()[layer2Id];
   QString layer2Name;
   if (mTestConfMap[testName].useSecondLayer)
   {
@@ -185,8 +193,8 @@ void rulesDialog::addTest()
 {
   //sanity checks
   QString test = mTestBox->currentText();
-  if (test == "Select test for addition")
-    return;
+  //if (test == "Select test for addition")
+    //return;
 
   QString layer1 = mLayer1Box->currentText();
   if (layer1 == "No layer")
@@ -196,7 +204,6 @@ void rulesDialog::addTest()
   if (layer2 == "No layer" && mTestConfMap[test].useSecondLayer)
     return;
 
-  //is inserting to qtablewidget really this stupid or am i missing something?
   int row = mTestTable->rowCount();
   mTestTable->insertRow(row);
  
@@ -205,7 +212,12 @@ void rulesDialog::addTest()
   mTestTable->setItem(row, 0, newItem);
   newItem = new QTableWidgetItem(layer1);
   mTestTable->setItem(row, 1, newItem);
-  newItem = new QTableWidgetItem(layer2);
+
+  if (mTestConfMap[test].useSecondLayer)
+    newItem = new QTableWidgetItem(layer2);
+  else
+    newItem = new QTableWidgetItem("No layer");
+
   mTestTable->setItem(row, 2, newItem);
  
   if (mTestConfMap[test].useTolerance)
