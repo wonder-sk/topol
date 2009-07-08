@@ -88,7 +88,6 @@ void rulesDialog::readTest(int index, QgsMapLayerRegistry* layerRegistry)
 
   testName = project->readEntry( "Topol", "/testname_" + postfix, "" );
   tolerance = project->readEntry( "Topol", "/tolerance_" + postfix, "" );
-  std::cout << "tol read: " <<tolerance.toStdString();
   layer1Id = project->readEntry( "Topol", "/layer1_" + postfix, "" );
   layer2Id = project->readEntry( "Topol", "/layer2_" + postfix, "" );
 
@@ -243,7 +242,6 @@ void rulesDialog::addTest()
 
   project->writeEntry( "Topol", "/testCount", row + 1 );
   project->writeEntry( "Topol", "/testname_" + postfix, test );
-  std::cout << "boxvalue: " << mToleranceBox->value();
   project->writeEntry( "Topol", "/tolerance_" + postfix, QString("%1").arg(mToleranceBox->value()));
   project->writeEntry( "Topol", "/layer1_" + postfix, layer1ID );
   project->writeEntry( "Topol", "/layer2_" + postfix, layer2ID );

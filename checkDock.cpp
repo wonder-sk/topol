@@ -57,7 +57,6 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QgisInt
   mConfigureButton->setIcon(QIcon(":/topol_c/topol.png"));
 
   mQgisApp = QgisApp::instance();
-  //TODO: rubberbands stay after plugin unloaded
   mRBFeature1 = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
   mRBFeature2 = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
   mRBConflict = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
@@ -84,9 +83,14 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QgisInt
 
 checkDock::~checkDock()
 {
+  //TODO: doesn't work, rubberbands stay on canvas after plugin unloaded
+  // clear canvas from rubberbands 
   mRBConflict->reset();
   mRBFeature1->reset();
   mRBFeature2->reset();
+  mQgisApp->mapCanvas()->scene()->removeItem(mRBConflict);
+  mQgisApp->mapCanvas()->scene()->removeItem(mRBFeature1);
+  mQgisApp->mapCanvas()->scene()->removeItem(mRBFeature2);
 
   delete mRBConflict, mRBFeature1, mRBFeature2;
   delete mConfigureDialog;
@@ -214,7 +218,6 @@ void checkDock::runTests(QgsRectangle extent)
     QString layer2Str = mTestTable->item(i, 5)->text();
 
     std::cout << testName.toStdString();
-    std::cout << "layerstrs: "<<layer1Str.toStdString() << " - " << layer2Str.toStdString() <<"\n";
 
     // test if layer1  is in the registry
     if (!((QgsVectorLayer*)mLayerRegistry->mapLayers().contains(layer1Str)))

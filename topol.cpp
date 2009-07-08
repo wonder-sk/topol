@@ -51,6 +51,7 @@ Topol::Topol(QgisInterface * theQgisInterface):
                  QgisPlugin(sName,sDescription,sPluginVersion,sPluginType),
                  mQGisIface(theQgisInterface)
 {
+  mDock = 0;
 }
 
 Topol::~Topol()
@@ -64,6 +65,7 @@ Topol::~Topol()
 void Topol::initGui()
 {
   mQActionPointer = new QAction(QIcon(),tr("Topology Checker"), this);
+  mQActionPointer->setCheckable(true);
 
   QString myCurThemePath = QgsApplication::activeThemePath() + "/plugins/topol.png";
   QString myDefThemePath = QgsApplication::defaultThemePath() + "/plugins/topol.png";
@@ -89,9 +91,9 @@ void Topol::initGui()
   // Create the action for tool
   //mQActionPointer = new QAction(QIcon(":/topol_c/topol.png"),tr("Topology Checker"), this);
   // Set the what's this text
-  mQActionPointer->setWhatsThis(tr("Open Topology Checker for vector layer"));
+  mQActionPointer->setWhatsThis(tr("Topology Checker for vector layer"));
   // Connect the action to the run
-  connect(mQActionPointer, SIGNAL(triggered()), this, SLOT(run()));
+  connect(mQActionPointer, SIGNAL(triggered()), this, SLOT(showOrHide()));
   // Add the icon to the toolbar
   mQGisIface->addToolBarIcon(mQActionPointer);
   mQGisIface->addPluginToMenu(tr("&Topol"), mQActionPointer);
@@ -103,6 +105,17 @@ void Topol::help()
   //implement me!
 }
 
+void Topol::showOrHide()
+{
+  if (!mDock)
+    run();
+  else
+    if (mQActionPointer->isChecked())
+      mDock->show();
+    else
+      mDock->hide();
+}
+
 // Slot called when the menu item is triggered
 // If you created more menu items / toolbar buttons in initiGui, you should 
 // create a separate handler for each action - this single run() method will
@@ -110,9 +123,10 @@ void Topol::help()
 void Topol::run()
 {
   QgsMapLayer *myLayer = mQGisIface->activeLayer();
-  checkDock* chDock = new checkDock("Topology", (QgsVectorLayer *)(myLayer), mQGisIface);
-  mQGisIface->addDockWidget(Qt::RightDockWidgetArea, chDock);
-  chDock->show();
+  mDock = new checkDock("Topology", (QgsVectorLayer *)(myLayer), mQGisIface);
+  mQGisIface->addDockWidget(Qt::RightDockWidgetArea, mDock);
+  connect(mDock, SIGNAL(visibilityChanged(bool)), mQActionPointer, SLOT(setChecked(bool)));
+  //mDock->show();
 }
 
 // Unload the plugin by cleaning up the GUI
@@ -123,7 +137,6 @@ void Topol::unload()
   mQGisIface->removeToolBarIcon(mQActionPointer);
   delete mQActionPointer;
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 //

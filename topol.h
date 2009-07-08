@@ -47,6 +47,7 @@ class QAction;
 class QToolBar;
 
 class QgisInterface;
+class checkDock;
 
 /**
 * \class Plugin
@@ -76,8 +77,10 @@ class Topol:public QObject, public QgisPlugin
 public slots:
   //! init the gui
   virtual void initGui();
-  //! Show the dialog box
+  //! Create and show the dialog box
   void run();
+  //! Show/hide the dialog box
+  void showOrHide();
   //! unload the plugin
   void unload();
   //! show the help document
@@ -96,6 +99,8 @@ private:
   QgisInterface *mQGisIface;
   //!pointer to the qaction for this plugin
   QAction * mQActionPointer;
+  checkDock* mDock;
+
   ////////////////////////////////////////////////////////////////////
   //
   // ADD YOUR OWN PROPERTY DECLARATIONS AFTER THIS POINT.....
