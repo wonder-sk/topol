@@ -51,6 +51,7 @@ private slots:
   void errorListClicked(const QModelIndex& index);
   void deleteErrors();
   void parseErrorList(QString layerId);
+  //void updateRubberBand(double scale);
 
 private:
   QgsVectorLayer *mLayer;
@@ -76,15 +77,6 @@ private:
   topolTest mTest;
   QgsMapLayerRegistry* mLayerRegistry;
 
-  /*void checkIntersections(double tolerance, QString layer1str, QString layer2Str);
-  void checkSelfIntersections(double tolerance, QString layer1str, QString layer2Str);
-  void checkCloseFeature(double tolerance, QString layer1str, QString layer2Str);
-  void checkPolygonContains(double tolerance, QString layer1str, QString layer2Str);
-  void checkSegmentLength(double tolerance, QString layer1str, QString layer2Str);
-  void checkUnconnectedLines(double tolerance, QString layer1str, QString layer2Str);
-  void checkPointCoveredBySegment(double tolerance, QString layer1str, QString layer2Str);
-  void checkValid(double tolerance, QString layer1str, QString layer2Str);
-  */
   void runTests(QgsRectangle extent);
   void validate(QgsRectangle extent);
 };

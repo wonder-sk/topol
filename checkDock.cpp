@@ -57,9 +57,10 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QgisInt
   mConfigureButton->setIcon(QIcon(":/topol_c/topol.png"));
 
   mQgisApp = QgisApp::instance();
-  mRBFeature1 = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
-  mRBFeature2 = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
-  mRBConflict = new QgsRubberBand(mQgisApp->mapCanvas(), mLayer);
+  QgsMapCanvas* canvas = mQgisApp->mapCanvas();
+  mRBFeature1 = new QgsRubberBand(canvas);
+  mRBFeature2 = new QgsRubberBand(canvas);
+  mRBConflict = new QgsRubberBand(canvas);
 
   mRBFeature1->setColor("blue");
   mRBFeature2->setColor("red");
@@ -79,12 +80,14 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QgisInt
   connect(mLayerRegistry, SIGNAL(layerWasAdded(QgsMapLayer*)), mConfigureDialog, SLOT(addLayer(QgsMapLayer*)));
   connect(mLayerRegistry, SIGNAL(layerWillBeRemoved(QString)), mConfigureDialog, SLOT(removeLayer(QString)));
   connect(mLayerRegistry, SIGNAL(layerWillBeRemoved(QString)), this, SLOT(parseErrorList(QString)));
+
+  //connect(canvas, SIGNAL(scaleChanged(double)), this, SLOT(updateRubberBand(double)));
 }
 
 checkDock::~checkDock()
 {
   //TODO: doesn't work, rubberbands stay on canvas after plugin unloaded
-  // clear canvas from rubberbands 
+  //TODO clear canvas from rubberbands 
   mRBConflict->reset();
   mRBFeature1->reset();
   mRBFeature2->reset();
@@ -103,6 +106,14 @@ checkDock::~checkDock()
   for (; lit != mLayerIndexes.end(); ++lit)
     delete *lit;
 }
+
+/*void checkDock::updateRubberBand(double scale)
+{
+	std::cout << "updateRub\n";
+  mRBConflict->updateRect();
+  mRBFeature1->updateRect();
+  mRBFeature2->updateRect();
+}*/
 
 void checkDock::deleteErrors()
 {
@@ -169,6 +180,11 @@ void checkDock::errorListClicked(const QModelIndex& index)
 
   fl.layer->featureAtId(fl.feature.id(), f, true, false);
   g = f.geometry();
+  if (!g)
+  {
+    std::cout << "invalid geometry 1\n"<<std::flush;
+    return;
+  }
   mRBFeature1->setToGeometry(g, fl.layer);
 
   fl = mErrorList[row]->featurePairs()[1];
@@ -180,8 +196,18 @@ void checkDock::errorListClicked(const QModelIndex& index)
 
   fl.layer->featureAtId(fl.feature.id(), f, true, false);
   g = f.geometry();
+  if (!g)
+  {
+    std::cout << "invalid geometry 2\n" << std::flush;
+    return;
+  }
   mRBFeature2->setToGeometry(g, fl.layer);
 
+  if (!mErrorList[row]->conflict())
+  {
+    std::cout << "invalid conflict\n" << std::flush;
+    return;
+  }
   mRBConflict->setToGeometry(mErrorList[row]->conflict(), fl.layer);
 }
 

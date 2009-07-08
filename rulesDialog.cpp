@@ -79,6 +79,7 @@ rulesDialog::~rulesDialog()
 
 void rulesDialog::readTest(int index, QgsMapLayerRegistry* layerRegistry)
 {
+	std::cout << "readtest\n";
   QString testName;
   QString layer1Id;
   QString layer2Id;
@@ -96,24 +97,22 @@ void rulesDialog::readTest(int index, QgsMapLayerRegistry* layerRegistry)
     return;
 
   l1 = (QgsVectorLayer*)layerRegistry->mapLayers()[layer1Id];
-  QString layer1Name;
   if (!l1)
     return;
 
-  layer1Name = l1->name();
-
-  QgsVectorLayer* l2;
-  if (!(QgsVectorLayer*)layerRegistry->mapLayers().contains(layer2Id))
-    return;
-
-  l2 = (QgsVectorLayer*)layerRegistry->mapLayers()[layer2Id];
+  QString layer1Name = l1->name();
   QString layer2Name;
+  QgsVectorLayer* l2;
+
   if (mTestConfMap[testName].useSecondLayer)
   {
-    if (!l2)
+    if (!(QgsVectorLayer*)layerRegistry->mapLayers().contains(layer2Id))
       return;
     else
+    {
+      l2 = (QgsVectorLayer*)layerRegistry->mapLayers()[layer2Id];
       layer2Name = l2->name();
+    }
   }
   else
     layer2Name = "No layer";

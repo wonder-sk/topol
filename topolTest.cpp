@@ -102,9 +102,7 @@ ErrorList topolTest::checkCloseFeature(double tolerance, QgsVectorLayer* layer1,
     QgsRectangle bb = g1->boundingBox();
 
     // increase bounding box by tolerance
-    // TODO: use this, when using map units
-    //QgsRectangle frame(bb.xMinimum() - tolerance, bb.yMinimum() - tolerance, bb.xMaximum() + tolerance, bb.yMaximum() + tolerance); 
-    QgsRectangle frame(bb);
+    QgsRectangle frame(bb.xMinimum() - tolerance, bb.yMinimum() - tolerance, bb.xMaximum() + tolerance, bb.yMaximum() + tolerance); 
 
     QList<int> crossingIds;
     crossingIds = index->intersects(frame);
@@ -268,6 +266,12 @@ ErrorList topolTest::checkValid(double tolerance, QgsVectorLayer* layer1, QgsVec
       break;
 
     QgsGeometry* g = it->feature.geometry();
+    if (!g)
+    {
+      std::cout << "validity test: invalid QgsGeometry\n" << std::flush;
+      return errorList;
+    }
+
     if (!g->asGeos() || !GEOSisValid(g->asGeos()))
     {
       QgsRectangle r = g->boundingBox();
@@ -431,9 +435,36 @@ ErrorList topolTest::checkPointCoveredBySegment(double tolerance, QgsVectorLayer
   return errorList;
 }
 
+/*
+ErrorList checkPolygonSegmentLength(QList<FeatureLayer>& featureList, double tolerance)
+{
+  for (it = mFeatureList1.begin(); it != FeatureListEnd; ++it)
+  {
+    QgsGeometry* g1 = it->feature.geometry();
+    QgsPolygon pol;
+    QgsPolyline segm;
+    QgsPolyline ls;
+    QList<FeatureLayer> fls;
+    TopolErrorShort* err;
+
+    pol = g1->asPolygon();
+
+    for (int i = 0; i < pol.size(); ++i)
+      for (int j = 1; j < pol[i].size(); ++j)
+        if (pol[i][j-1].sqrDist(pol[i][j]) < tolerance)
+	{
+	  fls.clear();
+          fls << *it << *it;
+	  segm.clear();
+	  segm << pol[i][j-1] << pol[i][j];
+          err = new TopolErrorShort(g1->boundingBox(), QgsGeometry::fromPolyline(segm), fls);
+          errorList << err;
+        }
+}*/
+
 ErrorList topolTest::checkSegmentLength(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {
-  //TODO: multi versions, use map units
+  //TODO: multi versions
   //TODO: move the type-switch from the cycle - it will be faster
   int i = 0;
   ErrorList errorList;
@@ -444,13 +475,16 @@ ErrorList topolTest::checkSegmentLength(double tolerance, QgsVectorLayer* layer1
   {
     QgsGeometry* g1 = it->feature.geometry();
     QgsPolygon pol;
+    QgsMultiPolygon mpol;
     QgsPolyline segm;
     QgsPolyline ls;
+    QgsMultiPolyline mls;
     QList<FeatureLayer> fls;
     TopolErrorShort* err;
 
-    switch (g1->type()) {
-      case QGis::Line:
+    switch (g1->wkbType()) {
+      case QGis::WKBLineString:
+      case QGis::WKBLineString25D:
         ls = g1->asPolyline();
 
 	for (int i = 1; i < ls.size(); ++i)
@@ -466,7 +500,8 @@ ErrorList topolTest::checkSegmentLength(double tolerance, QgsVectorLayer* layer1
 	  }
 	}
       break;
-      case QGis::Polygon:
+      case QGis::WKBPolygon:
+      case QGis::WKBPolygon25D:
         pol = g1->asPolygon();
 
 	for (int i = 0; i < pol.size(); ++i)
@@ -480,6 +515,47 @@ ErrorList topolTest::checkSegmentLength(double tolerance, QgsVectorLayer* layer1
               err = new TopolErrorShort(g1->boundingBox(), QgsGeometry::fromPolyline(segm), fls);
               errorList << err;
 	    }
+      break;
+      case QGis::WKBMultiLineString:
+      case QGis::WKBMultiLineString25D:
+        mls = g1->asMultiPolyline();
+
+	for (int k = 0; k < mls.size(); ++k)
+	{
+	  QgsPolyline& ls = mls[k];
+	  for (int i = 1; i < ls.size(); ++i)
+	  {
+	    if (ls[i-1].sqrDist(ls[i]) < tolerance)
+	    {
+	      fls.clear();
+              fls << *it << *it;
+	      segm.clear();
+	      segm << ls[i-1] << ls[i];
+              err = new TopolErrorShort(g1->boundingBox(), QgsGeometry::fromPolyline(segm), fls);
+              errorList << err;
+	    }
+	  }
+	}
+      break;
+      case QGis::WKBMultiPolygon:
+      case QGis::WKBMultiPolygon25D:
+        mpol = g1->asMultiPolygon();
+
+	for (int k = 0; k < mpol.size(); ++k)
+	{
+	  QgsPolygon& pol = mpol[k];
+	  for (int i = 0; i < pol.size(); ++i)
+	    for (int j = 1; j < pol[i].size(); ++j)
+	      if (pol[i][j-1].sqrDist(pol[i][j]) < tolerance)
+	      {
+	        fls.clear();
+                fls << *it << *it;
+	        segm.clear();
+	        segm << pol[i][j-1] << pol[i][j];
+                err = new TopolErrorShort(g1->boundingBox(), QgsGeometry::fromPolyline(segm), fls);
+                errorList << err;
+	      }
+	}
       break;
       default:
         continue;
