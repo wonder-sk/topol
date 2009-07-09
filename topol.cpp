@@ -122,8 +122,7 @@ void Topol::showOrHide()
 // not be enough
 void Topol::run()
 {
-  QgsMapLayer *myLayer = mQGisIface->activeLayer();
-  mDock = new checkDock("Topology", (QgsVectorLayer *)(myLayer), mQGisIface);
+  mDock = new checkDock("Topology", mQGisIface);
   mQGisIface->addDockWidget(Qt::RightDockWidgetArea, mDock);
   connect(mDock, SIGNAL(visibilityChanged(bool)), mQActionPointer, SLOT(setChecked(bool)));
   //mDock->show();

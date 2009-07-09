@@ -42,12 +42,11 @@
 class QgisInterface;
 
 //TODO: get rid of those global variables (eg. mFeatureList)
-checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QgisInterface* qIface, QWidget* parent)
+checkDock::checkDock(const QString &tableName, QgisInterface* qIface, QWidget* parent)
 : QDockWidget(parent), Ui::checkDock()
 {
   setupUi(this);
 
-  mLayer = theLayer;
   mLayerRegistry = QgsMapLayerRegistry::instance();
   mConfigureDialog = new rulesDialog("Rules", mLayerRegistry->mapLayers().keys(), mTest.testMap(), qIface, parent);
   mTestTable = mConfigureDialog->testTable();
@@ -209,7 +208,7 @@ void checkDock::errorListClicked(const QModelIndex& index)
   if (!g)
   {
     std::cout << "invalid geometry 1\n"<<std::flush;
-    QMessageBox::information(this, "Topology test", "Feature not found in layer.\nRun topology check again.");
+    QMessageBox::information(this, "Topology test", "Feature not found in the layer.\nThe layer has probably changed.\nRun topology check again.");
     return;
   }
   mRBFeature1->setToGeometry(g, fl.layer);
@@ -226,7 +225,7 @@ void checkDock::errorListClicked(const QModelIndex& index)
   if (!g)
   {
     std::cout << "invalid geometry 2\n" << std::flush;
-    QMessageBox::information(this, "Topology test", "Feature not found in layer.\nRun topology check again.");
+    QMessageBox::information(this, "Topology test", "Feature not found in the layer.\nThe layer has probably changed.\nRun topology check again.");
     return;
   }
   mRBFeature2->setToGeometry(g, fl.layer);

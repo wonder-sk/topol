@@ -40,7 +40,7 @@ class checkDock : public QDockWidget, public Ui::checkDock
 Q_OBJECT
 
 public:
-  checkDock(const QString &tableName, QgsVectorLayer *theLayer, QgisInterface* qIface, QWidget *parent = 0);
+  checkDock(const QString &tableName, QgisInterface* qIface, QWidget *parent = 0);
   ~checkDock();
 
 private slots:
@@ -53,7 +53,6 @@ private slots:
   void parseErrorListByLayer(QString layerId);
 
 private:
-  QgsVectorLayer *mLayer;
   rulesDialog* mConfigureDialog;
   QgsRubberBand* mRBConflict;
   QgsRubberBand* mRBFeature1;
