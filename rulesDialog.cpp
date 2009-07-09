@@ -178,17 +178,14 @@ void rulesDialog::removeLayer(QString layerId)
   mLayer1Box->removeItem(index + 1);
   mLayer2Box->removeItem(index + 1);
 
-  // TODO: tell Dock that we have no layers under
-  //if (mLayer1Box->size() == 1)
+  // TODO: Maybe tell the dock that we have no layers under
+  //if (mLayer1Box->size() == 1) do something
 }
 
 void rulesDialog::addTest()
 {
   //sanity checks
   QString test = mTestBox->currentText();
-  //if (test == "Select test for addition")
-    //return;
-
   QString layer1 = mLayer1Box->currentText();
   if (layer1 == "No layer")
     return;

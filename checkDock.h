@@ -50,8 +50,7 @@ private slots:
   void validateExtent();
   void errorListClicked(const QModelIndex& index);
   void deleteErrors();
-  void parseErrorList(QString layerId);
-  //void updateRubberBand(double scale);
+  void parseErrorListByLayer(QString layerId);
 
 private:
   QgsVectorLayer *mLayer;
@@ -79,6 +78,7 @@ private:
 
   void runTests(QgsRectangle extent);
   void validate(QgsRectangle extent);
+  void parseErrorListByFeature(int featureId);
 };
 
 #endif

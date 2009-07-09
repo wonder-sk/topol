@@ -79,7 +79,7 @@ checkDock::checkDock(const QString &tableName, QgsVectorLayer* theLayer, QgisInt
 
   connect(mLayerRegistry, SIGNAL(layerWasAdded(QgsMapLayer*)), mConfigureDialog, SLOT(addLayer(QgsMapLayer*)));
   connect(mLayerRegistry, SIGNAL(layerWillBeRemoved(QString)), mConfigureDialog, SLOT(removeLayer(QString)));
-  connect(mLayerRegistry, SIGNAL(layerWillBeRemoved(QString)), this, SLOT(parseErrorList(QString)));
+  connect(mLayerRegistry, SIGNAL(layerWillBeRemoved(QString)), this, SLOT(parseErrorListByLayer(QString)));
 
   //connect(canvas, SIGNAL(scaleChanged(double)), this, SLOT(updateRubberBand(double)));
 }
@@ -125,7 +125,7 @@ void checkDock::deleteErrors()
   mErrorListView->clear();
 }
 
-void checkDock::parseErrorList(QString layerId)
+void checkDock::parseErrorListByLayer(QString layerId)
 {
   QgsVectorLayer* layer = (QgsVectorLayer*)mLayerRegistry->mapLayers()[layerId];
   QList<TopolError*>::Iterator it = mErrorList.begin();
@@ -136,6 +136,32 @@ void checkDock::parseErrorList(QString layerId)
     FeatureLayer fl1 = (*it)->featurePairs().first();
     FeatureLayer fl2 = (*it)->featurePairs()[1];
     if (fl1.layer == layer || fl2.layer == layer)
+    {
+      it = mErrorList.erase(it);
+    }
+    else
+      ++it;
+  }
+
+  mComment->setText(QString("No errors were found"));
+  mErrorListView->clear();
+
+  ErrorList::ConstIterator lit = mErrorList.begin();
+  ErrorList::ConstIterator errorsEnd = mErrorList.end();
+  for (; lit != errorsEnd; ++lit)
+    mErrorListView->addItem((*lit)->name() + QString(" %1").arg((*lit)->featurePairs().first().feature.id()));
+}
+
+void checkDock::parseErrorListByFeature(int featureId)
+{
+  QList<TopolError*>::Iterator it = mErrorList.begin();
+  QList<TopolError*>::Iterator end = mErrorList.end();
+
+  while (it != mErrorList.end())
+  {
+    FeatureLayer fl1 = (*it)->featurePairs().first();
+    FeatureLayer fl2 = (*it)->featurePairs()[1];
+    if (fl1.feature.id() == featureId || fl2.feature.id() == featureId)
     {
       it = mErrorList.erase(it);
     }
@@ -183,6 +209,7 @@ void checkDock::errorListClicked(const QModelIndex& index)
   if (!g)
   {
     std::cout << "invalid geometry 1\n"<<std::flush;
+    QMessageBox::information(this, "Topology test", "Feature not found in layer.\nRun topology check again.");
     return;
   }
   mRBFeature1->setToGeometry(g, fl.layer);
@@ -199,6 +226,7 @@ void checkDock::errorListClicked(const QModelIndex& index)
   if (!g)
   {
     std::cout << "invalid geometry 2\n" << std::flush;
+    QMessageBox::information(this, "Topology test", "Feature not found in layer.\nRun topology check again.");
     return;
   }
   mRBFeature2->setToGeometry(g, fl.layer);
@@ -211,6 +239,7 @@ void checkDock::errorListClicked(const QModelIndex& index)
   mRBConflict->setToGeometry(mErrorList[row]->conflict(), fl.layer);
 }
 
+//TODO: delete items in errorListView
 void checkDock::fix()
 {
   int row = mErrorListView->currentRow();
@@ -227,8 +256,9 @@ void checkDock::fix()
   {
     mErrorList.removeAt(row);
     delete mErrorListView->takeItem(row);
+    //parseErrorListByFeature();
     mComment->setText(QString("%1 errors were found").arg(mErrorListView->count()));
-    mLayer->triggerRepaint();
+    mQgisApp->mapCanvas()->refresh();
   }
   else
     QMessageBox::information(this, "Topology fix error", "Fixing failed!");

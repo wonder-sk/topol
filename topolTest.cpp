@@ -435,37 +435,8 @@ ErrorList topolTest::checkPointCoveredBySegment(double tolerance, QgsVectorLayer
   return errorList;
 }
 
-/*
-ErrorList checkPolygonSegmentLength(QList<FeatureLayer>& featureList, double tolerance)
-{
-  for (it = mFeatureList1.begin(); it != FeatureListEnd; ++it)
-  {
-    QgsGeometry* g1 = it->feature.geometry();
-    QgsPolygon pol;
-    QgsPolyline segm;
-    QgsPolyline ls;
-    QList<FeatureLayer> fls;
-    TopolErrorShort* err;
-
-    pol = g1->asPolygon();
-
-    for (int i = 0; i < pol.size(); ++i)
-      for (int j = 1; j < pol[i].size(); ++j)
-        if (pol[i][j-1].sqrDist(pol[i][j]) < tolerance)
-	{
-	  fls.clear();
-          fls << *it << *it;
-	  segm.clear();
-	  segm << pol[i][j-1] << pol[i][j];
-          err = new TopolErrorShort(g1->boundingBox(), QgsGeometry::fromPolyline(segm), fls);
-          errorList << err;
-        }
-}*/
-
 ErrorList topolTest::checkSegmentLength(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {
-  //TODO: multi versions
-  //TODO: move the type-switch from the cycle - it will be faster
   int i = 0;
   ErrorList errorList;
   QList<FeatureLayer>::Iterator it;
@@ -482,6 +453,7 @@ ErrorList topolTest::checkSegmentLength(double tolerance, QgsVectorLayer* layer1
     QList<FeatureLayer> fls;
     TopolErrorShort* err;
 
+    // switching by type here, because layer can contain both single and multi version geometries
     switch (g1->wkbType()) {
       case QGis::WKBLineString:
       case QGis::WKBLineString25D:
@@ -500,6 +472,7 @@ ErrorList topolTest::checkSegmentLength(double tolerance, QgsVectorLayer* layer1
 	  }
 	}
       break;
+
       case QGis::WKBPolygon:
       case QGis::WKBPolygon25D:
         pol = g1->asPolygon();
@@ -516,6 +489,7 @@ ErrorList topolTest::checkSegmentLength(double tolerance, QgsVectorLayer* layer1
               errorList << err;
 	    }
       break;
+
       case QGis::WKBMultiLineString:
       case QGis::WKBMultiLineString25D:
         mls = g1->asMultiPolyline();
@@ -537,6 +511,7 @@ ErrorList topolTest::checkSegmentLength(double tolerance, QgsVectorLayer* layer1
 	  }
 	}
       break;
+
       case QGis::WKBMultiPolygon:
       case QGis::WKBMultiPolygon25D:
         mpol = g1->asMultiPolygon();
@@ -557,6 +532,7 @@ ErrorList topolTest::checkSegmentLength(double tolerance, QgsVectorLayer* layer1
 	      }
 	}
       break;
+
       default:
         continue;
     }
@@ -564,10 +540,6 @@ ErrorList topolTest::checkSegmentLength(double tolerance, QgsVectorLayer* layer1
 
   return errorList;
 }
-
-/*ErrorList topolTest::checkSelfIntersections(double tolerance, QString layer1Str, QString layer2Str)
-{
-}*/
 
 ErrorList topolTest::checkIntersections(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {

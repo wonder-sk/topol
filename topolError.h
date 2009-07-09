@@ -82,13 +82,6 @@ class TopolErrorClose : public TopolError
 public:
   TopolErrorClose(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs);
 };
-/*
-class TopolErrorContains : public TopolError
-{
-public:
-  TopolErrorContains(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs);
-};
-*/
 
 class TopolErrorCovered : public TopolError
 {

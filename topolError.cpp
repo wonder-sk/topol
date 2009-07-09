@@ -17,7 +17,7 @@
 
 #include "topolError.h"
 
-//TODO: fix crashing when feature is deleted
+//TODO: tell dock to parse errorlist when feature is deleted
 bool TopolError::fix(QString fixName)
 {
   std::cout << "fix: \""<<fixName.toStdString()<<"\"\n";
@@ -113,7 +113,6 @@ bool TopolError::fixDeleteFirst()
 
 bool TopolError::fixDeleteSecond()
 {
-//TODO: need to update error list - deleted feature could be involved in many errors!
   FeatureLayer fl = mFeaturePairs[1];
   return fl.layer->deleteFeature(fl.feature.id());
 }
