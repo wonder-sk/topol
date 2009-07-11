@@ -71,6 +71,7 @@ checkDock::checkDock(const QString &tableName, QgisInterface* qIface, QWidget* p
 
   connect(mConfigureButton, SIGNAL(clicked()), this, SLOT(configure()));
   connect(mValidateAllButton, SIGNAL(clicked()), this, SLOT(validateAll()));
+  connect(mValidateSelectedButton, SIGNAL(clicked()), this, SLOT(validateSelected()));
   connect(mValidateExtentButton, SIGNAL(clicked()), this, SLOT(validateExtent()));
 
   connect(mFixButton, SIGNAL(clicked()), this, SLOT(fix()));
@@ -263,7 +264,7 @@ void checkDock::fix()
     QMessageBox::information(this, "Topology fix error", "Fixing failed!");
 }
 
-void checkDock::runTests(QgsRectangle extent)
+void checkDock::runTests(ValidateType type)
 {
   for (int i = 0; i < mTestTable->rowCount(); ++i)
   {
@@ -294,7 +295,7 @@ void checkDock::runTests(QgsRectangle extent)
     connect(&mTest, SIGNAL(progress(int)), &progress, SLOT(setValue(int)));
     // run the test
 
-    ErrorList errors = mTest.runTest(testName, layer1, layer2, extent, toleranceStr.toDouble());
+    ErrorList errors = mTest.runTest(testName, layer1, layer2, type, toleranceStr.toDouble());
     disconnect(&progress, SIGNAL(canceled()), &mTest, SLOT(setTestCancelled()));
     disconnect(&mTest, SIGNAL(progress(int)), &progress, SLOT(setValue(int)));
 
@@ -307,12 +308,12 @@ void checkDock::runTests(QgsRectangle extent)
   }
 }
 
-void checkDock::validate(QgsRectangle extent)
+void checkDock::validate(ValidateType type)
 {
   mErrorList.clear();
   mErrorListView->clear();
 
-  runTests(extent);
+  runTests(type);
   mComment->setText(QString("%1 errors were found").arg(mErrorListView->count()));
 
   mRBFeature1->reset();
@@ -322,11 +323,15 @@ void checkDock::validate(QgsRectangle extent)
 
 void checkDock::validateExtent()
 {
-  QgsRectangle extent = mQgisApp->mapCanvas()->extent();
-  validate(extent);
+  validate(ValidateExtent);
 }
 
 void checkDock::validateAll()
 {
-  validate(QgsRectangle());
+  validate(ValidateAll);
+}
+
+void checkDock::validateSelected()
+{
+  validate(ValidateSelected);
 }

@@ -19,6 +19,7 @@
 
 #include <qgsvectorlayer.h>
 #include <qgsmaplayer.h>
+#include <qgsmapcanvas.h>
 #include <qgsgeometry.h>
 #include <qgsfeature.h>
 #include <spatialindex/qgsspatialindex.h>
@@ -658,7 +659,7 @@ QgsSpatialIndex* topolTest::createIndex(QgsVectorLayer* layer)
   return index;
 }
 
-ErrorList topolTest::runTest(QString testName, QgsVectorLayer* layer1, QgsVectorLayer* layer2, QgsRectangle extent, double tolerance)
+ErrorList topolTest::runTest(QString testName, QgsVectorLayer* layer1, QgsVectorLayer* layer2, ValidateType type, double tolerance)
 {
   std::cout << testName.toStdString();
   ErrorList errors;
@@ -689,10 +690,27 @@ ErrorList topolTest::runTest(QString testName, QgsVectorLayer* layer1, QgsVector
       fillFeatureMap(layer2);
   }
 
-  layer1->select(QgsAttributeList(), extent);
-  while (layer1->nextFeature(f))
-    if (f.geometry())
-      mFeatureList1 << FeatureLayer(layer1, f);
+  // validate only selected features
+  if (type == ValidateSelected)
+  {
+      QgsFeatureList flist = layer1->selectedFeatures();
+      QgsFeatureList::ConstIterator fit = flist.begin();
+      QgsFeatureList::ConstIterator flistEnd = flist.end();
+  
+      for (; fit != flist.end(); ++fit)
+        mFeatureList1 << FeatureLayer(layer1, *fit);
+  }
+  // validate all features or current extent
+  else {
+    QgsRectangle extent;
+    if (type == ValidateExtent)
+      extent = QgisApp::instance()->mapCanvas()->extent();
+
+    layer1->select(QgsAttributeList(), extent);
+    while (layer1->nextFeature(f))
+      if (f.geometry())
+        mFeatureList1 << FeatureLayer(layer1, f);
+  }
 
   //call test routine
   return (this->*(mTestMap[testName].f))(tolerance, layer1, layer2);

@@ -48,6 +48,7 @@ private slots:
   void fix();
   void validateAll();
   void validateExtent();
+  void validateSelected();
   void errorListClicked(const QModelIndex& index);
   void deleteErrors();
   void parseErrorListByLayer(QString layerId);
@@ -75,8 +76,8 @@ private:
   topolTest mTest;
   QgsMapLayerRegistry* mLayerRegistry;
 
-  void runTests(QgsRectangle extent);
-  void validate(QgsRectangle extent);
+  void runTests(ValidateType type);
+  void validate(ValidateType type);
   void parseErrorListByFeature(int featureId);
 };
 

@@ -30,6 +30,8 @@ class topolTest;
 
 typedef ErrorList (topolTest::*testFunction)(double, QgsVectorLayer*, QgsVectorLayer*);
 
+enum ValidateType { ValidateAll, ValidateExtent, ValidateSelected };
+
 class test
 {
 public:
@@ -54,7 +56,7 @@ public:
   ~topolTest();
 
   QMap<QString, test> testMap() { return mTestMap; }
-  ErrorList runTest(QString testName, QgsVectorLayer* layer1, QgsVectorLayer* layer2, QgsRectangle extent, double tolerance);
+  ErrorList runTest(QString testName, QgsVectorLayer* layer1, QgsVectorLayer* layer2, ValidateType type, double tolerance);
 
   ErrorList checkIntersections(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2);
   ErrorList checkSelfIntersections(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2);
