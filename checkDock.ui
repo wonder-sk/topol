@@ -43,7 +43,7 @@
        </layout>
       </item>
       <item>
-       <widget class="QListWidget" name="mErrorListView"/>
+       <widget class="QTableView" name="mErrorTableView"/>
       </item>
       <item>
        <widget class="QLabel" name="mComment">

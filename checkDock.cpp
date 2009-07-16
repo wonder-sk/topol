@@ -38,6 +38,7 @@
 
 #include "topolTest.h"
 #include "rulesDialog.h"
+#include "dockModel.h"
 
 class QgisInterface;
 
@@ -46,6 +47,11 @@ checkDock::checkDock(const QString &tableName, QgisInterface* qIface, QWidget* p
 : QDockWidget(parent), Ui::checkDock()
 {
   setupUi(this);
+  mErrorListModel = new DockModel(mErrorList, parent);
+  mErrorTableView->setModel(mErrorListModel);
+  mErrorTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
+  //mErrorTableView->setHorizontalHeader();
+  mErrorTableView->verticalHeader()->setDefaultSectionSize( 20 );
 
   mLayerRegistry = QgsMapLayerRegistry::instance();
   mConfigureDialog = new rulesDialog("Rules", mLayerRegistry->mapLayers().keys(), mTest.testMap(), qIface, parent);
@@ -75,7 +81,7 @@ checkDock::checkDock(const QString &tableName, QgisInterface* qIface, QWidget* p
   connect(mValidateExtentButton, SIGNAL(clicked()), this, SLOT(validateExtent()));
 
   connect(mFixButton, SIGNAL(clicked()), this, SLOT(fix()));
-  connect(mErrorListView, SIGNAL(clicked(const QModelIndex &)), this, SLOT(errorListClicked(const QModelIndex &)));
+  connect(mErrorTableView, SIGNAL(clicked(const QModelIndex &)), this, SLOT(errorListClicked(const QModelIndex &)));
 
   connect(mLayerRegistry, SIGNAL(layerWasAdded(QgsMapLayer*)), mConfigureDialog, SLOT(addLayer(QgsMapLayer*)));
   connect(mLayerRegistry, SIGNAL(layerWillBeRemoved(QString)), mConfigureDialog, SLOT(removeLayer(QString)));
@@ -97,6 +103,7 @@ checkDock::~checkDock()
 
   delete mRBConflict, mRBFeature1, mRBFeature2;
   delete mConfigureDialog;
+  delete mErrorListModel;
 
   // delete errors in list
   deleteErrors();
@@ -122,7 +129,8 @@ void checkDock::deleteErrors()
     delete *it;
 
   mErrorList.clear();
-  mErrorListView->clear();
+  mErrorListModel->resetModel();
+  //mErrorTableView->clear();
 }
 
 void checkDock::parseErrorListByLayer(QString layerId)
@@ -143,13 +151,15 @@ void checkDock::parseErrorListByLayer(QString layerId)
       ++it;
   }
 
+  mErrorListModel->resetModel();
   mComment->setText(QString("No errors were found"));
-  mErrorListView->clear();
+  //mErrorTableView->clear();
 
-  ErrorList::ConstIterator lit = mErrorList.begin();
+  /*ErrorList::ConstIterator lit = mErrorList.begin();
   ErrorList::ConstIterator errorsEnd = mErrorList.end();
   for (; lit != errorsEnd; ++lit)
-    mErrorListView->addItem((*lit)->name() + QString(" %1").arg((*lit)->featurePairs().first().feature.id()));
+    mErrorTableView->addItem((*lit)->name() + QString(" %1").arg((*lit)->featurePairs().first().feature.id()));
+    */
 }
 
 void checkDock::parseErrorListByFeature(int featureId)
@@ -170,12 +180,14 @@ void checkDock::parseErrorListByFeature(int featureId)
   }
 
   mComment->setText(QString("No errors were found"));
-  mErrorListView->clear();
+  mErrorListModel->resetModel();
+  /*mErrorTableView->clear();
 
   ErrorList::ConstIterator lit = mErrorList.begin();
   ErrorList::ConstIterator errorsEnd = mErrorList.end();
   for (; lit != errorsEnd; ++lit)
-    mErrorListView->addItem((*lit)->name() + QString(" %1").arg((*lit)->featurePairs().first().feature.id()));
+    mErrorTableView->addItem((*lit)->name() + QString(" %1").arg((*lit)->featurePairs().first().feature.id()));
+    */
 }
 
 void checkDock::configure()
@@ -239,10 +251,9 @@ void checkDock::errorListClicked(const QModelIndex& index)
   mRBConflict->setToGeometry(mErrorList[row]->conflict(), fl.layer);
 }
 
-//TODO: delete items in errorListView
 void checkDock::fix()
 {
-  int row = mErrorListView->currentRow();
+  int row = mErrorTableView->currentIndex().row();
   QString fixName = mFixBox->currentText();
 
   if (row == -1)
@@ -255,9 +266,10 @@ void checkDock::fix()
   if (mErrorList[row]->fix(fixName))
   {
     mErrorList.removeAt(row);
-    delete mErrorListView->takeItem(row);
+    mErrorListModel->resetModel();
+    //delete mErrorTableView->takeItem(row);
     //parseErrorListByFeature();
-    mComment->setText(QString("%1 errors were found").arg(mErrorListView->count()));
+    mComment->setText(QString("%1 errors were found").arg(mErrorList.count()));
     mQgisApp->mapCanvas()->refresh();
   }
   else
@@ -298,28 +310,30 @@ void checkDock::runTests(ValidateType type)
     ErrorList errors = mTest.runTest(testName, layer1, layer2, type, toleranceStr.toDouble());
     disconnect(&progress, SIGNAL(canceled()), &mTest, SLOT(setTestCancelled()));
     disconnect(&mTest, SIGNAL(progress(int)), &progress, SLOT(setValue(int)));
-
+/*
     ErrorList::ConstIterator it = errors.begin();
     ErrorList::ConstIterator errorsEnd = errors.end();
     for (; it != errorsEnd; ++it)
     {
       if (mTest.testMap()[testName].useSecondLayer)
-        mErrorListView->addItem((*it)->name() + QString(" %1 %2").arg((*it)->featurePairs().first().feature.id()).arg((*it)->featurePairs()[1].feature.id()));
+        mErrorTableView->addItem((*it)->name() + QString(" %1 %2").arg((*it)->featurePairs().first().feature.id()).arg((*it)->featurePairs()[1].feature.id()));
       else
-        mErrorListView->addItem((*it)->name() + QString(" %1").arg((*it)->featurePairs().first().feature.id()));
+        mErrorTableView->addItem((*it)->name() + QString(" %1").arg((*it)->featurePairs().first().feature.id()));
     }
-
+*/
     mErrorList << errors;
   }
+  mErrorListModel->resetModel();
 }
 
 void checkDock::validate(ValidateType type)
 {
   mErrorList.clear();
-  mErrorListView->clear();
+  //mErrorListModel->resetModel();
+  //mErrorTableView->clear();
 
   runTests(type);
-  mComment->setText(QString("%1 errors were found").arg(mErrorListView->count()));
+  mComment->setText(QString("%1 errors were found").arg(mErrorList.count()));
 
   mRBFeature1->reset();
   mRBFeature2->reset();

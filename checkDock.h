@@ -28,6 +28,7 @@
 #include "rulesDialog.h"
 #include "topolError.h"
 #include "topolTest.h"
+#include "dockModel.h"
 
 class QgsMapLayerRegistry;
 class QgsRubberBand;
@@ -66,6 +67,7 @@ private:
   QList<QString> mLayerNameList;
 
   ErrorList mErrorList;
+  DockModel* mErrorListModel;
   QgsGeometryMap mGeometryMap;
 
   //pointer to topology tests table
