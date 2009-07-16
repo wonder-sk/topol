@@ -275,7 +275,7 @@ void checkDock::runTests(ValidateType type)
 
     std::cout << testName.toStdString();
 
-    // test if layer1  is in the registry
+    // test if layer1 is in the registry
     if (!((QgsVectorLayer*)mLayerRegistry->mapLayers().contains(layer1Str)))
     {
       std::cout << "CheckDock: layer " << layer1Str.toStdString() << " not found in registry!" << std::flush;
@@ -302,7 +302,12 @@ void checkDock::runTests(ValidateType type)
     ErrorList::ConstIterator it = errors.begin();
     ErrorList::ConstIterator errorsEnd = errors.end();
     for (; it != errorsEnd; ++it)
-      mErrorListView->addItem((*it)->name() + QString(" %1").arg((*it)->featurePairs().first().feature.id()));
+    {
+      if (mTest.testMap()[testName].useSecondLayer)
+        mErrorListView->addItem((*it)->name() + QString(" %1 %2").arg((*it)->featurePairs().first().feature.id()).arg((*it)->featurePairs()[1].feature.id()));
+      else
+        mErrorListView->addItem((*it)->name() + QString(" %1").arg((*it)->featurePairs().first().feature.id()));
+    }
 
     mErrorList << errors;
   }
