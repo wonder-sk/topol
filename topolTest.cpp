@@ -39,8 +39,8 @@ topolTest::topolTest()
   mTestMap["Test segment lengths"].useTolerance = true;
   mTestMap["Test segment lengths"].useSecondLayer = false;
 
-  mTestMap["Test unconnected lines"].f = &topolTest::checkDanglingLines;
-  mTestMap["Test unconnected lines"].useSecondLayer = false;
+  mTestMap["Test dangling lines"].f = &topolTest::checkDanglingLines;
+  mTestMap["Test dangling lines"].useSecondLayer = false;
 
   // two layer tests
   mTestMap["Test intersections"].f = &topolTest::checkIntersections;

@@ -67,6 +67,7 @@ rulesDialog::rulesDialog(const QString &tableName, QList<QString> layerList, QMa
   connect(buttonBox, SIGNAL(accepted()), this, SLOT(addTest()));
   connect(mDeleteTestButton, SIGNAL(clicked()), this, SLOT(deleteTest()));
   connect(mTestBox, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(showControls(const QString&)));
+  mTestBox->setCurrentIndex(4);
 
   //this resets this plugin up if a project is loaded
   connect( mQgisIface->mainWindow(), SIGNAL( projectRead() ), this, SLOT( projectRead() ) );
