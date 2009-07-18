@@ -56,10 +56,6 @@ QVariant DockModel::data(const QModelIndex &index, int role) const
 	
   int row = index.row();
   int column = index.column();
-  //if (!column)
-  //QVariant::Type fldType = mLayer->dataProvider()->fields()[column].type();
-  //QVariant::Type fldType = mLayer->dataProvider()->fields()[index.column()].type();
-  //bool fldNumeric = (fldType == QVariant::Int || fldType == QVariant::Double);
   
   if (role == Qt::TextAlignmentRole)
   {
