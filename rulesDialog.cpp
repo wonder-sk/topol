@@ -173,10 +173,6 @@ void rulesDialog::addLayer(QgsMapLayer* layer)
 
 void rulesDialog::removeLayer(QString layerId)
 {
-  //QgsMapLayerRegistry* layerRegistry = QgsMapLayerRegistry::instance();
-  //QString layerName = ((QgsVectorLayer*)layerRegistry->mapLayers()[layerId])->name();
-  //std::cout << layerName.toStdString();
-  //int index = mLayerIds.indexOf(layerName);
   int index = mLayerIds.indexOf(layerId);
 
   mLayerIds.removeAt(index);
