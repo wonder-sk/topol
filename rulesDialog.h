@@ -33,23 +33,62 @@ class rulesDialog : public QDialog, public Ui::rulesDialog
 Q_OBJECT
 
 public:
-  rulesDialog(const QString &tableName, QList<QString> layerList, QMap<QString, test>, QgisInterface* theQgisIface, QWidget *parent);
+  /*
+   * Constructor
+   * @param layerList List of layer IDs
+   * @param testMap maps test names to test routines
+   * @param theQgisIface pointer to a QgisInterface instance
+   * @param parent parent widget
+   */
+  rulesDialog(QList<QString> layerList, QMap<QString, test> testMap, QgisInterface* theQgisIface, QWidget *parent);
   ~rulesDialog();
+  /*
+   * Returns pointer to the test table
+   */
   QTableWidget* testTable() { return mTestTable; }
+  /*
+   * Returns pointer to the test combobox
+   */
   QComboBox* testBox() { return mTestBox; }
 
 private:
   QMap<QString, test> mTestConfMap;
   QList<QString> mLayerIds;
   QgisInterface* mQgisIface;
+  /*
+   * Reads a test from the project
+   * @param index test index
+   * @param layerRegistry pointer to a QgsMapLayerRegistry instance
+   */
   void readTest(int index, QgsMapLayerRegistry* layerRegistry);
 
 private slots:
+  /*
+   * Shows or hides controls according to test settings
+   * @param testName name of the test
+   */
   void showControls(const QString& testName);
+  /*
+   * Adds test to the table
+   */
   void addTest();
+  /*
+   * Deletes test from the table
+   */
   void deleteTest();
+  /*
+   * Reads tests from the project
+   */
   void projectRead();
+  /*
+   * Adds layer to layer comboboxes
+   * @param layer layer pointer
+   */
   void addLayer(QgsMapLayer* layer);
+  /*
+   * Deletes layer to layer comboboxes
+   * @param layerId layer ID
+   */
   void removeLayer(QString layerId);
 };
 

@@ -23,6 +23,7 @@
 #include <qgsrectangle.h>
 
 class TopolError;
+typedef QList<TopolError*> ErrorList;
 typedef bool (TopolError::*fixFunction)();
 
 class FeatureLayer
@@ -30,6 +31,11 @@ class FeatureLayer
 public:
   FeatureLayer() : 
     layer(0), feature(QgsFeature()) {};
+  /**
+   * Constructor
+   * @param theLayer layer pointer
+   * @param theFeature QgsFeature
+   */
   FeatureLayer(QgsVectorLayer* theLayer, QgsFeature theFeature) :
     layer(theLayer), feature(theFeature) {};
 
@@ -46,28 +52,88 @@ protected:
   QList<FeatureLayer> mFeaturePairs;
   QMap<QString, fixFunction> mFixMap;
 
+  /**
+   * A dummy fix - does nothing
+   */
   bool fixDummy() { return false; }
+  /**
+   * Snaps to a feature
+   */
   bool fixSnap();
+  /**
+   * Moves first feature
+   */
   bool fixMoveFirst();
+  /**
+   * Moves second feature
+   */
   bool fixMoveSecond();
+  /**
+   * Unions features to the first
+   */
   bool fixUnionFirst();
+  /**
+   * Unions features to the first
+   */
   bool fixUnionSecond();
+  /**
+   * Deletes first feature
+   */
   bool fixDeleteFirst();
+  /**
+   * Deletes second feature
+   */
   bool fixDeleteSecond();
 
   //helper fix functions
+
+  /**
+   * Makes geometry difference
+   * @param fl1 first FeatureLayer pair
+   * @param fl2 second FeatureLayer pair
+   */
   bool fixMove(FeatureLayer fl1, FeatureLayer fl2);
+  /**
+   * Unions features to the first one
+   * @param fl1 first FeatureLayer pair
+   * @param fl2 second FeatureLayer pair
+   */
   bool fixUnion(FeatureLayer fl1, FeatureLayer fl2);
 
 public:
+  /**
+   * Constructor
+   * @param theBoundingBox bounding box of the two features
+   * @param theConflict geometry representation of the conflict
+   * @param theFeaturePairs FeatureLayer pairs of the two features
+   */
   TopolError(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : mFeaturePairs(theFeaturePairs), mBoundingBox(theBoundingBox), mConflict(theConflict) {};
 
   virtual ~TopolError() {}
+  /**
+   * Runs fixing function
+   * @param fixName name of the fix 
+   */
   virtual bool fix(QString fixName);
+  /**
+   * Returns error's name
+   */
   virtual QString name() { return mName; }
+  /**
+   * Returns conflict
+   */
   virtual QgsGeometry* conflict() { return mConflict; }
+  /**
+   * Returns bounding box of the error
+   */
   virtual QgsRectangle boundingBox() { return mBoundingBox; }
+  /**
+   * Returns FeatureLayer pairs from the error
+   */
   virtual QList<FeatureLayer> featurePairs() { return mFeaturePairs; }
+  /**
+   * Returns the names of posible fixes
+   */
   virtual QStringList fixNames() { return mFixMap.keys(); }
 };
 
@@ -113,7 +179,5 @@ class TopolErrorDangle : public TopolError
 public:
   TopolErrorDangle(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs);
 };
-
-typedef QList<TopolError*> ErrorList;
 
 #endif

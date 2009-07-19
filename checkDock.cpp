@@ -42,7 +42,7 @@
 
 class QgisInterface;
 
-checkDock::checkDock(const QString &tableName, QgisInterface* qIface, QWidget* parent)
+checkDock::checkDock(QgisInterface* qIface, QWidget* parent)
 : QDockWidget(parent), Ui::checkDock()
 {
   setupUi(this);
@@ -52,7 +52,7 @@ checkDock::checkDock(const QString &tableName, QgisInterface* qIface, QWidget* p
   mErrorTableView->verticalHeader()->setDefaultSectionSize( 20 );
 
   mLayerRegistry = QgsMapLayerRegistry::instance();
-  mConfigureDialog = new rulesDialog("Rules", mLayerRegistry->mapLayers().keys(), mTest.testMap(), qIface, parent);
+  mConfigureDialog = new rulesDialog(mLayerRegistry->mapLayers().keys(), mTest.testMap(), qIface, parent);
   mTestTable = mConfigureDialog->testTable();
   
   mValidateExtentButton->setIcon(QIcon(":/topol_c/topol.png"));

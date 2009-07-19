@@ -41,17 +41,48 @@ class checkDock : public QDockWidget, public Ui::checkDock
 Q_OBJECT
 
 public:
-  checkDock(const QString &tableName, QgisInterface* qIface, QWidget *parent = 0);
+  /**
+   * Constructor
+   * @param qIface pointer to QgisInterface instance that is passed to the rulesDialog
+   * @param parent parent object
+   */
+  checkDock(QgisInterface* qIface, QWidget *parent = 0);
   ~checkDock();
 
 private slots:
+  /**
+   * Launches the configuration dialog
+   */
   void configure();
+  /**
+   * Launches fixing routine
+   */
   void fix();
+  /**
+   * Validates the whole layer
+   */
   void validateAll();
+  /**
+   * Validates the current extent
+   */
   void validateExtent();
+  /**
+   * Validates only selected features
+   */
   void validateSelected();
+  /**
+   * Handles error selection
+   * @param index clicked index in the table
+   */
   void errorListClicked(const QModelIndex& index);
+  /**
+   * Deletes allocated errors' data
+   */
   void deleteErrors();
+  /**
+   * Filters all errors involving features from specified layer
+   * @param layerId layer ID
+   */
   void parseErrorListByLayer(QString layerId);
 
 private:
@@ -70,8 +101,20 @@ private:
   topolTest mTest;
   QgsMapLayerRegistry* mLayerRegistry;
 
+  /**
+   * Runs tests from the test table
+   * @param type validation type - what features to check
+   */
   void runTests(ValidateType type);
+  /**
+   * Validates topology
+   * @param type validation type - what features to check
+   */
   void validate(ValidateType type);
+  /**
+   * Filters all errors involving specified feature
+   * @param featureId feature ID
+   */
   void parseErrorListByFeature(int featureId);
 };
 
