@@ -42,7 +42,6 @@
 
 class QgisInterface;
 
-//TODO: get rid of those global variables (eg. mFeatureList)
 checkDock::checkDock(const QString &tableName, QgisInterface* qIface, QWidget* parent)
 : QDockWidget(parent), Ui::checkDock()
 {
@@ -50,7 +49,6 @@ checkDock::checkDock(const QString &tableName, QgisInterface* qIface, QWidget* p
   mErrorListModel = new DockModel(mErrorList, parent);
   mErrorTableView->setModel(mErrorListModel);
   mErrorTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
-  //mErrorTableView->setHorizontalHeader();
   mErrorTableView->verticalHeader()->setDefaultSectionSize( 20 );
 
   mLayerRegistry = QgsMapLayerRegistry::instance();
@@ -107,20 +105,7 @@ checkDock::~checkDock()
 
   // delete errors in list
   deleteErrors();
-
-  // delete spatial indexes
-  QMap<QString, QgsSpatialIndex*>::Iterator lit = mLayerIndexes.begin();
-  for (; lit != mLayerIndexes.end(); ++lit)
-    delete *lit;
 }
-
-/*void checkDock::updateRubberBand(double scale)
-{
-	std::cout << "updateRub\n";
-  mRBConflict->updateRect();
-  mRBFeature1->updateRect();
-  mRBFeature2->updateRect();
-}*/
 
 void checkDock::deleteErrors()
 {
@@ -130,7 +115,6 @@ void checkDock::deleteErrors()
 
   mErrorList.clear();
   mErrorListModel->resetModel();
-  //mErrorTableView->clear();
 }
 
 void checkDock::parseErrorListByLayer(QString layerId)
@@ -153,13 +137,6 @@ void checkDock::parseErrorListByLayer(QString layerId)
 
   mErrorListModel->resetModel();
   mComment->setText(QString("No errors were found"));
-  //mErrorTableView->clear();
-
-  /*ErrorList::ConstIterator lit = mErrorList.begin();
-  ErrorList::ConstIterator errorsEnd = mErrorList.end();
-  for (; lit != errorsEnd; ++lit)
-    mErrorTableView->addItem((*lit)->name() + QString(" %1").arg((*lit)->featurePairs().first().feature.id()));
-    */
 }
 
 void checkDock::parseErrorListByFeature(int featureId)
@@ -181,13 +158,6 @@ void checkDock::parseErrorListByFeature(int featureId)
 
   mComment->setText(QString("No errors were found"));
   mErrorListModel->resetModel();
-  /*mErrorTableView->clear();
-
-  ErrorList::ConstIterator lit = mErrorList.begin();
-  ErrorList::ConstIterator errorsEnd = mErrorList.end();
-  for (; lit != errorsEnd; ++lit)
-    mErrorTableView->addItem((*lit)->name() + QString(" %1").arg((*lit)->featurePairs().first().feature.id()));
-    */
 }
 
 void checkDock::configure()
@@ -267,7 +237,6 @@ void checkDock::fix()
   {
     mErrorList.removeAt(row);
     mErrorListModel->resetModel();
-    //delete mErrorTableView->takeItem(row);
     //parseErrorListByFeature();
     mComment->setText(QString("%1 errors were found").arg(mErrorList.count()));
     mQgisApp->mapCanvas()->refresh();
@@ -310,17 +279,6 @@ void checkDock::runTests(ValidateType type)
     ErrorList errors = mTest.runTest(testName, layer1, layer2, type, toleranceStr.toDouble());
     disconnect(&progress, SIGNAL(canceled()), &mTest, SLOT(setTestCancelled()));
     disconnect(&mTest, SIGNAL(progress(int)), &progress, SLOT(setValue(int)));
-/*
-    ErrorList::ConstIterator it = errors.begin();
-    ErrorList::ConstIterator errorsEnd = errors.end();
-    for (; it != errorsEnd; ++it)
-    {
-      if (mTest.testMap()[testName].useSecondLayer)
-        mErrorTableView->addItem((*it)->name() + QString(" %1 %2").arg((*it)->featurePairs().first().feature.id()).arg((*it)->featurePairs()[1].feature.id()));
-      else
-        mErrorTableView->addItem((*it)->name() + QString(" %1").arg((*it)->featurePairs().first().feature.id()));
-    }
-*/
     mErrorList << errors;
   }
   mErrorListModel->resetModel();
@@ -329,8 +287,6 @@ void checkDock::runTests(ValidateType type)
 void checkDock::validate(ValidateType type)
 {
   mErrorList.clear();
-  //mErrorListModel->resetModel();
-  //mErrorTableView->clear();
 
   runTests(type);
   mComment->setText(QString("%1 errors were found").arg(mErrorList.count()));

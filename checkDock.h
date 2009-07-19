@@ -61,20 +61,12 @@ private:
   QgsRubberBand* mRBFeature2;
   QgisApp* mQgisApp;
 
-  QList<FeatureLayer> mFeatureList1;
-  QList<FeatureLayer> mFeatureList2;
-  QMap<int, FeatureLayer> mFeatureMap2;
-  QList<QString> mLayerNameList;
-
   ErrorList mErrorList;
   DockModel* mErrorListModel;
-  QgsGeometryMap mGeometryMap;
 
   //pointer to topology tests table
   QTableWidget* mTestTable;
 
-  QMap<QString, QgsSpatialIndex*> mLayerIndexes;
-  QList<QString> mTestList;
   topolTest mTest;
   QgsMapLayerRegistry* mLayerRegistry;
 
