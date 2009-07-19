@@ -40,6 +40,8 @@ rulesDialog::rulesDialog(QList<QString> layerList, QMap<QString, test> testMap, 
   setupUi(this);
 
   mQgisIface = theQgisIface;
+  //TODO: even this doesn't solve the 1234 bug!
+  setHorizontalHeaderItems(); 
   mTestTable->hideColumn(4);
   mTestTable->hideColumn(5);
 
@@ -76,11 +78,25 @@ rulesDialog::rulesDialog(QList<QString> layerList, QMap<QString, test> testMap, 
 
 rulesDialog::~rulesDialog()
 {
+  /*for (int i = 0; i < 4; ++i)
+    delete mTestTable->takeHorizontalHeaderItem(i);*/
+}
+
+void rulesDialog::setHorizontalHeaderItems()
+{
+	std::cout << "ua\n";
+  QStringList labels;
+  labels << "Test" << "Layer #1" << "Layer #2" << "Tolerance" << "" << "";
+  mTestTable->setHorizontalHeaderLabels(labels);
+  /*mTestTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Test"));
+  mTestTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Layer #1"));
+  mTestTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Layer #2"));
+  mTestTable->setHorizontalHeaderItem(3, new QTableWidgetItem("Tolerance"));
+  */
 }
 
 void rulesDialog::readTest(int index, QgsMapLayerRegistry* layerRegistry)
 {
-	std::cout << "readtest\n";
   QString testName;
   QString layer1Id;
   QString layer2Id;
@@ -229,6 +245,7 @@ void rulesDialog::addTest()
 
   layer1ID = mLayerIds[mLayer1Box->currentIndex() - 1];
 
+  //TODO: use setData instead of hidden columns
   newItem = new QTableWidgetItem(layer1ID);
   mTestTable->setItem(row, 4, newItem);
   newItem = new QTableWidgetItem(layer2ID);

@@ -55,12 +55,17 @@ private:
   QMap<QString, test> mTestConfMap;
   QList<QString> mLayerIds;
   QgisInterface* mQgisIface;
+
   /*
    * Reads a test from the project
    * @param index test index
    * @param layerRegistry pointer to a QgsMapLayerRegistry instance
    */
   void readTest(int index, QgsMapLayerRegistry* layerRegistry);
+  /*
+   * Sets the horizontal header for tet table
+   */
+  void setHorizontalHeaderItems(); 
 
 private slots:
   /*
