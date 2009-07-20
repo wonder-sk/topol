@@ -39,6 +39,7 @@
 #include "topolTest.h"
 #include "rulesDialog.h"
 #include "dockModel.h"
+//#include "geosFunctions.h"
 
 class QgisInterface;
 
@@ -204,6 +205,7 @@ void checkDock::errorListClicked(const QModelIndex& index)
     QMessageBox::information(this, "Topology test", "Feature not found in the layer.\nThe layer has probably changed.\nRun topology check again.");
     return;
   }
+  std::cout << "1s\n";
   mRBFeature1->setToGeometry(g, fl.layer);
 
   fl = mErrorList[row]->featurePairs()[1];
@@ -221,6 +223,7 @@ void checkDock::errorListClicked(const QModelIndex& index)
     QMessageBox::information(this, "Topology test", "Feature not found in the layer.\nThe layer has probably changed.\nRun topology check again.");
     return;
   }
+  std::cout << "2s\n";
   mRBFeature2->setToGeometry(g, fl.layer);
 
   if (!mErrorList[row]->conflict())
@@ -228,6 +231,8 @@ void checkDock::errorListClicked(const QModelIndex& index)
     std::cout << "invalid conflict\n" << std::flush;
     return;
   }
+  std::cout << "3s\n";
+  std::cout << fl.layer<<std::flush;
   mRBConflict->setToGeometry(mErrorList[row]->conflict(), fl.layer);
 }
 
@@ -263,8 +268,6 @@ void checkDock::runTests(ValidateType type)
     QString toleranceStr = mTestTable->item(i, 3)->text();
     QString layer1Str = mTestTable->item(i, 4)->text();
     QString layer2Str = mTestTable->item(i, 5)->text();
-
-    std::cout << testName.toStdString();
 
     // test if layer1 is in the registry
     if (!((QgsVectorLayer*)mLayerRegistry->mapLayers().contains(layer1Str)))
@@ -304,6 +307,7 @@ void checkDock::validate(ValidateType type)
   mRBFeature1->reset();
   mRBFeature2->reset();
   mRBConflict->reset();
+  mErrorTableView->resizeColumnsToContents();
 }
 
 void checkDock::validateExtent()

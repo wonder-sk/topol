@@ -77,8 +77,6 @@ rulesDialog::rulesDialog(QList<QString> layerList, QMap<QString, test> testMap, 
 
 rulesDialog::~rulesDialog()
 {
-  /*for (int i = 0; i < 4; ++i)
-    delete mTestTable->takeHorizontalHeaderItem(i);*/
 }
 
 void rulesDialog::setHorizontalHeaderItems()
@@ -86,11 +84,6 @@ void rulesDialog::setHorizontalHeaderItems()
   QStringList labels;
   labels << "Test" << "Layer #1" << "Layer #2" << "Tolerance" << "" << "";
   mTestTable->setHorizontalHeaderLabels(labels);
-  /*mTestTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Test"));
-  mTestTable->setHorizontalHeaderItem(1, new QTableWidgetItem("Layer #1"));
-  mTestTable->setHorizontalHeaderItem(2, new QTableWidgetItem("Layer #2"));
-  mTestTable->setHorizontalHeaderItem(3, new QTableWidgetItem("Tolerance"));
-  */
 }
 
 void rulesDialog::readTest(int index, QgsMapLayerRegistry* layerRegistry)
@@ -213,6 +206,7 @@ void rulesDialog::addTest()
   int row = mTestTable->rowCount();
   mTestTable->insertRow(row);
  
+  //TODO: set items not editable
   QTableWidgetItem* newItem;
   newItem = new QTableWidgetItem(test);
   mTestTable->setItem(row, 0, newItem);

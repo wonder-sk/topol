@@ -272,8 +272,24 @@ ErrorList topolTest::checkValid(double tolerance, QgsVectorLayer* layer1, QgsVec
       std::cout << "validity test: invalid QgsGeometry\n" << std::flush;
       return errorList;
     }
+/*
+    std::cout << it->feature.id()<<"\n"<<std::flush;
+    std::cout << "line\n";
+    for (int i = 0; i < g->asPolyline().size();++i)
+      std::cout<<g->asPolyline()[i].toString().toStdString();
 
-    if (!g->asGeos() || !GEOSisValid(g->asGeos()))
+    std::cout << "point\n";
+    g->asPoint().toString().toStdString();
+    std::cout << "poly\n";
+    for (int i = 0; i < g->asPolygon().size();++i)
+      for (int j = 0; j<g->asPolygon()[i].size();++j)
+        std::cout<<g->asPolygon()[i][j].toString().toStdString();
+    std::cout<<std::flush;
+    */
+
+    if (!g->asGeos())
+      continue;
+    if (!GEOSisValid(g->asGeos()))
     {
       QgsRectangle r = g->boundingBox();
       QList<FeatureLayer> fls;

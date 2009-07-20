@@ -20,7 +20,7 @@
 
 DockModel::DockModel(ErrorList& theErrorList, QObject *parent = 0) : mErrorlist(theErrorList)
 {
-  mHeader << "Error" << "Feature ID #1" << "Feature ID #2";
+  mHeader << "Error" << "Layer" << "Feature ID";
 }
 
 int DockModel::rowCount(const QModelIndex &parent) const
@@ -72,10 +72,13 @@ QVariant DockModel::data(const QModelIndex &index, int role) const
       val = mErrorlist[row]->name();
     break;
     case 1:
-      val = mErrorlist[row]->featurePairs().first().feature.id();
+      if (!mErrorlist[row]->featurePairs().first().layer)
+	val = QString("Unkown");
+      else
+        val = mErrorlist[row]->featurePairs().first().layer->name();
     break;
     case 2:
-      val = mErrorlist[row]->featurePairs()[1].feature.id();
+      val = mErrorlist[row]->featurePairs().first().feature.id();
     break;
     default:
       val = QVariant();
