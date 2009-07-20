@@ -40,8 +40,7 @@ rulesDialog::rulesDialog(QList<QString> layerList, QMap<QString, test> testMap, 
   setupUi(this);
 
   mQgisIface = theQgisIface;
-  //TODO: even this doesn't solve the 1234 bug!
-  setHorizontalHeaderItems(); 
+  //setHorizontalHeaderItems(); 
   mTestTable->hideColumn(4);
   mTestTable->hideColumn(5);
 
@@ -84,7 +83,6 @@ rulesDialog::~rulesDialog()
 
 void rulesDialog::setHorizontalHeaderItems()
 {
-	std::cout << "ua\n";
   QStringList labels;
   labels << "Test" << "Layer #1" << "Layer #2" << "Tolerance" << "" << "";
   mTestTable->setHorizontalHeaderLabels(labels);
@@ -163,7 +161,7 @@ void rulesDialog::projectRead()
 {
   QgsMapLayerRegistry* layerRegistry = QgsMapLayerRegistry::instance();
   int testCount = QgsProject::instance()->readNumEntry( "Topol", "/testCount" );
-  mTestTable->clear();
+  mTestTable->clearContents();
 
   for (int i = 0; i < testCount; ++i)
     readTest(i, layerRegistry);

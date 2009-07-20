@@ -85,19 +85,19 @@ checkDock::checkDock(QgisInterface* qIface, QWidget* parent)
   connect(mLayerRegistry, SIGNAL(layerWillBeRemoved(QString)), mConfigureDialog, SLOT(removeLayer(QString)));
   connect(mLayerRegistry, SIGNAL(layerWillBeRemoved(QString)), this, SLOT(parseErrorListByLayer(QString)));
 
+  connect(this, SIGNAL(visibilityChanged(bool)), this, SLOT(updateRubberBands(bool)));
   //connect(canvas, SIGNAL(scaleChanged(double)), this, SLOT(updateRubberBand(double)));
 }
 
 checkDock::~checkDock()
 {
-  //TODO: doesn't work, rubberbands stay on canvas after plugin unloaded
-  //TODO clear canvas from rubberbands 
-  mRBConflict->reset();
+  /*mRBConflict->reset();
   mRBFeature1->reset();
   mRBFeature2->reset();
   mQgisApp->mapCanvas()->scene()->removeItem(mRBConflict);
   mQgisApp->mapCanvas()->scene()->removeItem(mRBFeature1);
   mQgisApp->mapCanvas()->scene()->removeItem(mRBFeature2);
+  */
 
   delete mRBConflict, mRBFeature1, mRBFeature2;
   delete mConfigureDialog;
@@ -105,6 +105,16 @@ checkDock::~checkDock()
 
   // delete errors in list
   deleteErrors();
+}
+
+void checkDock::updateRubberBands(bool visible)
+{
+  if (!visible)
+  {
+    mRBConflict->reset();
+    mRBFeature1->reset();
+    mRBFeature2->reset();
+  }
 }
 
 void checkDock::deleteErrors()

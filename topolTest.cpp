@@ -219,13 +219,13 @@ ErrorList topolTest::checkDanglingLines(double tolerance, QgsVectorLayer* layer1
       QgsGeometry* g2 = mFeatureMap2[*cit].feature.geometry();
       if (!g2)
       {
-	std::cout << "g2 == NULL in unconnected\n" << std::flush;
+	std::cout << "g2 == NULL in dangling line test\n" << std::flush;
         continue;
       }
 
       if (!g2->asGeos())
       {
-	std::cout << "g2->asGeos() == NULL in unconnected\n" << std::flush;
+	std::cout << "g2->asGeos() == NULL in dangling line test\n" << std::flush;
         continue;
       }
 	

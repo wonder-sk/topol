@@ -84,6 +84,12 @@ private slots:
    * @param layerId layer ID
    */
   void parseErrorListByLayer(QString layerId);
+  /**
+   * Clears rubberbands when window is hidden
+   * @param visible true if the window is visible
+   */
+  void updateRubberBands(bool visible);
+
 
 private:
   rulesDialog* mConfigureDialog;

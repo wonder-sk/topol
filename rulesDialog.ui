@@ -32,12 +32,12 @@
        </column>
        <column>
         <property name="text">
-         <string>Layer</string>
+         <string>Layer #1</string>
         </property>
        </column>
        <column>
         <property name="text">
-         <string>Layer</string>
+         <string>Layer #2</string>
         </property>
        </column>
        <column>
