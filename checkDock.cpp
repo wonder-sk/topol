@@ -27,6 +27,7 @@
 #include <qgsmaplayer.h>
 #include <qgsmaplayerregistry.h>
 #include <qgsgeometry.h>
+#include <qgsvertexmarker.h>
 #include <qgsfeature.h>
 #include <qgsmapcanvas.h>
 #include <qgsrubberband.h>
@@ -74,6 +75,10 @@ checkDock::checkDock(QgisInterface* qIface, QWidget* parent)
   mRBFeature2->setWidth(5);
   mRBConflict->setWidth(5);
 
+  mVMConflict = 0;
+  mVMFeature1 = 0;
+  mVMFeature2 = 0;
+
   connect(mConfigureButton, SIGNAL(clicked()), this, SLOT(configure()));
   connect(mValidateAllButton, SIGNAL(clicked()), this, SLOT(validateAll()));
   connect(mValidateSelectedButton, SIGNAL(clicked()), this, SLOT(validateSelected()));
@@ -87,22 +92,34 @@ checkDock::checkDock(QgisInterface* qIface, QWidget* parent)
   connect(mLayerRegistry, SIGNAL(layerWillBeRemoved(QString)), this, SLOT(parseErrorListByLayer(QString)));
 
   connect(this, SIGNAL(visibilityChanged(bool)), this, SLOT(updateRubberBands(bool)));
-  //connect(canvas, SIGNAL(scaleChanged(double)), this, SLOT(updateRubberBand(double)));
+}
+
+void checkDock::clearVertexMarkers()
+{
+  if (mVMConflict)
+  {
+    delete mVMConflict;
+    mVMConflict = 0;
+  }
+  if (mVMFeature1)
+  {
+    delete mVMFeature1;
+    mVMFeature1 = 0;
+  }
+  if (mVMFeature2)
+  {
+    delete mVMFeature2;
+    mVMFeature2 = 0;
+  }
 }
 
 checkDock::~checkDock()
 {
-  /*mRBConflict->reset();
-  mRBFeature1->reset();
-  mRBFeature2->reset();
-  mQgisApp->mapCanvas()->scene()->removeItem(mRBConflict);
-  mQgisApp->mapCanvas()->scene()->removeItem(mRBFeature1);
-  mQgisApp->mapCanvas()->scene()->removeItem(mRBFeature2);
-  */
-
   delete mRBConflict, mRBFeature1, mRBFeature2;
   delete mConfigureDialog;
   delete mErrorListModel;
+
+  clearVertexMarkers();
 
   // delete errors in list
   deleteErrors();
@@ -115,6 +132,8 @@ void checkDock::updateRubberBands(bool visible)
     mRBConflict->reset();
     mRBFeature1->reset();
     mRBFeature2->reset();
+
+    clearVertexMarkers();
   }
 }
 
@@ -205,9 +224,20 @@ void checkDock::errorListClicked(const QModelIndex& index)
     QMessageBox::information(this, "Topology test", "Feature not found in the layer.\nThe layer has probably changed.\nRun topology check again.");
     return;
   }
-  //std::cout << "1s\n";
-  //std::cout << "g1 "<<g<<std::flush;
-  mRBFeature1->setToGeometry(g, fl.layer);
+
+  clearVertexMarkers();
+
+  if (g->type() == QGis::Point)
+  { 
+    mVMFeature1 = new QgsVertexMarker(mQgisApp->mapCanvas());
+    mVMFeature1->setIconType(QgsVertexMarker::ICON_BOX);
+    mVMFeature1->setPenWidth(5);
+    mVMFeature1->setIconSize(20);
+    mVMFeature1->setColor("gold");
+    mVMFeature1->setCenter(g->asPoint());
+  }
+  else
+   mRBFeature1->setToGeometry(g, fl.layer);
 
   fl = mErrorList[row]->featurePairs()[1];
   if (!fl.layer)
@@ -224,37 +254,36 @@ void checkDock::errorListClicked(const QModelIndex& index)
     QMessageBox::information(this, "Topology test", "Feature not found in the layer.\nThe layer has probably changed.\nRun topology check again.");
     return;
   }
-  //std::cout << "2s\n";
-  //std::cout << "g2 "<<g<<std::flush;
-  mRBFeature2->setToGeometry(g, fl.layer);
+
+  if (g->type() == QGis::Point)
+  { 
+    mVMFeature2 = new QgsVertexMarker(mQgisApp->mapCanvas());
+    mVMFeature2->setIconType(QgsVertexMarker::ICON_BOX);
+    mVMFeature2->setPenWidth(5);
+    mVMFeature2->setIconSize(20);
+    mVMFeature2->setColor("gold");
+    mVMFeature2->setCenter(g->asPoint());
+  }
+  else
+    mRBFeature2->setToGeometry(g, fl.layer);
 
   if (!mErrorList[row]->conflict())
   {
     std::cout << "invalid conflict\n" << std::flush;
     return;
   }
-  /*
-  std::cout << "3s\n";
-  std::cout << fl.layer<<std::flush;
 
-    std::cout << "\nelc pol\n";
-    //std::cout << "char1: "<<*(char *)(mErrorList[row]->conflict() + 1)<<"\n";
-    //std::cout << std::flush;
-    QgsGeometry* ggg = mErrorList[row]->conflict();
-    */
-  /*
-  std::cout << "conflict "<<ggg<<std::flush;
-    std::cout << "wkb size: "<<ggg->wkbSize()<<"\n";
-    std::cout << std::flush;
-    std::cout << "char: "<<*(char *)(ggg->asWkb() + 1)<<"\n";
-    std::cout << std::flush;
-    for (int i = 0; i < ggg->asPolygon().size();++i)
-      for (int j = 0; j<ggg->asPolygon()[i].size();++j)
-        std::cout<<ggg->asPolygon()[i][j].toString().toStdString()<<" | ";
-    std::cout << std::flush;
-    */
-
-  mRBConflict->setToGeometry(mErrorList[row]->conflict(), fl.layer);
+  if (mErrorList[row]->conflict()->type() == QGis::Point)
+  { 
+    mVMConflict = new QgsVertexMarker(mQgisApp->mapCanvas());
+    mVMConflict->setIconType(QgsVertexMarker::ICON_BOX);
+    mVMConflict->setPenWidth(5);
+    mVMConflict->setIconSize(20);
+    mVMConflict->setColor("gold");
+    mVMConflict->setCenter(mErrorList[row]->conflict()->asPoint());
+  }
+  else
+    mRBConflict->setToGeometry(mErrorList[row]->conflict(), fl.layer);
 }
 
 void checkDock::fix()
@@ -268,6 +297,8 @@ void checkDock::fix()
   mRBFeature1->reset();
   mRBFeature2->reset();
   mRBConflict->reset();
+
+  clearVertexMarkers();
 
   if (mErrorList[row]->fix(fixName))
   {
@@ -328,6 +359,9 @@ void checkDock::validate(ValidateType type)
   mRBFeature1->reset();
   mRBFeature2->reset();
   mRBConflict->reset();
+
+  clearVertexMarkers();
+
   mErrorTableView->resizeColumnsToContents();
 }
 

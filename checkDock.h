@@ -22,6 +22,7 @@
 
 #include <qgsvectorlayer.h>
 #include <qgsgeometry.h>
+//#include <qgsvertexmarker.h>
 #include <spatialindex/qgsspatialindex.h>
 
 #include "ui_checkDock.h"
@@ -32,6 +33,7 @@
 
 class QgsMapLayerRegistry;
 class QgsRubberBand;
+class QgsVertexMarker;
 class QgisApp;
 class QgisInterface;
 class checkDock;
@@ -93,10 +95,14 @@ private slots:
 
 private:
   rulesDialog* mConfigureDialog;
+  QgisApp* mQgisApp;
+
   QgsRubberBand* mRBConflict;
   QgsRubberBand* mRBFeature1;
   QgsRubberBand* mRBFeature2;
-  QgisApp* mQgisApp;
+  QgsVertexMarker* mVMConflict;
+  QgsVertexMarker* mVMFeature1;
+  QgsVertexMarker* mVMFeature2;
 
   ErrorList mErrorList;
   DockModel* mErrorListModel;
@@ -122,6 +128,10 @@ private:
    * @param featureId feature ID
    */
   void parseErrorListByFeature(int featureId);
+  /**
+   * Deletes vertex markers
+   */
+  void clearVertexMarkers();
 };
 
 #endif
