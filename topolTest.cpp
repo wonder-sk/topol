@@ -75,7 +75,6 @@ bool topolTest::testCancelled()
 
 ErrorList topolTest::checkCloseFeature(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {
-	//TODO: maybe still crashes in distance()
   ErrorList errorList;
   QString secondLayerId = layer2->getLayerID();
   QgsSpatialIndex* index = mLayerIndexes[secondLayerId];
@@ -163,7 +162,7 @@ ErrorList topolTest::checkCloseFeature(double tolerance, QgsVectorLayer* layer1,
 
 ErrorList topolTest::checkDanglingLines(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {
-  //TODO: multilines
+  //TODO: multilines - check all separate pieces
   int i = 0;
   ErrorList errorList;
   QString layerId = layer1->getLayerID();
@@ -206,6 +205,12 @@ ErrorList topolTest::checkDanglingLines(double tolerance, QgsVectorLayer* layer1
     QList<int>::Iterator cit = crossingIds.begin();
     QList<int>::ConstIterator crossingIdsEnd = crossingIds.end();
 
+    // QList for multilines
+    // QList<QgsPoint> endPoints;
+    // QGis::WkbType type = g1->wkbType();
+    // if (type == WKBMultiLineString || type == WKBMultiLineString25D)
+    //   for (...)
+    // else
     QgsGeometry* startPoint = QgsGeometry::fromPoint(g1->asPolyline().first());
     QgsGeometry* endPoint = QgsGeometry::fromPoint(g1->asPolyline().last());
     if (!startPoint || !endPoint)
@@ -230,7 +235,8 @@ ErrorList topolTest::checkDanglingLines(double tolerance, QgsVectorLayer* layer1
 	std::cout << "g2->asGeos() == NULL in dangling line test\n" << std::flush;
         continue;
       }
-	
+
+      //if (touchesPoints(endPoints, g2))
       // test both endpoints
       if (geosTouches(startPoint, g2) || geosTouches(endPoint, g2))
       {
@@ -255,9 +261,13 @@ ErrorList topolTest::checkDanglingLines(double tolerance, QgsVectorLayer* layer1
   return errorList;
 }
 
+/*bool touchesPoints(QList<QgsPoint endPoints, QgsGeometry* g)
+{
+}
+*/
+
 ErrorList topolTest::checkValid(double tolerance, QgsVectorLayer* layer1, QgsVectorLayer* layer2)
 {
-  //TODO: crashes when clicked on error | maybe only when more tests ran
   int i = 0;
   ErrorList errorList;
   QList<FeatureLayer>::Iterator it;

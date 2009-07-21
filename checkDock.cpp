@@ -231,8 +231,8 @@ void checkDock::errorListClicked(const QModelIndex& index)
   { 
     mVMFeature1 = new QgsVertexMarker(mQgisApp->mapCanvas());
     mVMFeature1->setIconType(QgsVertexMarker::ICON_BOX);
-    mVMFeature1->setPenWidth(5);
-    mVMFeature1->setIconSize(20);
+    mVMFeature1->setPenWidth(10);
+    mVMFeature1->setIconSize(5);
     mVMFeature1->setColor("gold");
     mVMFeature1->setCenter(g->asPoint());
   }

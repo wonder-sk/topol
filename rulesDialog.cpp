@@ -130,10 +130,15 @@ void rulesDialog::readTest(int index, QgsMapLayerRegistry* layerRegistry)
  
   QTableWidgetItem* newItem;
   newItem = new QTableWidgetItem(testName);
+  newItem->setFlags(newItem->flags() & ~Qt::ItemIsEditable);
   mTestTable->setItem(row, 0, newItem);
+
   newItem = new QTableWidgetItem(layer1Name);
+  newItem->setFlags(newItem->flags() & ~Qt::ItemIsEditable);
   mTestTable->setItem(row, 1, newItem);
+
   newItem = new QTableWidgetItem(layer2Name);
+  newItem->setFlags(newItem->flags() & ~Qt::ItemIsEditable);
   mTestTable->setItem(row, 2, newItem);
  
   if (mTestConfMap[testName].useTolerance)
@@ -141,6 +146,7 @@ void rulesDialog::readTest(int index, QgsMapLayerRegistry* layerRegistry)
   else
     newItem = new QTableWidgetItem(QString("No tolerance"));
 
+  newItem->setFlags(newItem->flags() & ~Qt::ItemIsEditable);
   mTestTable->setItem(row, 3, newItem);
  
   // add layer ids to hidden columns
@@ -206,7 +212,6 @@ void rulesDialog::addTest()
   int row = mTestTable->rowCount();
   mTestTable->insertRow(row);
  
-  //TODO: set items not editable
   QTableWidgetItem* newItem;
   newItem = new QTableWidgetItem(test);
   mTestTable->setItem(row, 0, newItem);
@@ -237,7 +242,7 @@ void rulesDialog::addTest()
 
   layer1ID = mLayerIds[mLayer1Box->currentIndex() - 1];
 
-  //TODO: use setData instead of hidden columns
+  //TODO: use setItemData (or something like that) instead of hidden columns
   newItem = new QTableWidgetItem(layer1ID);
   mTestTable->setItem(row, 4, newItem);
   newItem = new QTableWidgetItem(layer2ID);
