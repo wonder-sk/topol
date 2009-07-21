@@ -205,7 +205,8 @@ void checkDock::errorListClicked(const QModelIndex& index)
     QMessageBox::information(this, "Topology test", "Feature not found in the layer.\nThe layer has probably changed.\nRun topology check again.");
     return;
   }
-  std::cout << "1s\n";
+  //std::cout << "1s\n";
+  //std::cout << "g1 "<<g<<std::flush;
   mRBFeature1->setToGeometry(g, fl.layer);
 
   fl = mErrorList[row]->featurePairs()[1];
@@ -223,7 +224,8 @@ void checkDock::errorListClicked(const QModelIndex& index)
     QMessageBox::information(this, "Topology test", "Feature not found in the layer.\nThe layer has probably changed.\nRun topology check again.");
     return;
   }
-  std::cout << "2s\n";
+  //std::cout << "2s\n";
+  //std::cout << "g2 "<<g<<std::flush;
   mRBFeature2->setToGeometry(g, fl.layer);
 
   if (!mErrorList[row]->conflict())
@@ -231,8 +233,27 @@ void checkDock::errorListClicked(const QModelIndex& index)
     std::cout << "invalid conflict\n" << std::flush;
     return;
   }
+  /*
   std::cout << "3s\n";
   std::cout << fl.layer<<std::flush;
+
+    std::cout << "\nelc pol\n";
+    //std::cout << "char1: "<<*(char *)(mErrorList[row]->conflict() + 1)<<"\n";
+    //std::cout << std::flush;
+    QgsGeometry* ggg = mErrorList[row]->conflict();
+    */
+  /*
+  std::cout << "conflict "<<ggg<<std::flush;
+    std::cout << "wkb size: "<<ggg->wkbSize()<<"\n";
+    std::cout << std::flush;
+    std::cout << "char: "<<*(char *)(ggg->asWkb() + 1)<<"\n";
+    std::cout << std::flush;
+    for (int i = 0; i < ggg->asPolygon().size();++i)
+      for (int j = 0; j<ggg->asPolygon()[i].size();++j)
+        std::cout<<ggg->asPolygon()[i][j].toString().toStdString()<<" | ";
+    std::cout << std::flush;
+    */
+
   mRBConflict->setToGeometry(mErrorList[row]->conflict(), fl.layer);
 }
 

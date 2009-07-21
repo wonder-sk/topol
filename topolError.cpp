@@ -165,12 +165,13 @@ TopolErrorShort::TopolErrorShort(QgsRectangle theBoundingBox, QgsGeometry* theCo
   mFixMap["Select automatic fix"] = &TopolErrorShort::fixDummy;
   mFixMap["Delete feature"] = &TopolErrorShort::fixDeleteFirst;
 }
-
+/*
 TopolErrorShort::~TopolErrorShort()
 {
   // this geometry was allocated by QgsGeometry::fromPolyline and needs to be deleted
   delete mConflict;
 }
+*/
 
 TopolErrorValid::TopolErrorValid(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : TopolError(theBoundingBox, theConflict, theFeaturePairs)
 {

@@ -143,7 +143,9 @@ ErrorList topolTest::checkCloseFeature(double tolerance, QgsVectorLayer* layer1,
 	fl.feature = f;
 	fl.layer = layer2;
 	fls << *it << fl;
-	TopolErrorClose* err = new TopolErrorClose(r, g2, fls);
+	QgsGeometry* conflict = new QgsGeometry(*g2);
+	TopolErrorClose* err = new TopolErrorClose(r, conflict, fls);
+	//TopolErrorClose* err = new TopolErrorClose(r, g2, fls);
 
 	errorList << err;
       }
@@ -241,7 +243,8 @@ ErrorList topolTest::checkDanglingLines(double tolerance, QgsVectorLayer* layer1
     {
       QList<FeatureLayer> fls;
       fls << *it << *it;
-      TopolErrorDangle* err = new TopolErrorDangle(bb, g1, fls);
+      QgsGeometry* conflict = new QgsGeometry(*g1);
+      TopolErrorDangle* err = new TopolErrorDangle(bb, conflict, fls);
 
       errorList << err;
     }
@@ -269,33 +272,21 @@ ErrorList topolTest::checkValid(double tolerance, QgsVectorLayer* layer1, QgsVec
     QgsGeometry* g = it->feature.geometry();
     if (!g)
     {
-      std::cout << "validity test: invalid QgsGeometry\n" << std::flush;
-      return errorList;
+      std::cout << "validity test: invalid QgsGeometry pointer\n" << std::flush;
+      continue;
     }
-/*
-    std::cout << it->feature.id()<<"\n"<<std::flush;
-    std::cout << "line\n";
-    for (int i = 0; i < g->asPolyline().size();++i)
-      std::cout<<g->asPolyline()[i].toString().toStdString();
-
-    std::cout << "point\n";
-    g->asPoint().toString().toStdString();
-    std::cout << "poly\n";
-    for (int i = 0; i < g->asPolygon().size();++i)
-      for (int j = 0; j<g->asPolygon()[i].size();++j)
-        std::cout<<g->asPolygon()[i][j].toString().toStdString();
-    std::cout<<std::flush;
-    */
 
     if (!g->asGeos())
       continue;
+
     if (!GEOSisValid(g->asGeos()))
     {
       QgsRectangle r = g->boundingBox();
       QList<FeatureLayer> fls;
       fls << *it << *it;
 
-      TopolErrorValid* err = new TopolErrorValid(r, g, fls);
+      QgsGeometry* conflict = new QgsGeometry(*g);
+      TopolErrorValid* err = new TopolErrorValid(r, conflict, fls);
       errorList << err;
     }
   }
@@ -369,7 +360,8 @@ ErrorList topolTest::checkPolygonContains(double tolerance, QgsVectorLayer* laye
 	fl.feature = f;
 	fl.layer = layer2;
 	fls << *it << fl;
-	TopolErrorInside* err = new TopolErrorInside(bb, g2, fls);
+        QgsGeometry* conflict = new QgsGeometry(*g2);
+	TopolErrorInside* err = new TopolErrorInside(bb, conflict, fls);
 
 	errorList << err;
       }
@@ -443,7 +435,8 @@ ErrorList topolTest::checkPointCoveredBySegment(double tolerance, QgsVectorLayer
       QList<FeatureLayer> fls;
       fls << *it << *it;
       //bb.scale(10);
-      TopolErrorCovered* err = new TopolErrorCovered(bb, g1, fls);
+      QgsGeometry* conflict = new QgsGeometry(*g1);
+      TopolErrorCovered* err = new TopolErrorCovered(bb, conflict, fls);
 
       errorList << err;
     }
@@ -484,7 +477,9 @@ ErrorList topolTest::checkSegmentLength(double tolerance, QgsVectorLayer* layer1
             fls << *it << *it;
 	    segm.clear();
 	    segm << ls[i-1] << ls[i];
-            err = new TopolErrorShort(g1->boundingBox(), QgsGeometry::fromPolyline(segm), fls);
+            QgsGeometry* conflict = QgsGeometry::fromPolyline(segm);
+            err = new TopolErrorShort(g1->boundingBox(), conflict, fls);
+            //err = new TopolErrorShort(g1->boundingBox(), QgsGeometry::fromPolyline(segm), fls);
             errorList << err;
 	  }
 	}
@@ -502,7 +497,8 @@ ErrorList topolTest::checkSegmentLength(double tolerance, QgsVectorLayer* layer1
               fls << *it << *it;
 	      segm.clear();
 	      segm << pol[i][j-1] << pol[i][j];
-              err = new TopolErrorShort(g1->boundingBox(), QgsGeometry::fromPolyline(segm), fls);
+              QgsGeometry* conflict = QgsGeometry::fromPolyline(segm);
+              err = new TopolErrorShort(g1->boundingBox(), conflict, fls);
               errorList << err;
 	    }
       break;
@@ -522,7 +518,8 @@ ErrorList topolTest::checkSegmentLength(double tolerance, QgsVectorLayer* layer1
               fls << *it << *it;
 	      segm.clear();
 	      segm << ls[i-1] << ls[i];
-              err = new TopolErrorShort(g1->boundingBox(), QgsGeometry::fromPolyline(segm), fls);
+              QgsGeometry* conflict = QgsGeometry::fromPolyline(segm);
+              err = new TopolErrorShort(g1->boundingBox(), conflict, fls);
               errorList << err;
 	    }
 	  }
@@ -544,7 +541,8 @@ ErrorList topolTest::checkSegmentLength(double tolerance, QgsVectorLayer* layer1
                 fls << *it << *it;
 	        segm.clear();
 	        segm << pol[i][j-1] << pol[i][j];
-                err = new TopolErrorShort(g1->boundingBox(), QgsGeometry::fromPolyline(segm), fls);
+                QgsGeometry* conflict = QgsGeometry::fromPolyline(segm);
+                err = new TopolErrorShort(g1->boundingBox(), conflict, fls);
                 errorList << err;
 	      }
 	}
@@ -613,9 +611,10 @@ ErrorList topolTest::checkIntersections(double tolerance, QgsVectorLayer* layer1
 	QgsRectangle r2 = g2->boundingBox();
 	r.combineExtentWith(&r2);
 
-	QgsGeometry* c = g1->intersection(g2);
+	QgsGeometry* conflict = g1->intersection(g2);
 	// could this for some reason return NULL?
-	//if (!c)
+	if (!conflict)
+          continue;
 	  //c = new QgsGeometry;
 
 	QList<FeatureLayer> fls;
@@ -623,7 +622,7 @@ ErrorList topolTest::checkIntersections(double tolerance, QgsVectorLayer* layer1
 	fl.feature = f;
 	fl.layer = layer2;
 	fls << *it << fl;
-	TopolErrorIntersection* err = new TopolErrorIntersection(r, c, fls);
+	TopolErrorIntersection* err = new TopolErrorIntersection(r, conflict, fls);
 
 	errorList << err;
       }
@@ -710,11 +709,12 @@ ErrorList topolTest::runTest(QString testName, QgsVectorLayer* layer1, QgsVector
   if (type == ValidateSelected)
   {
       QgsFeatureList flist = layer1->selectedFeatures();
-      QgsFeatureList::ConstIterator fit = flist.begin();
-      QgsFeatureList::ConstIterator flistEnd = flist.end();
+      QgsFeatureList::Iterator fit = flist.begin();
+      QgsFeatureList::Iterator flistEnd = flist.end();
   
       for (; fit != flist.end(); ++fit)
-        mFeatureList1 << FeatureLayer(layer1, *fit);
+	if (fit->geometry())
+          mFeatureList1 << FeatureLayer(layer1, *fit);
   }
   // validate all features or current extent
   else {
