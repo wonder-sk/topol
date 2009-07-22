@@ -34,6 +34,7 @@ bool TopolError::fixMove(FeatureLayer fl1, FeatureLayer fl2)
   if (!ok)
     return false;
 
+  QgsGeometry* g2, *g1 = f1.geometry();
   // 0 means success
   if(!f1.geometry()->makeDifference(f2.geometry()))
     return fl1.layer->changeGeometry(f1.id(), f1.geometry());
