@@ -107,9 +107,11 @@ public:
    * @param theConflict geometry representation of the conflict
    * @param theFeaturePairs FeatureLayer pairs of the two features
    */
-  TopolError(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : mFeaturePairs(theFeaturePairs), mBoundingBox(theBoundingBox), mConflict(theConflict) {};
-  //TopolError(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs) : mFeaturePairs(theFeaturePairs), mBoundingBox(theBoundingBox) { mConflict = theConflict; std::cout << theConflict;};
+  TopolError(QgsRectangle theBoundingBox, QgsGeometry* theConflict, QList<FeatureLayer> theFeaturePairs);
 
+  /**
+   * Destructor
+   */
   virtual ~TopolError() { delete mConflict; }
   /**
    * Runs fixing function
@@ -121,7 +123,7 @@ public:
    */
   virtual QString name() { return mName; }
   /**
-   * Returns conflict
+   * Returns topology conflict
    */
   virtual QgsGeometry* conflict() { return mConflict; }
   /**

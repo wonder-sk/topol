@@ -94,6 +94,18 @@ checkDock::checkDock(QgisInterface* qIface, QWidget* parent)
   connect(this, SIGNAL(visibilityChanged(bool)), this, SLOT(updateRubberBands(bool)));
 }
 
+checkDock::~checkDock()
+{
+  delete mRBConflict, mRBFeature1, mRBFeature2;
+  delete mConfigureDialog;
+  delete mErrorListModel;
+
+  clearVertexMarkers();
+
+  // delete errors in list
+  deleteErrors();
+}
+
 void checkDock::clearVertexMarkers()
 {
   if (mVMConflict)
@@ -111,18 +123,6 @@ void checkDock::clearVertexMarkers()
     delete mVMFeature2;
     mVMFeature2 = 0;
   }
-}
-
-checkDock::~checkDock()
-{
-  delete mRBConflict, mRBFeature1, mRBFeature2;
-  delete mConfigureDialog;
-  delete mErrorListModel;
-
-  clearVertexMarkers();
-
-  // delete errors in list
-  deleteErrors();
 }
 
 void checkDock::updateRubberBands(bool visible)
@@ -204,8 +204,8 @@ void checkDock::errorListClicked(const QModelIndex& index)
   mQgisApp->mapCanvas()->refresh();
 
   mFixBox->clear();
-  mFixBox->addItem("Select automatic fix");
   mFixBox->addItems(mErrorList[row]->fixNames());
+  mFixBox->setCurrentIndex(mFixBox->findText("Select automatic fix"));
 
   QgsFeature f;
   QgsGeometry* g;
@@ -227,13 +227,15 @@ void checkDock::errorListClicked(const QModelIndex& index)
 
   clearVertexMarkers();
 
+  // use vertex marker when highlighting a point
+  // and rubber band otherwise
   if (g->type() == QGis::Point)
   { 
     mVMFeature1 = new QgsVertexMarker(mQgisApp->mapCanvas());
     mVMFeature1->setIconType(QgsVertexMarker::ICON_BOX);
-    mVMFeature1->setPenWidth(10);
+    mVMConflict->setPenWidth(5);
     mVMFeature1->setIconSize(5);
-    mVMFeature1->setColor("gold");
+    mVMFeature1->setColor("blue");
     mVMFeature1->setCenter(g->asPoint());
   }
   else
@@ -259,9 +261,9 @@ void checkDock::errorListClicked(const QModelIndex& index)
   { 
     mVMFeature2 = new QgsVertexMarker(mQgisApp->mapCanvas());
     mVMFeature2->setIconType(QgsVertexMarker::ICON_BOX);
-    mVMFeature2->setPenWidth(5);
-    mVMFeature2->setIconSize(20);
-    mVMFeature2->setColor("gold");
+    mVMConflict->setPenWidth(5);
+    mVMConflict->setIconSize(5);
+    mVMFeature2->setColor("red");
     mVMFeature2->setCenter(g->asPoint());
   }
   else
@@ -278,7 +280,7 @@ void checkDock::errorListClicked(const QModelIndex& index)
     mVMConflict = new QgsVertexMarker(mQgisApp->mapCanvas());
     mVMConflict->setIconType(QgsVertexMarker::ICON_BOX);
     mVMConflict->setPenWidth(5);
-    mVMConflict->setIconSize(20);
+    mVMConflict->setIconSize(5);
     mVMConflict->setColor("gold");
     mVMConflict->setCenter(mErrorList[row]->conflict()->asPoint());
   }
