@@ -48,6 +48,11 @@ checkDock::checkDock(QgisInterface* qIface, QWidget* parent)
 : QDockWidget(parent), Ui::checkDock()
 {
   setupUi(this);
+  
+  // hide the fix-related stuff, needs more work
+  mFixButton->hide();
+  mFixBox->hide();
+
   mErrorListModel = new DockModel(mErrorList, parent);
   mErrorTableView->setModel(mErrorListModel);
   mErrorTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
