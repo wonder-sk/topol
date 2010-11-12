@@ -40,6 +40,7 @@ ADD_LIBRARY (topolplugin MODULE ${topol_SRCS} ${topol_MOC_SRCS} ${topol_RCC_SRCS
 INCLUDE_DIRECTORIES(
   ${CMAKE_BINARY_DIR}/src/ui
   ${CMAKE_CURRENT_BINARY_DIR}
+  ${GEOS_INCLUDE_DIR}
   ../../core ../../core/raster ../../core/renderer ../../core/symbology
   ../../gui  
   ..
